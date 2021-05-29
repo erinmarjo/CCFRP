@@ -15,9 +15,13 @@ This is my test markdown for making R and GitHub talk
 
 a <- 2+2
 
-b <- a-4
 
+
+
+
+b <- 3
 a + b
 
 ```
 
+Made some changes
