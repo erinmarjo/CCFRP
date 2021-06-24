@@ -1,0 +1,43 @@
+---
+title: "blue maturity"
+author: "Erin Johnston"
+date: "1/7/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, warning=F, message=F}
+
+library(tidyverse)
+library(here)
+```
+
+```{r}
+
+blue_mat <- read_csv(here("Data", "blue_maturityII.csv"))
+
+blue_summary <- blue_mat %>%
+  group_by(maturity) %>%
+  summarise(min_size = min(length),
+            mean_size = mean(length),
+            max_size = max(length))
+
+blue_II <- blue_mat %>%
+  select(-location) %>%
+  mutate(calc_wt = 0.0158*length^2.988,
+         diff_wt = weight-calc_wt,
+         std_wt = diff_wt/weight)
+
+write_csv(blue_II, here("Data", "blue_II.csv"))
+
+ggplot(blue_II)+
+  geom_bar(stat = "identity", aes(x = year, y = std_wt, color = sex))+
+  theme_classic()
+
+
+
+```
+

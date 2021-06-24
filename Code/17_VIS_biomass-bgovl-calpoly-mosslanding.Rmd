@@ -1,0 +1,901 @@
+---
+title: "Biomass per Unit Effort Visualization"
+author: "Erin Johnston"
+date: "10/25/2020"
+output: html_document
+---
+
+The purpose of this markdown file is to show a polished BPUE visualization as of Oct 2020. 
+This code is a modification of the 'bpue_analysis_cp_mlml.Rmd'. 
+Original Path = documents/thesis/R Stuff/Thesis_Johnston_Rockfish/Analyses
+
+These data are for rockfishes in the central coast of California caught for the California Collaborative Fisheries Research Project. These data have both Cal Poly, San Luis Obispo catch as well as Moss Landing Marine Laboratories.
+
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+
+```
+
+
+```{r library dependencies}
+
+library(tidyverse)
+library(here)
+library(plotrix) ## for standard error
+
+```
+
+
+This dataframe is from the csv created at the end of 01_DATA_cpue-add-zeros.Rmd
+
+```{r}
+
+biomass_cp_mlml <- read_csv(here("Data/output", "2020-10-25_BPUE_calpoly-mosslanding.csv"))
+```
+
+
+# BPUE Visualization
+
+## Sebastes mystinus
+
+```{r blue}
+
+mystinus_biomass_cp_ml <- biomass_cp_mlml %>%
+  select(BLU_bpue, drift, area, site, year, BLU, anglerhours)
+
+```
+
+
+```{r blue PB}
+
+blu_cp_pb_bpue <- mystinus_biomass_cp_ml %>%
+  filter(area == "PB") %>%
+  group_by(year, site,  drift) %>%
+  summarise(sum = sum(BLU_bpue))%>%
+  group_by(year, site)%>%
+  summarise(mean = mean(sum),
+            sd = sd(sum),
+            n = n(),
+            se = std.error(sum))%>%
+  ggplot(aes(x = year, y = mean, color = site, group = site))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), width = 0.2,
+                position = position_dodge(0))+
+  scale_color_manual(values = c("#CC0000", "#0066CC"))+
+  labs(y = "BPUE (Blue rockfish biomass/angler hours", x = "",
+       title = "Point Buchon - Cal Poly San Luis Obispo", 
+       subtitle = "Blue Rockfish BPUE" )+
+  scale_x_continuous(limits=c(2007,2019),breaks=seq(2007,2019,1))+
+  theme_bw()+
+  theme(panel.grid=element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 12),
+        plot.subtitle = element_text(hjust = 0.5, size = 10))
+
+plot(blu_cp_pb_bpue)
+
+#ggsave("blu_cp_pb_bpue.png", plot = blu_cp_pb_bpue, path = "C:/Users/erinj/Documents/Thesis/Figures/BPUE/BPUE_CP_MLML", dpi = 1000, width = 6, height = 4)
+
+```
+
+```{r blue BL}
+
+blu_cp_bl_bpue <- mystinus_biomass_cp_ml %>%
+  filter(area == "BL") %>%
+  group_by(year, site,  drift) %>%
+  summarise(sum = sum(BLU_bpue))%>%
+  group_by(year, site)%>%
+  summarise(mean = mean(sum),
+            sd = sd(sum),
+            n = n(),
+            se = std.error(sum))%>%
+  ggplot(aes(x = year, y = mean, color = site, group = site))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), width = 0.2,
+                position = position_dodge(0))+
+  scale_color_manual(values = c("#CC0000", "#0066CC"))+
+  labs(y = "BPUE (Blue rockfish biomass/angler hours", x = "",
+       title = "Piedras Blancas - Cal Poly San Luis Obispo", 
+       subtitle = "Blue Rockfish BPUE" )+
+  scale_x_continuous(limits=c(2007,2019),breaks=seq(2007,2019,1))+
+  theme_bw()+
+  theme(panel.grid=element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 12),
+        plot.subtitle = element_text(hjust = 0.5, size = 10))
+
+plot(blu_cp_bl_bpue)
+
+#ggsave("blu_cp_bl_bpue.png", plot = blu_cp_bl_bpue, path = "C:/Users/erinj/Documents/Thesis/Figures/BPUE/BPUE_CP_MLML", dpi = 1000, width = 6, height = 4)
+
+```
+
+```{r blue PL}
+
+blu_ml_pl_bpue <- mystinus_biomass_cp_ml %>%
+  filter(area == "PL") %>%
+  group_by(year, site,  drift) %>%
+  summarise(sum = sum(BLU_bpue))%>%
+  group_by(year, site)%>%
+  summarise(mean = mean(sum),
+            sd = sd(sum),
+            n = n(),
+            se = std.error(sum))%>%
+  ggplot(aes(x = year, y = mean, color = site, group = site))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), width = 0.2,
+                position = position_dodge(0))+
+  scale_color_manual(values = c("#CC0000", "#0066CC"))+
+  labs(y = "BPUE (Blue rockfish biomass/angler hours", x = "",
+       title = "Point Lobos - Moss Landing Marine Laboratories", 
+       subtitle = "Blue Rockfish BPUE" )+
+  scale_x_continuous(limits=c(2007,2019),breaks=seq(2007,2019,1))+
+  theme_bw()+
+  theme(panel.grid=element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 12),
+        plot.subtitle = element_text(hjust = 0.5, size = 10))
+
+plot(blu_ml_pl_bpue)
+
+#ggsave("blu_ml_pl_bpue.png", plot = blu_ml_pl_bpue, path = "C:/Users/erinj/Documents/Thesis/Figures/BPUE/BPUE_CP_MLML", dpi = 1000, width = 6, height = 4)
+
+```
+
+```{r blue AN}
+
+blu_ml_an_bpue <- mystinus_biomass_cp_ml %>%
+  filter(area == "AN") %>%
+  group_by(year, site,  drift) %>%
+  summarise(sum = sum(BLU_bpue))%>%
+  group_by(year, site)%>%
+  summarise(mean = mean(sum),
+            sd = sd(sum),
+            n = n(),
+            se = std.error(sum))%>%
+  ggplot(aes(x = year, y = mean, color = site, group = site))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), width = 0.2,
+                position = position_dodge(0))+
+  scale_color_manual(values = c("#CC0000", "#0066CC"))+
+  labs(y = "BPUE (Blue rockfish biomass/angler hours", x = "",
+       title = "Ano Nuevo - Moss Landing Marine Laboratories", 
+       subtitle = "Blue Rockfish BPUE" )+
+  scale_x_continuous(limits=c(2007,2019),breaks=seq(2007,2019,1))+
+  theme_bw()+
+  theme(panel.grid=element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 12),
+        plot.subtitle = element_text(hjust = 0.5, size = 10))
+
+plot(blu_ml_an_bpue)
+
+#ggsave("blu_ml_an_bpue.png", plot = blu_ml_an_bpue, path = "C:/Users/erinj/Documents/Thesis/Figures/BPUE/BPUE_CP_MLML", dpi = 1000, width = 6, height = 4)
+
+```
+
+```{r blue FN}
+
+blu_ml_fn_bpue <- mystinus_biomass_cp_ml %>%
+  filter(area == "FN") %>%
+  group_by(year, site,  drift) %>%
+  summarise(sum = sum(BLU_bpue))%>%
+  group_by(year, site)%>%
+  summarise(mean = mean(sum),
+            sd = sd(sum),
+            n = n(),
+            se = std.error(sum))%>%
+  ggplot(aes(x = year, y = mean, color = site, group = site))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), width = 0.2,
+                position = position_dodge(0))+
+  scale_color_manual(values = c("#CC0000", "#0066CC"))+
+  labs(y = "BPUE (Blue rockfish biomass/angler hours", x = "",
+       title = "SE Farallon Islands - Moss Landing Marine Laboratories", 
+       subtitle = "Blue Rockfish BPUE" )+
+  scale_x_continuous(limits=c(2007,2019),breaks=seq(2007,2019,1))+
+  theme_bw()+
+  theme(panel.grid=element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 12),
+        plot.subtitle = element_text(hjust = 0.5, size = 10))
+
+plot(blu_ml_fn_bpue)
+
+#ggsave("blu_ml_fn_bpue.png", plot = blu_ml_fn_bpue, path = "C:/Users/erinj/Documents/Thesis/Figures/BPUE/BPUE_CP_MLML", dpi = 1000, width = 6, height = 4)
+
+```
+
+
+
+
+
+## Sebastes carnatus
+
+```{r gopher}
+
+carnatus_biomass_cp_ml <- biomass_cp_mlml %>%
+  select(GPR_bpue, drift, area, site, year, GPR, anglerhours)
+
+```
+
+```{r Gopher PB}
+
+gpr_cp_pb_bpue <- carnatus_biomass_cp_ml %>%
+  filter(area == "PB") %>%
+  group_by(year, site,  drift) %>%
+  summarise(sum = sum(GPR_bpue))%>%
+  group_by(year, site)%>%
+  summarise(mean = mean(sum),
+            sd = sd(sum),
+            n = n(),
+            se = std.error(sum))%>%
+  ggplot(aes(x = year, y = mean, color = site, group = site))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), width = 0.2,
+                position = position_dodge(0))+
+  scale_color_manual(values = c("#CC0000", "#0066CC"))+
+  labs(y = "BPUE (Gopher rockfish biomass/angler hours", x = "",
+       title = "Point Buchon - Cal Poly San Luis Obispo", 
+       subtitle = "Gopher Rockfish BPUE" )+
+  scale_x_continuous(limits=c(2007,2019),breaks=seq(2007,2019,1))+
+  theme_bw()+
+  theme(panel.grid=element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 12),
+        plot.subtitle = element_text(hjust = 0.5, size = 10))
+
+plot(gpr_cp_pb_bpue)
+
+#ggsave("gpr_cp_pb_bpue.png", plot = gpr_cp_pb_bpue, path = "C:/Users/erinj/Documents/Thesis/Figures/BPUE/BPUE_CP_MLML", dpi = 1000, width = 6, height = 4)
+
+```
+
+```{r Gopher BL}
+
+gpr_cp_bl_bpue <- carnatus_biomass_cp_ml %>%
+  filter(area == "BL") %>%
+  group_by(year, site,  drift) %>%
+  summarise(sum = sum(GPR_bpue))%>%
+  group_by(year, site)%>%
+  summarise(mean = mean(sum),
+            sd = sd(sum),
+            n = n(),
+            se = std.error(sum))%>%
+  ggplot(aes(x = year, y = mean, color = site, group = site))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), width = 0.2,
+                position = position_dodge(0))+
+  scale_color_manual(values = c("#CC0000", "#0066CC"))+
+  labs(y = "BPUE (Gopher rockfish biomass/angler hours", x = "",
+       title = "Piedras Blancas - Cal Poly San Luis Obispo", 
+       subtitle = "Gopher Rockfish BPUE" )+
+  scale_x_continuous(limits=c(2007,2019),breaks=seq(2007,2019,1))+
+  theme_bw()+
+  theme(panel.grid=element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 12),
+        plot.subtitle = element_text(hjust = 0.5, size = 10))
+
+plot(gpr_cp_bl_bpue)
+
+#ggsave("gpr_cp_bl_bpue.png", plot = gpr_cp_bl_bpue, path = "C:/Users/erinj/Documents/Thesis/Figures/BPUE/BPUE_CP_MLML", dpi = 1000, width = 6, height = 4)
+
+```
+
+```{r Gopher PL}
+
+gpr_ml_pl_bpue <- carnatus_biomass_cp_ml %>%
+  filter(area == "PL") %>%
+  group_by(year, site,  drift) %>%
+  summarise(sum = sum(GPR_bpue))%>%
+  group_by(year, site)%>%
+  summarise(mean = mean(sum),
+            sd = sd(sum),
+            n = n(),
+            se = std.error(sum))%>%
+  ggplot(aes(x = year, y = mean, color = site, group = site))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), width = 0.2,
+                position = position_dodge(0))+
+  scale_color_manual(values = c("#CC0000", "#0066CC"))+
+  labs(y = "BPUE (Gopher rockfish biomass/angler hours", x = "",
+       title = "Point Lobos - Moss Landing Marine Laboratories", 
+       subtitle = "Gopher Rockfish BPUE" )+
+  scale_x_continuous(limits=c(2007,2019),breaks=seq(2007,2019,1))+
+  theme_bw()+
+  theme(panel.grid=element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 12),
+        plot.subtitle = element_text(hjust = 0.5, size = 10))
+
+plot(gpr_ml_pl_bpue)
+
+#ggsave("gpr_ml_pl_bpue.png", plot = gpr_ml_pl_bpue, path = "C:/Users/erinj/Documents/Thesis/Figures/BPUE/BPUE_CP_MLML", dpi = 1000, width = 6, height = 4)
+
+```
+
+```{r Gopher AN}
+
+gpr_ml_an_bpue <- carnatus_biomass_cp_ml %>%
+  filter(area == "AN") %>%
+  group_by(year, site,  drift) %>%
+  summarise(sum = sum(GPR_bpue))%>%
+  group_by(year, site)%>%
+  summarise(mean = mean(sum),
+            sd = sd(sum),
+            n = n(),
+            se = std.error(sum))%>%
+  ggplot(aes(x = year, y = mean, color = site, group = site))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), width = 0.2,
+                position = position_dodge(0))+
+  scale_color_manual(values = c("#CC0000", "#0066CC"))+
+  labs(y = "BPUE (Gopher rockfish biomass/angler hours", x = "",
+       title = "Ano Nuevo - Moss Landing Marine Laboratories", 
+       subtitle = "Gopher Rockfish BPUE" )+
+  scale_x_continuous(limits=c(2007,2019),breaks=seq(2007,2019,1))+
+  theme_bw()+
+  theme(panel.grid=element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 12),
+        plot.subtitle = element_text(hjust = 0.5, size = 10))
+
+plot(gpr_ml_an_bpue)
+
+#ggsave("gpr_ml_an_bpue.png", plot = gpr_ml_an_bpue, path = "C:/Users/erinj/Documents/Thesis/Figures/BPUE/BPUE_CP_MLML", dpi = 1000, width = 6, height = 4)
+
+```
+
+```{r Gopher FN}
+
+gpr_ml_fn_bpue <- carnatus_biomass_cp_ml %>%
+  filter(area == "FN") %>%
+  group_by(year, site,  drift) %>%
+  summarise(sum = sum(GPR_bpue))%>%
+  group_by(year, site)%>%
+  summarise(mean = mean(sum),
+            sd = sd(sum),
+            n = n(),
+            se = std.error(sum))%>%
+  ggplot(aes(x = year, y = mean, color = site, group = site))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), width = 0.2,
+                position = position_dodge(0))+
+  scale_color_manual(values = c("#CC0000", "#0066CC"))+
+  labs(y = "BPUE (Gopher rockfish biomass/angler hours", x = "",
+       title = "SE Farallon Islands - Moss Landing Marine Laboratories", 
+       subtitle = "Gopher Rockfish BPUE" )+
+  scale_x_continuous(limits=c(2007,2019),breaks=seq(2007,2019,1))+
+  theme_bw()+
+  theme(panel.grid=element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 12),
+        plot.subtitle = element_text(hjust = 0.5, size = 10))
+
+plot(gpr_ml_fn_bpue)
+
+#ggsave("gpr_ml_fn_bpue.png", plot = gpr_ml_fn_bpue, path = "C:/Users/erinj/Documents/Thesis/Figures/BPUE/BPUE_CP_MLML", dpi = 1000, width = 6, height = 4)
+
+```
+
+
+
+
+## Sebastes serranoides
+
+```{r olive}
+
+serranoides_biomass_cp_ml <- biomass_cp_mlml %>%
+  select(OLV_bpue, drift, area, site, year, OLV, anglerhours)
+
+```
+
+
+```{r Olive PB}
+
+olv_cp_pb_bpue <- serranoides_biomass_cp_ml %>%
+  filter(area == "PB") %>%
+  group_by(year, site,  drift) %>%
+  summarise(sum = sum(OLV_bpue))%>%
+  group_by(year, site)%>%
+  summarise(mean = mean(sum),
+            sd = sd(sum),
+            n = n(),
+            se = std.error(sum))%>%
+  ggplot(aes(x = year, y = mean, color = site, group = site))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), width = 0.2,
+                position = position_dodge(0))+
+  scale_color_manual(values = c("#CC0000", "#0066CC"))+
+  labs(y = "BPUE (Olive rockfish biomass/angler hours", x = "",
+       title = "Point Buchon - Cal Poly San Luis Obispo", 
+       subtitle = "Olive Rockfish BPUE" )+
+  scale_x_continuous(limits=c(2007,2019),breaks=seq(2007,2019,1))+
+  theme_bw()+
+  theme(panel.grid=element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 12),
+        plot.subtitle = element_text(hjust = 0.5, size = 10))
+
+plot(olv_cp_pb_bpue)
+
+#ggsave("olv_cp_pb_bpue.png", plot = olv_cp_pb_bpue, path = "C:/Users/erinj/Documents/Thesis/Figures/BPUE/BPUE_CP_MLML", dpi = 1000, width = 6, height = 4)
+
+```
+
+```{r Olive BL}
+
+olv_cp_bl_bpue <- serranoides_biomass_cp_ml %>%
+  filter(area == "BL") %>%
+  group_by(year, site,  drift) %>%
+  summarise(sum = sum(OLV_bpue))%>%
+  group_by(year, site)%>%
+  summarise(mean = mean(sum),
+            sd = sd(sum),
+            n = n(),
+            se = std.error(sum))%>%
+  ggplot(aes(x = year, y = mean, color = site, group = site))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), width = 0.2,
+                position = position_dodge(0))+
+  scale_color_manual(values = c("#CC0000", "#0066CC"))+
+  labs(y = "BPUE (Olive rockfish biomass/angler hours", x = "",
+       title = "Piedras Blancas - Cal Poly San Luis Obispo", 
+       subtitle = "Olive Rockfish BPUE" )+
+  scale_x_continuous(limits=c(2007,2019),breaks=seq(2007,2019,1))+
+  theme_bw()+
+  theme(panel.grid=element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 12),
+        plot.subtitle = element_text(hjust = 0.5, size = 10))
+
+plot(olv_cp_bl_bpue)
+
+#ggsave("olv_cp_bl_bpue.png", plot = olv_cp_bl_bpue, path = "C:/Users/erinj/Documents/Thesis/Figures/BPUE/BPUE_CP_MLML", dpi = 1000, width = 6, height = 4)
+
+```
+
+```{r Olive PL}
+
+olv_ml_pl_bpue <- serranoides_biomass_cp_ml %>%
+  filter(area == "PL") %>%
+  group_by(year, site,  drift) %>%
+  summarise(sum = sum(OLV_bpue))%>%
+  group_by(year, site)%>%
+  summarise(mean = mean(sum),
+            sd = sd(sum),
+            n = n(),
+            se = std.error(sum))%>%
+  ggplot(aes(x = year, y = mean, color = site, group = site))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), width = 0.2,
+                position = position_dodge(0))+
+  scale_color_manual(values = c("#CC0000", "#0066CC"))+
+  labs(y = "BPUE (Olive rockfish biomass/angler hours", x = "",
+       title = "Point Lobos - Moss Landing Marine Laboratories", 
+       subtitle = "Olive Rockfish BPUE" )+
+  scale_x_continuous(limits=c(2007,2019),breaks=seq(2007,2019,1))+
+  theme_bw()+
+  theme(panel.grid=element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 12),
+        plot.subtitle = element_text(hjust = 0.5, size = 10))
+
+plot(olv_ml_pl_bpue)
+
+#ggsave("olv_ml_pl_bpue.png", plot = olv_ml_pl_bpue, path = "C:/Users/erinj/Documents/Thesis/Figures/BPUE/BPUE_CP_MLML", dpi = 1000, width = 6, height = 4)
+
+```
+
+```{r Olive AN}
+
+olv_ml_an_bpue <- serranoides_biomass_cp_ml %>%
+  filter(area == "AN") %>%
+  group_by(year, site,  drift) %>%
+  summarise(sum = sum(OLV_bpue))%>%
+  group_by(year, site)%>%
+  summarise(mean = mean(sum),
+            sd = sd(sum),
+            n = n(),
+            se = std.error(sum))%>%
+  ggplot(aes(x = year, y = mean, color = site, group = site))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), width = 0.2,
+                position = position_dodge(0))+
+  scale_color_manual(values = c("#CC0000", "#0066CC"))+
+  labs(y = "BPUE (Olive rockfish biomass/angler hours", x = "",
+       title = "Ano Nuevo - Moss Landing Marine Laboratories", 
+       subtitle = "Olive Rockfish BPUE" )+
+  scale_x_continuous(limits=c(2007,2019),breaks=seq(2007,2019,1))+
+  theme_bw()+
+  theme(panel.grid=element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 12),
+        plot.subtitle = element_text(hjust = 0.5, size = 10))
+
+plot(olv_ml_an_bpue)
+
+#ggsave("olv_ml_an_bpue.png", plot = olv_ml_an_bpue, path = "C:/Users/erinj/Documents/Thesis/Figures/BPUE/BPUE_CP_MLML", dpi = 1000, width = 6, height = 4)
+
+```
+
+```{r Olive FN}
+
+olv_ml_fn_bpue <- serranoides_biomass_cp_ml %>%
+  filter(area == "FN") %>%
+  group_by(year, site,  drift) %>%
+  summarise(sum = sum(OLV_bpue))%>%
+  group_by(year, site)%>%
+  summarise(mean = mean(sum),
+            sd = sd(sum),
+            n = n(),
+            se = std.error(sum))%>%
+  ggplot(aes(x = year, y = mean, color = site, group = site))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), width = 0.2,
+                position = position_dodge(0))+
+  scale_color_manual(values = c("#CC0000", "#0066CC"))+
+  labs(y = "BPUE (Olive rockfish biomass/angler hours", x = "",
+       title = "SE Farallon Islands - Moss Landing Marine Laboratories", 
+       subtitle = "Olive Rockfish BPUE" )+
+  scale_x_continuous(limits=c(2007,2019),breaks=seq(2007,2019,1))+
+  theme_bw()+
+  theme(panel.grid=element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 12),
+        plot.subtitle = element_text(hjust = 0.5, size = 10))
+
+plot(olv_ml_fn_bpue)
+
+#ggsave("olv_ml_fn_bpue.png", plot = olv_ml_fn_bpue, path = "C:/Users/erinj/Documents/Thesis/Figures/BPUE/BPUE_CP_MLML", dpi = 1000, width = 6, height = 4)
+
+```
+
+
+
+## Sebastes miniatus
+
+```{r vermilion}
+
+miniatus_biomass_cp_ml <- biomass_cp_mlml %>%
+  select(VER_bpue, drift, area, site, year, VER, anglerhours)
+
+```
+
+```{r Vermilion PB}
+
+ver_cp_pb_bpue <- miniatus_biomass_cp_ml %>%
+  filter(area == "PB") %>%
+  group_by(year, site,  drift) %>%
+  summarise(sum = sum(VER_bpue))%>%
+  group_by(year, site)%>%
+  summarise(mean = mean(sum),
+            sd = sd(sum),
+            n = n(),
+            se = std.error(sum))%>%
+  ggplot(aes(x = year, y = mean, color = site, group = site))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), width = 0.2,
+                position = position_dodge(0))+
+  scale_color_manual(values = c("#CC0000", "#0066CC"))+
+  labs(y = "BPUE (Vermilion rockfish biomass/angler hours", x = "",
+       title = "Point Buchon - Cal Poly San Luis Obispo", 
+       subtitle = "Vermilion Rockfish BPUE" )+
+  scale_x_continuous(limits=c(2007,2019),breaks=seq(2007,2019,1))+
+  theme_bw()+
+  theme(panel.grid=element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 12),
+        plot.subtitle = element_text(hjust = 0.5, size = 10))
+
+plot(ver_cp_pb_bpue)
+
+#ggsave("ver_cp_pb_bpue.png", plot = ver_cp_pb_bpue, path = "C:/Users/erinj/Documents/Thesis/Figures/BPUE/BPUE_CP_MLML", dpi = 1000, width = 6, height = 4)
+
+```
+
+```{r Vermilion BL}
+
+ver_cp_bl_bpue <- miniatus_biomass_cp_ml %>%
+  filter(area == "BL") %>%
+  group_by(year, site,  drift) %>%
+  summarise(sum = sum(VER_bpue))%>%
+  group_by(year, site)%>%
+  summarise(mean = mean(sum),
+            sd = sd(sum),
+            n = n(),
+            se = std.error(sum))%>%
+  ggplot(aes(x = year, y = mean, color = site, group = site))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), width = 0.2,
+                position = position_dodge(0))+
+  scale_color_manual(values = c("#CC0000", "#0066CC"))+
+  labs(y = "BPUE (Vermilion rockfish biomass/angler hours", x = "",
+       title = "Piedras Blancas - Cal Poly San Luis Obispo", 
+       subtitle = "Vermilion Rockfish BPUE" )+
+  scale_x_continuous(limits=c(2007,2019),breaks=seq(2007,2019,1))+
+  theme_bw()+
+  theme(panel.grid=element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 12),
+        plot.subtitle = element_text(hjust = 0.5, size = 10))
+
+plot(ver_cp_bl_bpue)
+
+#ggsave("ver_cp_bl_bpue.png", plot = ver_cp_bl_bpue, path = "C:/Users/erinj/Documents/Thesis/Figures/BPUE/BPUE_CP_MLML", dpi = 1000, width = 6, height = 4)
+
+```
+
+```{r Vermilion PL}
+
+ver_ml_pl_bpue <- miniatus_biomass_cp_ml %>%
+  filter(area == "PL") %>%
+  group_by(year, site,  drift) %>%
+  summarise(sum = sum(VER_bpue))%>%
+  group_by(year, site)%>%
+  summarise(mean = mean(sum),
+            sd = sd(sum),
+            n = n(),
+            se = std.error(sum))%>%
+  ggplot(aes(x = year, y = mean, color = site, group = site))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), width = 0.2,
+                position = position_dodge(0))+
+  scale_color_manual(values = c("#CC0000", "#0066CC"))+
+  labs(y = "BPUE (Vermilion rockfish biomass/angler hours", x = "",
+       title = "Point Lobos - Moss Landing Marine Laboratories", 
+       subtitle = "Vermilion Rockfish BPUE" )+
+  scale_x_continuous(limits=c(2007,2019),breaks=seq(2007,2019,1))+
+  theme_bw()+
+  theme(panel.grid=element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 12),
+        plot.subtitle = element_text(hjust = 0.5, size = 10))
+
+plot(ver_ml_pl_bpue)
+
+#ggsave("ver_ml_pl_bpue.png", plot = ver_ml_pl_bpue, path = "C:/Users/erinj/Documents/Thesis/Figures/BPUE/BPUE_CP_MLML", dpi = 1000, width = 6, height = 4)
+
+```
+
+```{r Vermilion AN}
+
+ver_ml_an_bpue <- miniatus_biomass_cp_ml %>%
+  filter(area == "AN") %>%
+  group_by(year, site,  drift) %>%
+  summarise(sum = sum(VER_bpue))%>%
+  group_by(year, site)%>%
+  summarise(mean = mean(sum),
+            sd = sd(sum),
+            n = n(),
+            se = std.error(sum))%>%
+  ggplot(aes(x = year, y = mean, color = site, group = site))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), width = 0.2,
+                position = position_dodge(0))+
+  scale_color_manual(values = c("#CC0000", "#0066CC"))+
+  labs(y = "BPUE (Vermilion rockfish biomass/angler hours", x = "",
+       title = "Ano Nuevo - Moss Landing Marine Laboratories", 
+       subtitle = "Vermilion Rockfish BPUE" )+
+  scale_x_continuous(limits=c(2007,2019),breaks=seq(2007,2019,1))+
+  theme_bw()+
+  theme(panel.grid=element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 12),
+        plot.subtitle = element_text(hjust = 0.5, size = 10))
+
+plot(ver_ml_an_bpue)
+
+#ggsave("ver_ml_an_bpue.png", plot = ver_ml_an_bpue, path = "C:/Users/erinj/Documents/Thesis/Figures/BPUE/BPUE_CP_MLML", dpi = 1000, width = 6, height = 4)
+
+```
+
+```{r Vermilion FN}
+
+ver_ml_fn_bpue <- miniatus_biomass_cp_ml %>%
+  filter(area == "FN") %>%
+  group_by(year, site,  drift) %>%
+  summarise(sum = sum(VER_bpue))%>%
+  group_by(year, site)%>%
+  summarise(mean = mean(sum),
+            sd = sd(sum),
+            n = n(),
+            se = std.error(sum))%>%
+  ggplot(aes(x = year, y = mean, color = site, group = site))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), width = 0.2,
+                position = position_dodge(0))+
+  scale_color_manual(values = c("#CC0000", "#0066CC"))+
+  labs(y = "BPUE (Vermilion rockfish biomass/angler hours", x = "",
+       title = "SE Farallon Islands - Moss Landing Marine Laboratories", 
+       subtitle = "Vermilion Rockfish BPUE" )+
+  scale_x_continuous(limits=c(2007,2019),breaks=seq(2007,2019,1))+
+  theme_bw()+
+  theme(panel.grid=element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 12),
+        plot.subtitle = element_text(hjust = 0.5, size = 10))
+
+plot(ver_ml_fn_bpue)
+
+#ggsave("ver_ml_fn_bpue.png", plot = ver_ml_fn_bpue, path = "C:/Users/erinj/Documents/Thesis/Figures/BPUE/BPUE_CP_MLML", dpi = 1000, width = 6, height = 4)
+
+```
+
+
+
+
+
+## Ophiodon elongatus
+
+```{r lingcod}
+
+elongatus_biomass_cp_ml <- biomass_cp_mlml %>%
+  select(LCD_bpue, drift, area, site, year, LCD, anglerhours)
+
+```
+
+
+```{r Lingcod PB}
+
+lcd_cp_pb_bpue <- elongatus_biomass_cp_ml %>%
+  filter(area == "PB") %>%
+  group_by(year, site,  drift) %>%
+  summarise(sum = sum(LCD_bpue))%>%
+  group_by(year, site)%>%
+  summarise(mean = mean(sum),
+            sd = sd(sum),
+            n = n(),
+            se = std.error(sum))%>%
+  ggplot(aes(x = year, y = mean, color = site, group = site))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), width = 0.2,
+                position = position_dodge(0))+
+  scale_color_manual(values = c("#CC0000", "#0066CC"))+
+  labs(y = "BPUE (Lingcod biomass/angler hours", x = "",
+       title = "Point Buchon - Cal Poly San Luis Obispo", 
+       subtitle = "Lingcod BPUE" )+
+  scale_x_continuous(limits=c(2007,2019),breaks=seq(2007,2019,1))+
+  theme_bw()+
+  theme(panel.grid=element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 12),
+        plot.subtitle = element_text(hjust = 0.5, size = 10))
+
+plot(lcd_cp_pb_bpue)
+
+#ggsave("lcd_cp_pb_bpue.png", plot = lcd_cp_pb_bpue, path = "C:/Users/erinj/Documents/Thesis/Figures/BPUE/BPUE_CP_MLML", dpi = 1000, width = 6, height = 4)
+
+```
+
+```{r Lingcod BL}
+
+lcd_cp_bl_bpue <- elongatus_biomass_cp_ml %>%
+  filter(area == "BL") %>%
+  group_by(year, site,  drift) %>%
+  summarise(sum = sum(LCD_bpue))%>%
+  group_by(year, site)%>%
+  summarise(mean = mean(sum),
+            sd = sd(sum),
+            n = n(),
+            se = std.error(sum))%>%
+  ggplot(aes(x = year, y = mean, color = site, group = site))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), width = 0.2,
+                position = position_dodge(0))+
+  scale_color_manual(values = c("#CC0000", "#0066CC"))+
+  labs(y = "BPUE (Lingcod biomass/angler hours", x = "",
+       title = "Piedras Blancas - Cal Poly San Luis Obispo", 
+       subtitle = "Lingcod BPUE" )+
+  scale_x_continuous(limits=c(2007,2019),breaks=seq(2007,2019,1))+
+  theme_bw()+
+  theme(panel.grid=element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 12),
+        plot.subtitle = element_text(hjust = 0.5, size = 10))
+
+plot(lcd_cp_bl_bpue)
+
+#ggsave("lcd_cp_bl_bpue.png", plot = lcd_cp_bl_bpue, path = "C:/Users/erinj/Documents/Thesis/Figures/BPUE/BPUE_CP_MLML", dpi = 1000, width = 6, height = 4)
+
+```
+
+```{r Lingcod PL}
+
+lcd_ml_pl_bpue <- elongatus_biomass_cp_ml %>%
+  filter(area == "PL") %>%
+  group_by(year, site,  drift) %>%
+  summarise(sum = sum(LCD_bpue))%>%
+  group_by(year, site)%>%
+  summarise(mean = mean(sum),
+            sd = sd(sum),
+            n = n(),
+            se = std.error(sum))%>%
+  ggplot(aes(x = year, y = mean, color = site, group = site))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), width = 0.2,
+                position = position_dodge(0))+
+  scale_color_manual(values = c("#CC0000", "#0066CC"))+
+  labs(y = "BPUE (Lingcod biomass/angler hours", x = "",
+       title = "Point Lobos - Moss Landing Marine Laboratories", 
+       subtitle = "Lingcod BPUE" )+
+  scale_x_continuous(limits=c(2007,2019),breaks=seq(2007,2019,1))+
+  theme_bw()+
+  theme(panel.grid=element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 12),
+        plot.subtitle = element_text(hjust = 0.5, size = 10))
+
+plot(lcd_ml_pl_bpue)
+
+#ggsave("lcd_ml_pl_bpue.png", plot = lcd_ml_pl_bpue, path = "C:/Users/erinj/Documents/Thesis/Figures/BPUE/BPUE_CP_MLML", dpi = 1000, width = 6, height = 4)
+
+```
+
+```{r Lingcod AN}
+
+lcd_ml_an_bpue <- elongatus_biomass_cp_ml %>%
+  filter(area == "AN") %>%
+  group_by(year, site,  drift) %>%
+  summarise(sum = sum(LCD_bpue))%>%
+  group_by(year, site)%>%
+  summarise(mean = mean(sum),
+            sd = sd(sum),
+            n = n(),
+            se = std.error(sum))%>%
+  ggplot(aes(x = year, y = mean, color = site, group = site))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), width = 0.2,
+                position = position_dodge(0))+
+  scale_color_manual(values = c("#CC0000", "#0066CC"))+
+  labs(y = "BPUE (Lingcod biomass/angler hours", x = "",
+       title = "Ano Nuevo - Moss Landing Marine Laboratories", 
+       subtitle = "Lingcod BPUE" )+
+  scale_x_continuous(limits=c(2007,2019),breaks=seq(2007,2019,1))+
+  theme_bw()+
+  theme(panel.grid=element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 12),
+        plot.subtitle = element_text(hjust = 0.5, size = 10))
+
+plot(lcd_ml_an_bpue)
+
+#ggsave("lcd_ml_an_bpue.png", plot = lcd_ml_an_bpue, path = "C:/Users/erinj/Documents/Thesis/Figures/BPUE/BPUE_CP_MLML", dpi = 1000, width = 6, height = 4)
+
+```
+
+```{r Lingcod FN}
+
+lcd_ml_fn_bpue <- elongatus_biomass_cp_ml %>%
+  filter(area == "FN") %>%
+  group_by(year, site,  drift) %>%
+  summarise(sum = sum(LCD_bpue))%>%
+  group_by(year, site)%>%
+  summarise(mean = mean(sum),
+            sd = sd(sum),
+            n = n(),
+            se = std.error(sum))%>%
+  ggplot(aes(x = year, y = mean, color = site, group = site))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), width = 0.2,
+                position = position_dodge(0))+
+  scale_color_manual(values = c("#CC0000", "#0066CC"))+
+  labs(y = "BPUE (Lingcod biomass/angler hours", x = "",
+       title = "SE Farallon Islands - Moss Landing Marine Laboratories", 
+       subtitle = "Lingcod BPUE" )+
+  scale_x_continuous(limits=c(2007,2019),breaks=seq(2007,2019,1))+
+  theme_bw()+
+  theme(panel.grid=element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 12),
+        plot.subtitle = element_text(hjust = 0.5, size = 10))
+
+plot(lcd_ml_fn_bpue)
+
+#ggsave("lcd_ml_fn_bpue.png", plot = lcd_ml_fn_bpue, path = "C:/Users/erinj/Documents/Thesis/Figures/BPUE/BPUE_CP_MLML", dpi = 1000, width = 6, height = 4)
+
+```
+

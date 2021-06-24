@@ -1,0 +1,847 @@
+---
+title: "Catch per Unit Effort Visualization"
+author: "Erin Johnston"
+date: "10/25/2020"
+output: html_document
+---
+
+**2020-11-10 UPDATE** New code file `13_VIS_cpue-bgovl-cpslo-mlml-update.Rmd` includes code for visualization using data where CPUE is summed to the cell level and then to the site level before using it in visualization. Slight, but important difference which accounts for uneven sampling design.
+
+The purpose of this markdown file is to show a polished CPUE visualization as of Oct 2020. 
+This code is a modification of the 'cpue_analysis_cp_mlml.Rmd'. 
+Original Path = documents/thesis/R Stuff/Thesis_Johnston_Rockfish/Analyses
+
+
+These data are for rockfishes in the central coast of California caught for the California Collaborative Fisheries Research Project. These data have both Cal Poly, San Luis Obispo catch as well as Moss Landing Marine Laboratories.
+
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+
+```
+
+
+```{r library dependencies}
+
+library(tidyverse)
+library(here)
+library(plotrix) ## for standard error
+
+```
+
+
+This dataframe is from the csv created at the end of 01_DATA_cpue-add-zeros.Rmd
+
+```{r}
+
+cpue_cp_ml <- read_csv(here("Data/output", "2020-10-25_CPUE_calpoly-mosslanding.csv"))
+
+```
+
+
+# CPUE Visualization
+
+
+## Sebastes mystinus
+### Blue rockfish
+
+```{r blue PB}
+
+blu_cp_pb_cpue <- cpue_cp_ml %>%
+  filter(species == "BLU", area == "PB")%>%
+  group_by(year, site)%>%
+  summarise(mean = mean(cpue),
+                    sd = sd (cpue),
+                    n = n(),
+                    se = std.error (cpue))%>%
+  ggplot(aes(x = year, y = mean, color = site, group = site))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), width = 0.2,
+                position = position_dodge(0))+
+  scale_color_manual(values = c("#CC0000", "#0066CC"))+
+  labs(y = "CPUE (number of fishes/angler hours", x = "",
+       title = "Point Buchon - Cal Poly San Luis Obispo", 
+       subtitle = "Blue Rockfish CPUE" )+
+  scale_x_continuous(limits=c(2007,2019),breaks=seq(2007,2019,1))+
+  theme_bw()+
+  theme(panel.grid=element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 12),
+        plot.subtitle = element_text(hjust = 0.5, size = 10))
+
+plot(blu_cp_pb_cpue)
+
+#ggsave("blu_cp_pb_cpue.png", plot = blu_cp_pb_cpue, path = "C:/Users/erinj/Documents/Thesis/Figures/CPUE/CPUE_CP_MLML", dpi = 1000, width = 6, height = 4)
+
+```
+
+
+```{r blue BL}
+
+blu_cp_bl_cpue <- cpue_cp_ml %>%
+  filter(species == "BLU", area == "BL")%>%
+  group_by(year, site)%>%
+  summarise(mean = mean(cpue),
+                    sd = sd (cpue),
+                    n = n(),
+                    se = std.error (cpue))%>%
+  ggplot(aes(x = year, y = mean, color = site, group = site))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), width = 0.2,
+                position = position_dodge(0))+
+  scale_color_manual(values = c("#CC0000", "#0066CC"))+
+  labs(y = "CPUE (number of fishes/angler hours", x = "", 
+       title = "Piedras Blancas - Cal Poly San Luis Obispo", 
+       subtitle = "Blue Rockfish CPUE")+
+  scale_x_continuous(limits=c(2007,2019),breaks=seq(2007,2019,1))+
+  theme_bw()+
+  theme(panel.grid=element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 12),
+        plot.subtitle = element_text(hjust = 0.5, size = 10))
+
+plot(blu_cp_bl_cpue)
+
+
+#ggsave("blu_cp_bl_cpue.png", plot = blu_cp_bl_cpue, path = "C:/Users/erinj/Documents/Thesis/Figures/CPUE/CPUE_CP_MLML", dpi = 1000, width = 6, height = 4)
+
+```
+
+```{r blue PL}
+
+blu_ml_pl_cpue <- cpue_cp_ml %>%
+  filter(species == "BLU", area == "PL")%>%
+  group_by(year, site)%>%
+  summarise(mean = mean(cpue),
+                    sd = sd (cpue),
+                    n = n(),
+                    se = std.error (cpue))%>%
+  ggplot(aes(x = year, y = mean, color = site, group = site))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), width = 0.2,
+                position = position_dodge(0))+
+  labs(y = "CPUE (number of fishes/angler hours", x = "", 
+       title = "Point Lobos - Moss Landing Marine Laboratories", 
+       subtitle = "Blue Rockfish CPUE")+
+  scale_color_manual(values = c("#CC0000", "#0066CC"))+
+  scale_x_continuous(limits=c(2007,2019),breaks=seq(2007,2019,1))+
+  theme_bw()+
+  theme(panel.grid=element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 12),
+        plot.subtitle = element_text(hjust = 0.5, size = 10))
+
+plot(blu_ml_pl_cpue)
+
+
+#ggsave("blu_ml_pl_cpue.png", plot = blu_ml_pl_cpue, path = "C:/Users/erinj/Documents/Thesis/Figures/CPUE/CPUE_CP_MLML", dpi = 1000, width = 6, height = 4)
+
+```
+
+```{r blue AN}
+
+blu_ml_an_cpue <- cpue_cp_ml %>%
+  filter(species == "BLU", area == "AN")%>%
+  group_by(year, site)%>%
+  summarise(mean = mean(cpue),
+                    sd = sd (cpue),
+                    n = n(),
+                    se = std.error (cpue))%>%
+  ggplot(aes(x = year, y = mean, color = site, group = site))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), width = 0.2,
+                position = position_dodge(0))+
+  scale_color_manual(values = c("#CC0000", "#0066CC"))+
+  labs(y = "CPUE (number of fishes/angler hours", x = "", 
+       title = "Ano Nuevo - Moss Landing Marine Laboratories", 
+       subtitle = "Blue Rockfish CPUE")+
+  scale_x_continuous(limits=c(2007,2019),breaks=seq(2007,2019,1))+
+  theme_bw()+
+  theme(panel.grid=element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 12),
+        plot.subtitle = element_text(hjust = 0.5, size = 10))
+
+plot(blu_ml_an_cpue)
+
+
+#ggsave("blu_ml_an_cpue.png", plot = blu_ml_an_cpue, path = "C:/Users/erinj/Documents/Thesis/Figures/CPUE/CPUE_CP_MLML", dpi = 1000, width = 6, height = 4)
+
+```
+
+```{r blue FN}
+
+blu_ml_fn_cpue <- cpue_cp_ml %>%
+  filter(species == "BLU", area == "FN")%>%
+  group_by(year, site)%>%
+  summarise(mean = mean(cpue),
+                    sd = sd (cpue),
+                    n = n(),
+                    se = std.error (cpue))%>%
+  ggplot(aes(x = year, y = mean, color = site, group = site))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), width = 0.2,
+                position = position_dodge(0))+
+  scale_color_manual(values = c("#CC0000", "#0066CC"))+
+  labs(y = "CPUE (number of fishes/angler hours", x = "", 
+       title = "SE Farallon Islands - Moss Landing Marine Laboratories", 
+       subtitle = "Blue Rockfish CPUE")+
+  scale_x_continuous(limits=c(2007,2019),breaks=seq(2007,2019,1))+
+  theme_bw()+
+  theme(panel.grid=element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 12),
+        plot.subtitle = element_text(hjust = 0.5, size = 10))
+
+plot(blu_ml_fn_cpue)
+
+
+#ggsave("blu_ml_fn_cpue.png", plot = blu_ml_fn_cpue, path = "C:/Users/erinj/Documents/Thesis/Figures/CPUE/CPUE_CP_MLML", dpi = 1000, width = 6, height = 4)
+
+```
+
+
+
+## Sebastes carnatus
+### Gopher rockfish
+
+```{r gopher PB}
+
+gpr_cp_pb_cpue <- cpue_cp_ml %>%
+  filter(species == "GPR", area == "PB")%>%
+  group_by(year, site)%>%
+  summarise(mean = mean(cpue),
+                    sd = sd (cpue),
+                    n = n(),
+                    se = std.error (cpue))%>%
+  ggplot(aes(x = year, y = mean, color = site, group = site))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), width = 0.2,
+                position = position_dodge(0))+
+  scale_color_manual(values = c("#CC0000", "#0066CC"))+
+  labs(y = "CPUE (number of fishes/angler hours", x = "",
+       title = "Point Buchon - Cal Poly San Luis Obispo", 
+       subtitle = "Gopher Rockfish CPUE" )+
+  scale_x_continuous(limits=c(2007,2019),breaks=seq(2007,2019,1))+
+  theme_bw()+
+  theme(panel.grid=element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 12),
+        plot.subtitle = element_text(hjust = 0.5, size = 10))
+
+plot(gpr_cp_pb_cpue)
+
+
+#ggsave("gpr_cp_pb_cpue.png", plot = gpr_cp_pb_cpue, path = "C:/Users/erinj/Documents/Thesis/Figures/CPUE/CPUE_CP_MLML", dpi = 1000, width = 6, height = 4)
+
+```
+
+```{r gopher BL}
+
+gpr_cp_bl_cpue <- cpue_cp_ml %>%
+  filter(species == "GPR", area == "BL")%>%
+  group_by(year, site)%>%
+  summarise(mean = mean(cpue),
+                    sd = sd (cpue),
+                    n = n(),
+                    se = std.error (cpue))%>%
+  ggplot(aes(x = year, y = mean, color = site, group = site))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), width = 0.2,
+                position = position_dodge(0))+
+  scale_color_manual(values = c("#CC0000", "#0066CC"))+
+  labs(y = "CPUE (number of fishes/angler hours", x = "", 
+       title = "Piedras Blancas - Cal Poly San Luis Obispo", 
+       subtitle = "Gopher Rockfish CPUE")+
+  scale_x_continuous(limits=c(2007,2019),breaks=seq(2007,2019,1))+
+  theme_bw()+
+  theme(panel.grid=element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 12),
+        plot.subtitle = element_text(hjust = 0.5, size = 10))
+
+plot(gpr_cp_bl_cpue)
+
+
+#ggsave("gpr_cp_bl_cpue.png", plot = gpr_cp_bl_cpue, path = "C:/Users/erinj/Documents/Thesis/Figures/CPUE/CPUE_CP_MLML", dpi = 1000, width = 6, height = 4)
+
+```
+
+```{r gopher PL}
+
+gpr_ml_pl_cpue <- cpue_cp_ml %>%
+  filter(species == "GPR", area == "PL")%>%
+  group_by(year, site)%>%
+  summarise(mean = mean(cpue),
+                    sd = sd (cpue),
+                    n = n(),
+                    se = std.error (cpue))%>%
+  ggplot(aes(x = year, y = mean, color = site, group = site))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), width = 0.2,
+                position = position_dodge(0))+
+  scale_color_manual(values = c("#CC0000", "#0066CC"))+
+  labs(y = "CPUE (number of fishes/angler hours", x = "", 
+       title = "Point Lobos - Moss Landing Marine Laboratories", 
+       subtitle = "Gopher Rockfish CPUE")+
+  scale_x_continuous(limits=c(2007,2019),breaks=seq(2007,2019,1))+
+  theme_bw()+
+  theme(panel.grid=element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 12),
+        plot.subtitle = element_text(hjust = 0.5, size = 10))
+
+plot(gpr_ml_pl_cpue)
+
+
+#ggsave("gpr_ml_pl_cpue.png", plot = gpr_ml_pl_cpue, path = "C:/Users/erinj/Documents/Thesis/Figures/CPUE/CPUE_CP_MLML", dpi = 1000, width = 6, height = 4)
+
+```
+
+```{r gopher AN}
+
+gpr_ml_an_cpue <- cpue_cp_ml %>%
+  filter(species == "GPR", area == "AN")%>%
+  group_by(year, site)%>%
+  summarise(mean = mean(cpue),
+                    sd = sd (cpue),
+                    n = n(),
+                    se = std.error (cpue))%>%
+  ggplot(aes(x = year, y = mean, color = site, group = site))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), width = 0.2,
+                position = position_dodge(0))+
+  scale_color_manual(values = c("#CC0000", "#0066CC"))+
+  labs(y = "CPUE (number of fishes/angler hours", x = "", 
+       title = "Ano Nuevo - Moss Landing Marine Laboratories", 
+       subtitle = "Gopher Rockfish CPUE")+
+  scale_x_continuous(limits=c(2007,2019),breaks=seq(2007,2019,1))+
+  theme_bw()+
+  theme(panel.grid=element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 12),
+        plot.subtitle = element_text(hjust = 0.5, size = 10))
+
+plot(gpr_ml_an_cpue)
+
+
+#ggsave("gpr_ml_an_cpue.png", plot = gpr_ml_an_cpue, path = "C:/Users/erinj/Documents/Thesis/Figures/CPUE/CPUE_CP_MLML", dpi = 1000, width = 6, height = 4)
+
+```
+
+```{r gopher FN}
+
+gpr_ml_fn_cpue <- cpue_cp_ml %>%
+  filter(species == "GPR", area == "FN")%>%
+  group_by(year, site)%>%
+  summarise(mean = mean(cpue),
+                    sd = sd (cpue),
+                    n = n(),
+                    se = std.error (cpue))%>%
+  ggplot(aes(x = year, y = mean, color = site, group = site))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), width = 0.2,
+                position = position_dodge(0))+
+  scale_color_manual(values = c("#CC0000", "#0066CC"))+
+  labs(y = "CPUE (number of fishes/angler hours", x = "", 
+       title = "SE Farallon Islands - Moss Landing Marine Laboratories", 
+       subtitle = "Gopher Rockfish CPUE")+
+  scale_x_continuous(limits=c(2007,2019),breaks=seq(2007,2019,1))+
+  theme_bw()+
+  theme(panel.grid=element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 12),
+        plot.subtitle = element_text(hjust = 0.5, size = 10))
+
+plot(gpr_ml_fn_cpue)
+
+
+#ggsave("gpr_ml_fn_cpue.png", plot = gpr_ml_fn_cpue, path = "C:/Users/erinj/Documents/Thesis/Figures/CPUE/CPUE_CP_MLML", dpi = 1000, width = 6, height = 4)
+
+```
+
+
+
+
+## Sebastes serranoides
+### Olive rockfish
+
+```{r Olive PB}
+
+olv_cp_pb_cpue <- cpue_cp_ml %>%
+  filter(species == "OLV", area == "PB")%>%
+  group_by(year, site)%>%
+  summarise(mean = mean(cpue),
+                    sd = sd (cpue),
+                    n = n(),
+                    se = std.error (cpue))%>%
+  ggplot(aes(x = year, y = mean, color = site, group = site))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), width = 0.2,
+                position = position_dodge(0))+
+  scale_color_manual(values = c("#CC0000", "#0066CC"))+
+  labs(y = "CPUE (number of fishes/angler hours", x = "",
+       title = "Point Buchon - Cal Poly San Luis Obispo", 
+       subtitle = "Olive Rockfish CPUE" )+
+  scale_x_continuous(limits=c(2007,2019),breaks=seq(2007,2019,1))+
+  theme_bw()+
+  theme(panel.grid=element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 12),
+        plot.subtitle = element_text(hjust = 0.5, size = 10))
+
+plot(olv_cp_pb_cpue)
+
+
+#ggsave("olv_cp_pb_cpue.png", plot = olv_cp_pb_cpue, path = "C:/Users/erinj/Documents/Thesis/Figures/CPUE/CPUE_CP_MLML", dpi = 1000, width = 6, height = 4)
+
+```
+
+```{r Olive BL}
+
+olv_cp_bl_cpue <- cpue_cp_ml %>%
+  filter(species == "OLV", area == "BL")%>%
+  group_by(year, site)%>%
+  summarise(mean = mean(cpue),
+                    sd = sd (cpue),
+                    n = n(),
+                    se = std.error (cpue))%>%
+  ggplot(aes(x = year, y = mean, color = site, group = site))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), width = 0.2,
+                position = position_dodge(0))+
+  scale_color_manual(values = c("#CC0000", "#0066CC"))+
+  labs(y = "CPUE (number of fishes/angler hours", x = "", 
+       title = "Piedras Blancas - Cal Poly San Luis Obispo", 
+       subtitle = "Olive Rockfish CPUE")+
+  scale_x_continuous(limits=c(2007,2019),breaks=seq(2007,2019,1))+
+  theme_bw()+
+  theme(panel.grid=element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 12),
+        plot.subtitle = element_text(hjust = 0.5, size = 10))
+
+plot(olv_cp_bl_cpue)
+
+
+#ggsave("olv_cp_bl_cpue.png", plot = olv_cp_bl_cpue, path = "C:/Users/erinj/Documents/Thesis/Figures/CPUE/CPUE_CP_MLML", dpi = 1000, width = 6, height = 4)
+
+```
+
+```{r Olive PL}
+
+olv_ml_pl_cpue <- cpue_cp_ml %>%
+  filter(species == "OLV", area == "PL")%>%
+  group_by(year, site)%>%
+  summarise(mean = mean(cpue),
+                    sd = sd (cpue),
+                    n = n(),
+                    se = std.error (cpue))%>%
+  ggplot(aes(x = year, y = mean, color = site, group = site))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), width = 0.2,
+                position = position_dodge(0))+
+  scale_color_manual(values = c("#CC0000", "#0066CC"))+
+  labs(y = "CPUE (number of fishes/angler hours", x = "", 
+       title = "Point Lobos - Moss Landing Marine Laboratories", 
+       subtitle = "Olive Rockfish CPUE")+
+  scale_x_continuous(limits=c(2007,2019),breaks=seq(2007,2019,1))+
+  theme_bw()+
+  theme(panel.grid=element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 12),
+        plot.subtitle = element_text(hjust = 0.5, size = 10))
+
+plot(olv_ml_pl_cpue)
+
+
+#ggsave("olv_ml_pl_cpue.png", plot = olv_ml_pl_cpue, path = "C:/Users/erinj/Documents/Thesis/Figures/CPUE/CPUE_CP_MLML", dpi = 1000, width = 6, height = 4)
+
+```
+
+```{r Olive AN}
+
+olv_ml_an_cpue <- cpue_cp_ml %>%
+  filter(species == "OLV", area == "AN")%>%
+  group_by(year, site)%>%
+  summarise(mean = mean(cpue),
+                    sd = sd (cpue),
+                    n = n(),
+                    se = std.error (cpue))%>%
+  ggplot(aes(x = year, y = mean, color = site, group = site))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), width = 0.2,
+                position = position_dodge(0))+
+  scale_color_manual(values = c("#CC0000", "#0066CC"))+
+  labs(y = "CPUE (number of fishes/angler hours", x = "", 
+       title = "Ano Nuevo - Moss Landing Marine Laboratories", 
+       subtitle = "Olive Rockfish CPUE")+
+  scale_x_continuous(limits=c(2007,2019),breaks=seq(2007,2019,1))+
+  theme_bw()+
+  theme(panel.grid=element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 12),
+        plot.subtitle = element_text(hjust = 0.5, size = 10))
+
+plot(olv_ml_an_cpue)
+
+
+#ggsave("olv_ml_an_cpue.png", plot = olv_ml_an_cpue, path = "C:/Users/erinj/Documents/Thesis/Figures/CPUE/CPUE_CP_MLML", dpi = 1000, width = 6, height = 4)
+
+```
+
+```{r Olive FN}
+
+olv_ml_fn_cpue <- cpue_cp_ml %>%
+  filter(species == "OLV", area == "FN")%>%
+  group_by(year, site)%>%
+  summarise(mean = mean(cpue),
+                    sd = sd (cpue),
+                    n = n(),
+                    se = std.error (cpue))%>%
+  ggplot(aes(x = year, y = mean, color = site, group = site))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), width = 0.2,
+                position = position_dodge(0))+
+  scale_color_manual(values = c("#CC0000", "#0066CC"))+
+  labs(y = "CPUE (number of fishes/angler hours", x = "", 
+       title = "SE Farallon Islands - Moss Landing Marine Laboratories", 
+       subtitle = "Olive Rockfish CPUE")+
+  scale_x_continuous(limits=c(2007,2019),breaks=seq(2007,2019,1))+
+  theme_bw()+
+  theme(panel.grid=element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 12),
+        plot.subtitle = element_text(hjust = 0.5, size = 10))
+
+plot(olv_ml_fn_cpue)
+
+
+#ggsave("olv_ml_fn_cpue.png", plot = olv_ml_fn_cpue, path = "C:/Users/erinj/Documents/Thesis/Figures/CPUE/CPUE_CP_MLML", dpi = 1000, width = 6, height = 4)
+
+```
+
+
+
+## Sebastes miniatus
+### Vermilion rockfish
+
+```{r Vermilion PB}
+
+ver_cp_pb_cpue <- cpue_cp_ml %>%
+  filter(species == "VER", area == "PB")%>%
+  group_by(year, site)%>%
+  summarise(mean = mean(cpue),
+                    sd = sd (cpue),
+                    n = n(),
+                    se = std.error (cpue))%>%
+  ggplot(aes(x = year, y = mean, color = site, group = site))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), width = 0.2,
+                position = position_dodge(0))+
+  scale_color_manual(values = c("#CC0000", "#0066CC"))+
+  labs(y = "CPUE (number of fishes/angler hours", x = "",
+       title = "Point Buchon - Cal Poly San Luis Obispo", 
+       subtitle = "Vermilion Rockfish CPUE" )+
+  scale_x_continuous(limits=c(2007,2019),breaks=seq(2007,2019,1))+
+  theme_bw()+
+  theme(panel.grid=element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 12),
+        plot.subtitle = element_text(hjust = 0.5, size = 10))
+
+plot(ver_cp_pb_cpue)
+
+
+#ggsave("ver_cp_pb_cpue.png", plot = ver_cp_pb_cpue, path = "C:/Users/erinj/Documents/Thesis/Figures/CPUE/CPUE_CP_MLML", dpi = 1000, width = 6, height = 4)
+
+```
+
+```{r Vermilion BL}
+
+ver_cp_bl_cpue <- cpue_cp_ml %>%
+  filter(species == "VER", area == "BL")%>%
+  group_by(year, site)%>%
+  summarise(mean = mean(cpue),
+                    sd = sd (cpue),
+                    n = n(),
+                    se = std.error (cpue))%>%
+  ggplot(aes(x = year, y = mean, color = site, group = site))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), width = 0.2,
+                position = position_dodge(0))+
+  scale_color_manual(values = c("#CC0000", "#0066CC"))+
+  labs(y = "CPUE (number of fishes/angler hours", x = "", 
+       title = "Piedras Blancas - Cal Poly San Luis Obispo", 
+       subtitle = "Vermilion Rockfish CPUE")+
+  scale_x_continuous(limits=c(2007,2019),breaks=seq(2007,2019,1))+
+  theme_bw()+
+  theme(panel.grid=element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 12),
+        plot.subtitle = element_text(hjust = 0.5, size = 10))
+
+plot(ver_cp_bl_cpue)
+
+
+#ggsave("ver_cp_bl_cpue.png", plot = ver_cp_bl_cpue, path = "C:/Users/erinj/Documents/Thesis/Figures/CPUE/CPUE_CP_MLML", dpi = 1000, width = 6, height = 4)
+
+```
+
+```{r Vermilion PL}
+
+ver_ml_pl_cpue <- cpue_cp_ml %>%
+  filter(species == "VER", area == "PL")%>%
+  group_by(year, site)%>%
+  summarise(mean = mean(cpue),
+                    sd = sd (cpue),
+                    n = n(),
+                    se = std.error (cpue))%>%
+  ggplot(aes(x = year, y = mean, color = site, group = site))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), width = 0.2,
+                position = position_dodge(0))+
+  scale_color_manual(values = c("#CC0000", "#0066CC"))+
+  labs(y = "CPUE (number of fishes/angler hours", x = "", 
+       title = "Point Lobos - Moss Landing Marine Laboratories", 
+       subtitle = "Vermilion Rockfish CPUE")+
+  scale_x_continuous(limits=c(2007,2019),breaks=seq(2007,2019,1))+
+  theme_bw()+
+  theme(panel.grid=element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 12),
+        plot.subtitle = element_text(hjust = 0.5, size = 10))
+
+plot(ver_ml_pl_cpue)
+
+
+#ggsave("ver_ml_pl_cpue.png", plot = ver_ml_pl_cpue, path = "C:/Users/erinj/Documents/Thesis/Figures/CPUE/CPUE_CP_MLML", dpi = 1000, width = 6, height = 4)
+
+```
+
+```{r Vermilion AN}
+
+ver_ml_an_cpue <- cpue_cp_ml %>%
+  filter(species == "VER", area == "AN")%>%
+  group_by(year, site)%>%
+  summarise(mean = mean(cpue),
+                    sd = sd (cpue),
+                    n = n(),
+                    se = std.error (cpue))%>%
+  ggplot(aes(x = year, y = mean, color = site, group = site))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), width = 0.2,
+                position = position_dodge(0))+
+  scale_color_manual(values = c("#CC0000", "#0066CC"))+
+  labs(y = "CPUE (number of fishes/angler hours", x = "", 
+       title = "Ano Nuevo - Moss Landing Marine Laboratories", 
+       subtitle = "Vermilion Rockfish CPUE")+
+  scale_x_continuous(limits=c(2007,2019),breaks=seq(2007,2019,1))+
+  theme_bw()+
+  theme(panel.grid=element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 12),
+        plot.subtitle = element_text(hjust = 0.5, size = 10))
+
+plot(ver_ml_an_cpue)
+
+
+#ggsave("ver_ml_an_cpue.png", plot = ver_ml_an_cpue, path = "C:/Users/erinj/Documents/Thesis/Figures/CPUE/CPUE_CP_MLML", dpi = 1000, width = 6, height = 4)
+
+```
+
+```{r Vermilion FN}
+
+ver_ml_fn_cpue <- cpue_cp_ml %>%
+  filter(species == "VER", area == "FN")%>%
+  group_by(year, site)%>%
+  summarise(mean = mean(cpue),
+                    sd = sd (cpue),
+                    n = n(),
+                    se = std.error (cpue))%>%
+  ggplot(aes(x = year, y = mean, color = site, group = site))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), width = 0.2,
+                position = position_dodge(0))+
+  scale_color_manual(values = c("#CC0000", "#0066CC"))+
+  labs(y = "CPUE (number of fishes/angler hours", x = "", 
+       title = "SE Farallon Islands - Moss Landing Marine Laboratories", 
+       subtitle = "Vermilion Rockfish CPUE")+
+  scale_x_continuous(limits=c(2007,2019),breaks=seq(2007,2019,1))+
+  theme_bw()+
+  theme(panel.grid=element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 12),
+        plot.subtitle = element_text(hjust = 0.5, size = 10))
+
+plot(ver_ml_fn_cpue)
+
+
+#ggsave("ver_ml_fn_cpue.png", plot = ver_ml_fn_cpue, path = "C:/Users/erinj/Documents/Thesis/Figures/CPUE/CPUE_CP_MLML", dpi = 1000, width = 6, height = 4)
+
+```
+
+
+
+
+
+## Ophiodon elongatus
+### Lingcod
+
+```{r Lingcod PB}
+
+lcd_cp_pb_cpue <- cpue_cp_ml %>%
+  filter(species == "LCD", area == "PB")%>%
+  group_by(year, site)%>%
+  summarise(mean = mean(cpue),
+                    sd = sd (cpue),
+                    n = n(),
+                    se = std.error (cpue))%>%
+  ggplot(aes(x = year, y = mean, color = site, group = site))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), width = 0.2,
+                position = position_dodge(0))+
+  scale_color_manual(values = c("#CC0000", "#0066CC"))+
+  labs(y = "CPUE (number of fishes/angler hours", x = "",
+       title = "Point Buchon - Cal Poly San Luis Obispo", 
+       subtitle = "Lingcod CPUE" )+
+  scale_x_continuous(limits=c(2007,2019),breaks=seq(2007,2019,1))+
+  theme_bw()+
+  theme(panel.grid=element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 12),
+        plot.subtitle = element_text(hjust = 0.5, size = 10))
+
+plot(lcd_cp_pb_cpue)
+
+
+#ggsave("lcd_cp_pb_cpue.png", plot = lcd_cp_pb_cpue, path = "C:/Users/erinj/Documents/Thesis/Figures/CPUE/CPUE_CP_MLML", dpi = 1000, width = 6, height = 4)
+
+```
+
+```{r Lingcod BL}
+
+lcd_cp_bl_cpue <- cpue_cp_ml %>%
+  filter(species == "LCD", area == "BL")%>%
+  group_by(year, site)%>%
+  summarise(mean = mean(cpue),
+                    sd = sd (cpue),
+                    n = n(),
+                    se = std.error (cpue))%>%
+  ggplot(aes(x = year, y = mean, color = site, group = site))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), width = 0.2,
+                position = position_dodge(0))+
+  scale_color_manual(values = c("#CC0000", "#0066CC"))+
+  labs(y = "CPUE (number of fishes/angler hours", x = "", 
+       title = "Piedras Blancas - Cal Poly San Luis Obispo", 
+       subtitle = "Lingcod CPUE")+
+  scale_x_continuous(limits=c(2007,2019),breaks=seq(2007,2019,1))+
+  theme_bw()+
+  theme(panel.grid=element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 12),
+        plot.subtitle = element_text(hjust = 0.5, size = 10))
+
+plot(lcd_cp_bl_cpue)
+
+
+#ggsave("lcd_cp_bl_cpue.png", plot = lcd_cp_bl_cpue, path = "C:/Users/erinj/Documents/Thesis/Figures/CPUE/CPUE_CP_MLML", dpi = 1000, width = 6, height = 4)
+
+```
+
+```{r Lingcod PL}
+
+lcd_ml_pl_cpue <- cpue_cp_ml %>%
+  filter(species == "LCD", area == "PL")%>%
+  group_by(year, site)%>%
+  summarise(mean = mean(cpue),
+                    sd = sd (cpue),
+                    n = n(),
+                    se = std.error (cpue))%>%
+  ggplot(aes(x = year, y = mean, color = site, group = site))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), width = 0.2,
+                position = position_dodge(0))+
+  scale_color_manual(values = c("#CC0000", "#0066CC"))+
+  labs(y = "CPUE (number of fishes/angler hours", x = "", 
+       title = "Point Lobos - Moss Landing Marine Laboratories", 
+       subtitle = "Lingcod CPUE")+
+  scale_x_continuous(limits=c(2007,2019),breaks=seq(2007,2019,1))+
+  theme_bw()+
+  theme(panel.grid=element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 12),
+        plot.subtitle = element_text(hjust = 0.5, size = 10))
+
+plot(lcd_ml_pl_cpue)
+
+
+#ggsave("lcd_ml_pl_cpue.png", plot = lcd_ml_pl_cpue, path = "C:/Users/erinj/Documents/Thesis/Figures/CPUE/CPUE_CP_MLML", dpi = 1000, width = 6, height = 4)
+
+```
+
+```{r Lingcod AN}
+
+lcd_ml_an_cpue <- cpue_cp_ml %>%
+  filter(species == "LCD", area == "AN")%>%
+  group_by(year, site)%>%
+  summarise(mean = mean(cpue),
+                    sd = sd (cpue),
+                    n = n(),
+                    se = std.error (cpue))%>%
+  ggplot(aes(x = year, y = mean, color = site, group = site))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), width = 0.2,
+                position = position_dodge(0))+
+  scale_color_manual(values = c("#CC0000", "#0066CC"))+
+  labs(y = "CPUE (number of fishes/angler hours", x = "", 
+       title = "Ano Nuevo - Moss Landing Marine Laboratories", 
+       subtitle = "Lingcod CPUE")+
+  scale_x_continuous(limits=c(2007,2019),breaks=seq(2007,2019,1))+
+  theme_bw()+
+  theme(panel.grid=element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 12),
+        plot.subtitle = element_text(hjust = 0.5, size = 10))
+
+plot(lcd_ml_an_cpue)
+
+
+#ggsave("lcd_ml_an_cpue.png", plot = lcd_ml_an_cpue, path = "C:/Users/erinj/Documents/Thesis/Figures/CPUE/CPUE_CP_MLML", dpi = 1000, width = 6, height = 4)
+
+```
+
+```{r Lingcod FN}
+
+lcd_ml_fn_cpue <- cpue_cp_ml %>%
+  filter(species == "LCD", area == "FN")%>%
+  group_by(year, site)%>%
+  summarise(mean = mean(cpue),
+                    sd = sd (cpue),
+                    n = n(),
+                    se = std.error (cpue))%>%
+  ggplot(aes(x = year, y = mean, color = site, group = site))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), width = 0.2,
+                position = position_dodge(0))+
+  scale_color_manual(values = c("#CC0000", "#0066CC"))+
+  labs(y = "CPUE (number of fishes/angler hours", x = "", 
+       title = "SE Farallon Islands - Moss Landing Marine Laboratories", 
+       subtitle = "Lingcod CPUE")+
+  scale_x_continuous(limits=c(2007,2019),breaks=seq(2007,2019,1))+
+  theme_bw()+
+  theme(panel.grid=element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 12),
+        plot.subtitle = element_text(hjust = 0.5, size = 10))
+
+plot(lcd_ml_fn_cpue)
+
+
+#ggsave("lcd_ml_fn_cpue.png", plot = lcd_ml_fn_cpue, path = "C:/Users/erinj/Documents/Thesis/Figures/CPUE/CPUE_CP_MLML", dpi = 1000, width = 6, height = 4)
+
+```
+
+

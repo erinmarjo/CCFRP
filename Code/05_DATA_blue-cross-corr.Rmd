@@ -1,0 +1,209 @@
+---
+title: "Blue Rockfish Correlation Investigation"
+author: "Erin Johnston"
+date: "10/28/2020"
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = F, message = F)
+```
+
+```{r libraries}
+
+library(tidyverse)
+library(here)
+
+```
+
+```{r data}
+
+## this is the full dataset with all 5 species + 4 areas + 2 sites + 4 seasons + lag values.
+cross_corr <- read_csv(here("Data/output", "2020-10-16_cross_corr_cpue_moci.csv"))
+
+blue_cross_corr <- cross_corr %>%
+  filter(species == "BLU")%>%
+  arrange(desc(corr_values))
+
+MOCI <- read_csv(here("Data", "Central_California_MOCI.csv"))
+#CP_ML_MOCI <- read_csv(here("Data", "CP_ML_MOCI.csv"))
+headers_2 <- read_csv(here("Data", "headers_2.csv"))
+
+blu_juv_corr_values <- headers_2
+
+blu_adult_corr_values <- headers_2
+
+```
+
+I want to investigate these correlation values between juveniles and adults --to do that I think I will need to go back to the raw data.
+
+From code file 01_DATA_cpue-add-zeros.Rmd
+
+```{r from 01, include = F}
+
+#CP_MLML_to_2019 <- read_csv(here("Data", "CP_MLML_to_2019.csv"))
+
+#CP_MLML_to_2019 %>%
+#  select(everything())%>%
+#  summarise_all(funs(sum(is.na(.))))
+
+#CP_MLML_to_2019 <- CP_MLML_to_2019 %>%
+#  drop_na() %>%
+#  rename(site_1 = site)%>%
+#  transform(site_2 = substr(drift, 3, 3))%>%
+#  mutate(
+#    site = case_when(
+#      site_2 == "M" ~ "MPA",
+#      site_2 == "R" ~ "REF"
+#    )
+#  )%>%
+#  select(-site_1, - site_2)
+
+
+#blue_juvenile <- CP_MLML_to_2019 %>%
+#  filter(species == "BLU", length <= 16)
+
+#blue_adult <- CP_MLML_to_2019 %>%
+#  filter(species == "BLU", length > 16)
+
+```
+
+
+```{r juvenile, include = F}
+
+#blue_juvenile_zeros <- blue_juvenile %>%
+#  count(drift)%>%
+#  rename(numbercaught = n)%>%
+#  pivot_wider(names_from = drift,
+#              values_from = numbercaught)%>%
+#  pivot_longer(-species,
+#               names_to = "drift",
+#               values_to = "numbercaught") %>%
+#   mutate(numbercaught=case_when(
+#    is.na(numbercaught)~0,
+#    TRUE~ as.numeric(numbercaught)
+#  ))
+
+#metadata_blue_juv <- blue_juvenile %>% 
+#  select(group, trip, area, site, month, day, year, gridcell, anglerhours, drift)%>%
+#  distinct()
+
+#cpue_blue_juv <- left_join(blue_juvenile_zeros, metadata_blue_juv, by = "drift")%>%
+#  mutate(cpue = numbercaught/anglerhours)
+
+#MOCI_wide <- MOCI %>%
+#  pivot_wider(names_from = "season",
+#              values_from = "central_ca")
+
+#cpue_moci_blue_juv <- left_join(cpue_blue_juv, MOCI_wide, by = "year")
+
+#subset_cpue_moci_blue_juv <- cpue_moci_blue_juv %>%
+#  select(drift, area, site, year, cpue, JFM, AMJ, JAS, OND)%>%
+#  group_by(area, site, year) %>%
+#  summarise(mean_cpue = mean(cpue))
+
+#subset_2_cpue_moci_blue_juv <- left_join(subset_cpue_moci_blue_juv, MOCI, by = "year")
+
+#subset_2_cpue_moci_blue_juv <- subset_2_cpue_moci_blue_juv %>%
+  #drop_na()
+
+
+```
+
+
+
+```{r subsetting}
+
+## subsetting from a master dataset
+blu_juv <- cpue_cp_ml %>%
+  filter(species == "BLU", length < 16)%>%
+  group_by(species, drift, group, trip, area, site, month, day, year,
+           gridcell, anglerhours) %>%
+  summarise(cpue_sum = sum(cpue))
+
+blu_adult <- cpue_cp_ml %>%
+  filter(species == "BLU", length >= 16)%>%
+  group_by(species, drift, group, trip, area, site, month, day, year,
+           gridcell, anglerhours) %>%
+  summarise(cpue_sum = sum(cpue))
+
+```
+
+
+```{r}
+
+MOCI_wide <- MOCI %>%
+  pivot_wider(names_from = "season",
+              values_from = "central_ca")
+
+blu_juv_moci <- left_join(blu_juv, MOCI, by = "year")
+
+blu_adult_moci <- left_join(blu_adult, MOCI, by = "year")
+
+```
+
+
+```{r}
+
+area_list <- list("PB", "BL", "AN", "PL")
+site_list <- list("MPA", "REF")
+season_list <- list("JFM", "AMJ", "JAS", "OND")
+
+#for(i in species_list){
+    for(j in area_list){
+      for(k in site_list){
+        for(l in season_list){
+      unique_subsets_blue_juv <- blu_juv_moci%>%
+      filter(area == j, site == k, season == l)
+      cross_corr <- ccf(unique_subsets_blue_juv$central_ca,
+                        unique_subsets_blue_juv$cpue_sum, plot = F) #plot = F
+      lag <- cross_corr$lag
+      corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      blu_juv_corr_values <- bind_rows(blu_juv_corr_values, c(area = j, site = k,
+                                                              season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+        }
+      }
+    }
+#}
+
+blu_juv_corr_values <- blu_juv_corr_values %>%
+  arrange(desc(corr_values))
+
+```
+
+
+```{r adult blue}
+
+#for(i in species_list){
+    for(j in area_list){
+      for(k in site_list){
+        for(l in season_list){
+      unique_subsets_blue_adult <- blu_adult_moci%>%
+      filter(area == j, site == k, season == l)
+      cross_corr <- ccf(unique_subsets_blue_juv$central_ca,
+                        unique_subsets_blue_juv$cpue_sum, plot = F) #plot = F
+      lag <- cross_corr$lag
+      corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      blu_adult_corr_values <- bind_rows(blu_adult_corr_values, c(area = j, site = k,
+                                                              season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+        }
+      }
+    }
+#}
+
+blu_adult_corr_values <- blu_adult_corr_values %>%
+  arrange(desc(corr_values))
+
+
+
+```
+

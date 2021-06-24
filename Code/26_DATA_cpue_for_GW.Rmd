@@ -1,0 +1,117 @@
+---
+title: '''Raw'' Data for Grant'
+author: "Erin Johnston"
+date: "5/4/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, warning=F, message = F}
+
+library(tidyverse)
+library(here)
+
+```
+
+Reading in raw data for all years for four central coast regions.
+
+```{r}
+## actual raw data for CP and MLML 2007-2020, all species
+cp_ml_20 <- read_csv(here("Data","2021-04-12_full_query_2007_2020.csv"))
+```
+
+NA values were dropped for species and for angler hours because those are necessary for CPUE calculations. Lengths that were missing were not excluded since this had no bearing on CPUE calculations and those fishes could still be counted without a length.
+
+```{r}
+## there is one drift (55 records) that are missing angler hours - dropping this
+## there are three records missing a species identification - dropping this
+## there are 165 fishes with no length. Will keep these in for the purposes of just CPUE
+cp_ml_20 %>%
+  select(everything())%>%
+  summarise_all(funs(sum(is.na(.))))
+
+cp_ml_20 <- cp_ml_20 %>% drop_na(c(anglerhours, species))
+```
+
+Uncommon species were filtered out of the data
+
+```{r}
+## 21 of the most common species
+cp_ml_20_sp <- cp_ml_20 %>%
+   filter(species %in% c("BLU", "GPR", "BLA", "OLV", "LCD", "VER", "DEA", "YTL",
+                         "KLP", "CPR", "CNY", "CHN", "RSY", "BWN", "KGL", "QBK", 
+                         "CBZ", "BAY", "PSD", "TRE", "SRY"))
+
+counting_sp <- cp_ml_20_sp %>%
+  count(species, drift)
+```
+
+Metadata for all lifetime drifts taken 2007-2020 were pulled from the database for inclusion, regardless of if any fishes were caught during those drifts to account for drifts in which no fish were caught.
+
+```{r}
+## there are 210 drifts for which no fish of any kind were caught
+life_drifts <- read_csv(here("Data", "2021-04-12_lifetime_drifts_metadata.csv"))
+
+## just the drifts, no metadata
+## there are a total of 5639 drifts
+drift <- life_drifts %>%
+  select(drift)
+
+## adding these 210 no data drifts to total
+zero_wdrifts <- full_join(counting_sp, drift, by = "drift")
+
+## checking to make sure there are total of 5639 unique drifts
+length(unique(zero_wdrifts$drift))
+
+zeros_long <- zero_wdrifts %>%
+  rename(num_caught = n)%>%
+  pivot_wider(names_from = drift,
+              values_from = num_caught)%>%
+  drop_na(species)%>%
+  pivot_longer(-species,
+                names_to = "drift",
+                values_to = "num_caught")%>%
+   mutate(num_caught = case_when(
+     is.na(num_caught) ~ 0,
+    TRUE ~ as.numeric(num_caught)
+   ))
+
+
+meta_cp_ml <- cp_ml_20_sp %>%
+   select(group, trip, area, site, month, day, year, gridcell, anglerhours,drift)%>%
+   distinct()
+
+nofishdrifts <- anti_join(life_drifts, meta_cp_ml)
+
+
+full_cp_ml <- left_join(zeros_long, life_drifts, by = "drift") %>%
+   mutate(cpue = num_caught/anglerhour)
+
+
+#write_csv(full_cp_ml, here("Data/output", "2021-05-04_airquotesraw_cpml_07_20.csv"))
+```
+
+
+Data Checks
+
+```{r}
+## checking to make sure that drifts with no fishes made it in to the final dataframe
+checking <- full_cp_ml %>%
+  filter(drift == "BLM0715083101")
+
+## checking for NAs
+full_cp_ml %>%
+  select(everything())%>%
+  summarise_all(funs(sum(is.na(.))))
+
+## one of the drifts that didn't have any fishes also is missing angler hours.
+full_cp_ml %>% filter_all(any_vars(is.na(.))) 
+
+## making sure there are still 5639 unique drifts which match # lifetime drifts
+length(unique(full_cp_ml$drift))
+
+```
+

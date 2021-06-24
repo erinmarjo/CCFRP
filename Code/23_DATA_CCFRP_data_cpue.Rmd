@@ -1,0 +1,186 @@
+---
+title: "CCFRP Data Formatting/Curation"
+author: "Erin Johnston"
+date: "3/12/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = F, warning = F)
+```
+
+```{r libraries}
+
+library(tidyverse)
+library(here)
+
+```
+
+#### Metadata Information:
+
+* **group** - either MLML(Moss Landing) or Cal Poly
+
+* **trip** - two letter area code + 'T' + the trip number + two digit year
+  * *example*: BLT01_20 is the first trip from Piedras Blancas in 2020.
+
+
+* **area** - the broad area location sampled
+  * AN: Ano Nuevo (MLML)
+  * FN: Farallon Islands (MLML)
+  * PL: Point Lobos (MLML)
+  * BL: Piedras Blancas (Cal Poly)
+  * PB: Point Buchon (Cal Poly)
+
+
+* **site** - protection status
+  * MPA: marine protected area
+  * REF: associated reference site where fishing is allowed
+
+
+* **month** - month sampled. July-September (rarely October)
+
+* **day** - day sampled
+
+* **year** - year sampled. 2007-2019
+
+* **drift** - two letter area code + one letter site designation ('M' for MPA or 'R' for REF) + six digit date (MMDDYY) + two digit cell number + two digit drift number. 
+  * *example*: BLR0722201202 would be the second drift from Piedras Blancas reference site on 7/22/2020 in cell 12.
+
+* **gridcell** - two letter area code + two digit cell number. 
+  * *example*: BL02 is cell #2 in Piedras Blancas
+
+* **species** - see metadata file on species
+
+* **length** - total length (tip of snout to end of tail) in centimeters
+
+* **anglerhours** - total drift length (around 15 minutes) * number of anglers fishing (6-12 fishers) - any time that needs to be subtracted or added for anglers changing gear or taking breaks.
+
+<div style="margin-bottom:40px;">
+</div>
+
+#### CCFRP Data Formatting
+
+These data are for Cal Poly and Moss Landing from 2007-2019. 
+
+```{r}
+
+## 124,228 obs 12 vars
+cp_ml <- read_csv(here("Data", "2021-03-12_CP_MLML_2007_2019.csv"))
+
+cp_ml %>%
+  select(everything())%>%
+  summarise_all(funs(sum(is.na(.))))
+
+```
+
+
+There are 160 fishes with no length data - 75 fishes from Cal Poly, 85 from Moss Landing. There are 55 instances in which there are no angler hours. This came from one drift at Cal Poly. 
+
+* CPUE - definitely drop the NA's for angler hours, but you can keep the 160 fishes without lengths. I looked at the paper data sheets for the 75 CP fishes and the only thing wrong with them is no recorded length, so they could potentially count for CPUE
+
+* Biomass - drop all angler hour NA's and length NA's.
+
+```{r}
+
+## if you want to drop all NA for biomass or just to get rid of these, take out 'anglerhours'
+## cp_ml <- cp_ml %>% drop_na()
+cp_ml <- cp_ml %>%
+  drop_na(anglerhours) 
+
+## species count
+spp_count <- cp_ml %>%count(species, sort = T)
+
+## These are the 21 most abundant species
+## 123,651 obs 13 vars
+cp_ml <- cp_ml %>%
+  filter(species %in% c("BLU", "GPR", "BLA", "OLV", "LCD", "VER", "DEA", "YTL",
+                        "KLP", "CPR", "CNY", "CHN", "RSY", "BWN", "KGL", "QBK", 
+                        "CBZ", "BAY", "PSD", "TRE", "SRY")) %>%
+  unite("spec_size", species:length, sep = "_", remove = F)
+
+```
+
+See species metadata file for species information. `2021-03-12_CCFRP_metadata_species_table.csv`
+
+
+```{r}
+## code for adding zero
+
+z_cp_ml <- cp_ml %>%
+  count(spec_size, drift)%>%
+  rename(num_caught = n) %>% 
+  ## pivot_wider() creates wide dataframe 
+  ## 659 rows are spec_size and the 5253 colums are drifts
+  pivot_wider(names_from = drift,
+              values_from = num_caught)%>% 
+  ## pivot_longer() back to long format with NA
+  pivot_longer(-spec_size,
+               names_to = "drift",
+               values_to = "num_caught") %>%
+  ## turns NA's into 0 for number of fishes caught
+  mutate(num_caught = case_when(
+    is.na(num_caught) ~ 0,
+    TRUE ~ as.numeric(num_caught)
+  ))
+
+## metadata
+meta_cp_ml <- cp_ml %>%
+  select(group, trip, area, site, month, day, year, gridcell, anglerhours, drift)%>%
+  distinct()
+
+## join zero infilled data and metadata
+
+full_cp_ml <- left_join(z_cp_ml, meta_cp_ml, by = "drift") %>%
+  ## calculate cpue
+  mutate(cpue = num_caught/anglerhours)%>%
+  separate(spec_size, into = c("species", "size"), sep = "_") %>%
+  ## the code below is necessary to deal with some data inconsistencies 
+  ## Moss Landing sometimes writes 'MPA/REF' instead of just one or the other
+  ## this won't be necessary if you subset to just Cal Poly data
+  rename(site_1 = site)%>%
+  transform(site_2 = substr(drift, 3, 3))%>%
+  mutate(
+    site = case_when(
+      site_2 == "M" ~ "MPA",
+      site_2 == "R" ~ "REF"))%>%
+  select(-site_1, - site_2)
+
+
+#write_csv(full_cp_ml, here("Data/output", "2021-03-12_ccfrp_zeroinfill_species_subset.csv"))
+
+```
+
+<div style="margin-bottom:40px;">
+</div>
+
+#### CPUE at Different Levels
+
+Example code for obtaining catch per unit effort at various levels of interest.
+
+```{r}
+
+### CPUE at the drift level
+blue_drift <- full_cp_ml %>%
+  filter(species == "BLU", area != "FN") %>%
+  group_by(drift, trip, area, site, month, day, year, gridcell) %>%
+  summarise(cpue_sum = sum(cpue))
+
+### CPUE at the date level
+blue_date <- blue_drift %>%
+  group_by(trip, area, site, month, year, gridcell) %>%
+  summarise(cpue_date = mean(cpue_sum))
+
+### CPUE at the cell level
+blue_cell <- blue_date  %>%
+  group_by( area, site, year, gridcell) %>%
+  summarise(cpue_cell = mean(cpue_date))
+
+### CPUE at the site level
+blue_site <- blue_cell %>%
+  group_by( area, site, year) %>%
+  summarise(cpue_site = mean(cpue_cell))
+
+
+
+```
+

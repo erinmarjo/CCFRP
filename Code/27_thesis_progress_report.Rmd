@@ -1,0 +1,65 @@
+---
+title: "Thesis Progress Report"
+author: "Erin Johnston"
+date: "6/23/2021"
+output: 
+  prettydoc::html_pretty:
+  #html_document:
+    toc: true
+    #number_sections: true
+    toc_depth: 4
+    theme: cayman
+    #toc_float: true
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, warning=F, message=F}
+
+library(tidyverse)
+library(here)
+
+
+```
+
+# Field Methods
+
+Fishing trips happened at one of four [sampling locations](https://erinmarjo.github.io/CCFRP/20_VIS_interactive-widget-maps.html)
+
+Something new
+
+# Data Cleaning
+
+For full details of cleaning the dataset including the 2020 data and building cross correlation figures, see [this page](https://erinmarjo.github.io/CCFRP/25b_DATA_incorporate_2020.html)
+
+# Juvenile Blue Rockfish and MHWs
+
+![](/Users/erinj/Documents/Thesis/R Stuff/Thesis_Proj/Images/2021-04-14_juv_corr_2020_dat.png){width=80%}
+
+![](/Users/erinj/Documents/Thesis/R Stuff/Thesis_Proj/Images/2021-04-14_top_juv_2020_dat.png){width=80%}
+
+# Adult Blue Rockfish and MHWs
+
+![](/Users/erinj/Documents/Thesis/R Stuff/Thesis_Proj/Images/2021-04-14_adult_corr_2020_dat.png){width=80%}
+
+![](/Users/erinj/Documents/Thesis/R Stuff/Thesis_Proj/Images/2021-04-14_top_adult_2020_dat.png){width=80%}
+
+# Importance of MHW Years
+
+If marine heatwave years have a disproportionately important impact on the correlation between CPUE and MOCI for juvenile blue rockfish, excluding those year will lower the correlation.
+
+![](/Users/erinj/Documents/Thesis/R Stuff/Thesis_Proj/Images/2021-04-14_no_mhw.png){width=80%}
+
+To ensure that these correlations were not lower simply because data were missing, three other years were excluded from cross correlation.
+
+![](/Users/erinj/Documents/Thesis/R Stuff/Thesis_Proj/Images/2021-04-14_no7_9.png){width=80%}
+
+Multiple sets of years were excluded. For full representation, click [here](https://erinmarjo.github.io/CCFRP/28_DATA_year_exclusion.html)
+
+# Importance of Component Parts of MOCI
+
+# Impacts of MHW on Adult Blue Rockfish Growth
+

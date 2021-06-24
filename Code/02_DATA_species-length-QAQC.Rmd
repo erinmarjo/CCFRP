@@ -1,0 +1,82 @@
+---
+title: "Species Length QAQC Cal Poly & Moss Landing"
+author: "Erin Johnston"
+date: "10/25/2020"
+output: html_document
+---
+
+Adapted from original script file 'Species_Length_QAQC.Rmd'
+Location: path = Documents/Thesis/R Stuff/Thesis_Johnston_Rockfish
+See document for for loop equivalent of `case_when()`
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE,
+                      message = FALSE)
+```
+
+```{r library dependencies, message=F, warning = F}
+library(tidyverse)
+library(here)
+```
+
+```{r dataset}
+
+#which drifts may be missing between EM862020_FROSTQuery_CPML.csv and CP_MLML_to_2019.csv. Read both in and then make df <- anti_join(df1, df2, by = "drift"). Many drifts are MM or RR. Ask Grant
+
+CPML_07_19 <- read_csv(here("Data", "CP_MLML_to_2019.csv"))
+
+## drop drifts where there are no lengths for species
+CPML_07_19 <- CPML_07_19 %>%
+  drop_na(length) %>%
+  select(-anglerhours)
+
+```
+
+For every species caught, if the recorded size is under the published maximum size limit, leave the size in, if not, put an NA in the lenQAQC column.
+
+Published maximum sizes are recorded in cm and are from Milton Love's book 'The Rockfishes of the Northeast Pacific' and 'Certainly More Than You Want to Know About The Fishes of The Pacific Coast'
+
+```{r}
+
+species_length_QAQC <- CPML_07_19 %>%
+  mutate(lenQAQC = case_when(
+    species == "BLU" & length < 53  ~ CPML_07_19$length, ## max length = 52 cm
+    species == "GPR" & length < 62  ~ CPML_07_19$length, ## max length = 42.5 cm
+    species == "BLA" & length < 69  ~ CPML_07_19$length, ## max length = 69 cm
+    species == "OLV" & length < 62  ~ CPML_07_19$length, ## max length = 61 cm
+    species == "LCD" & length < 153 ~ CPML_07_19$length, ## max length = 152 cm
+    species == "VER" & length < 77  ~ CPML_07_19$length, ## max length = 76 cm
+    species == "YTL" & length < 67  ~ CPML_07_19$length, ## max length = 66 cm
+    species == "DEA" & length < 54  ~ CPML_07_19$length, ## max length = 53 cm
+    species == "KLP" & length < 43  ~ CPML_07_19$length, ## max length = 42.5 cm
+    species == "CPR" & length < 67  ~ CPML_07_19$length, ## max length = 66 cm
+    species == "CNY" & length < 77  ~ CPML_07_19$length, ## max length = 76 cm
+    species == "CHN" & length < 46  ~ CPML_07_19$length, ## max length = 45 cm
+    species == "BWN" & length < 57  ~ CPML_07_19$length, ## max length = 56 cm
+    species == "RSY" & length < 37  ~ CPML_07_19$length, ## max length = 36 cm
+    species == "KGL" & length < 63  ~ CPML_07_19$length, ## max length = 62.9 cm
+    species == "CBZ" & length < 100 ~ CPML_07_19$length, ## max length = 99 cm
+    species == "PSD" & length < 42  ~ CPML_07_19$length, ## max length = 41 cm
+    species == "BAY" & length < 40  ~ CPML_07_19$length, ## max length = 39 cm
+    species == "TRE" & length < 42  ~ CPML_07_19$length, ## max length = 41 cm
+    species == "QBK" & length < 62  ~ CPML_07_19$length, ## max length = 61 cm
+    TRUE ~ as.numeric(NA)
+    )
+  )
+
+
+sum(is.na(species_length_QAQC$lenQAQC)) ## 602 NA in the length QAQC column
+
+species_length_QAQC_NAs <- species_length_QAQC %>%
+  filter_all(any_vars(is.na(.))) ## this makes a dataset with all obs from original dataset that have an NA. 602 NA in lenQAQC column
+
+## now see if any NA came from the 20 common species that we have QAQC length for.
+species_length_QAQC_NAs_common <- species_length_QAQC_NAs %>%
+  filter(species %in% c("BLU","GPR", "BLA", "OLV", "LCD", "VER", "YTL", "DEA", "KLP",
+                        "CPR", "CNY", "CHN", "BWN", "RSY", "KGL", "CBZ", "PSD", "BAY",
+                        "TRE", "QBK"))
+
+```
+
+
+There are no instances in which fish caught from the 20 most common CCFRP species (for CP and MLML) were recorded at a length longer than the published maximum size.

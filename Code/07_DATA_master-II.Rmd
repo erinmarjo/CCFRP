@@ -1,0 +1,162 @@
+---
+title: "Master Dataset II"
+author: "Erin Johnston"
+date: "11/17/2020"
+output: html_document
+---
+
+# Corrections to Master Dataset Doc. 
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r libraries, warning=F, message=F }
+
+library(tidyverse)
+library(here)
+library(gridExtra)
+
+```
+
+
+```{r raw data and initial clean}
+
+## 124,228 obs 12 vars
+cp_ml <- read_csv(here("Data", "CP_MLML_to_2019.csv"))
+
+
+## 124,013 obs 12 vars
+cp_ml <- cp_ml %>%
+  drop_na() 
+
+#count <- cp_ml %>%count(species, sort = T)
+
+## 123,500 obs 12 vars
+cp_ml <- cp_ml %>%
+  filter(species %in% c("BLU", "GPR", "BLA", "OLV", "LCD", "VER", "DEA", "YTL",
+                        "KLP", "CPR", "CNY", "CHN", "RSY", "BWN", "KGL", "QBK", 
+                        "CBZ", "BAY", "PSD", "TRE", "SRY")) 
+
+count <- cp_ml %>%count(species, sort = T)
+
+length(unique(cp_ml$species))
+
+```
+
+
+```{r}
+## Ben 2020-11-11
+## this has NA when there is no record from the original df
+## we want all metadata to appear regardless of if there was a record there
+## pivot wider starting with CP_MLML_to_2019 with columns to be species + length
+## want drifts to be rows in piv-wider
+## pivot longer which will have rows as drifts in one col and species + length. If not there will be NA
+## left join metadata by drift
+## qaqc df len should be 659*5252
+
+## 123,500 obs 13 vars 
+cp_ml$spec_size <- paste(cp_ml$species, cp_ml$length, sep = "_")
+
+z_cp_ml <- cp_ml %>%
+  count(spec_size, drift)%>%
+  rename(num_caught = n) %>% ## 72,025 obs 3 vars
+  pivot_wider(names_from = drift,
+              values_from = num_caught)%>% ## 659 obs 5253 vars
+  pivot_longer(-spec_size,
+               names_to = "drift",
+               values_to = "num_caught") %>%
+  mutate(num_caught = case_when(
+    is.na(num_caught) ~ 0,
+    TRUE ~ as.numeric(num_caught)
+  )) ## 3,461,068 obs 3 vars ## YEEEESSS this df is 659*5252
+
+meta_cp_ml <- cp_ml %>%
+  select(group, trip, area, site, month, day, year, gridcell, anglerhours, drift)%>%
+  distinct()
+
+full_cp_ml <- left_join(z_cp_ml, meta_cp_ml, by = "drift") %>%
+  mutate(cpue = num_caught/anglerhours)%>%
+  separate(spec_size, into = c("species", "size"), sep = "_") %>%
+  rename(site_1 = site)%>%
+  transform(site_2 = substr(drift, 3, 3))%>%
+  mutate(
+    site = case_when(
+      site_2 == "M" ~ "MPA",
+      site_2 == "R" ~ "REF"))%>%
+  select(-site_1, - site_2)
+
+#write_csv(full_cp_ml, here("Data/output", "2020-11-18_master_II.csv"))
+
+
+```
+
+Now test CPUE for Blue RF
+
+```{r}
+
+## BEN 2020-11-18
+## Grant q about drift data
+## qaqc vec of antijoin drifts - look in blue_test
+## for qaqc diff between blue_m2 and _og append 9 rows (row_bind) to bottom of df before pivot_wider with a new species_size combo.
+## should create 5252 obs longer than df now.
+## can remove later
+
+blue_test_m2 <- full_cp_ml %>%
+  filter(species == "BLU") %>%
+  group_by(drift, gridcell, site, area, year) %>%
+  summarise(cpue_drift = sum(cpue))
+
+blue_test_og <- cpue_cp_ml_clean %>%
+  filter(species == "BLU")
+
+## why don't these 9 drifts appear in the new df?
+qaqc <- anti_join(blue_test_og, blue_test_m2, by = "drift")
+
+## create vec with these 9 drifts, investigate in raw data
+## are these accurate. Grant
+## yes, they are accurate in the paper datasheets
+
+
+
+chicago9 <- unique(qaqc$drift)
+
+missing9_2 <- CP_MLML_to_2019_2 %>%
+  filter(drift %in% chicago9)
+
+write_csv(missing9_2, here("Data/output", "investigate_me.csv"))
+
+ml <- missing9 %>%
+  filter(group == "MLML")
+
+## in better news, cpue fucking matches. eff yeah
+## one more qaqc... join drift ID with cpue and then antijoin
+
+
+
+
+blue_test_m2$qaqc <- paste(blue_test_m2$drift, round(blue_test_m2$cpue_drift, 4), sep = "_")
+blue_test_og$qaqc <- paste(blue_test_og$drift, round(blue_test_og$drift_cpue, 4), sep = "_")
+
+qaqc_2 <- anti_join(blue_test_og, blue_test_m2, by = "qaqc")
+qaqc_3 <- anti_join(blue_test_m2, blue_test_og, by = "qaqc") 
+
+
+qaqc_4 <- full_join(qaqc_2, qaqc_3[c(qaqc_3$drift, qaqc_3$qaqc),], by = "drift")
+
+
+CP_MLML_to_2019_2 <- read_csv(here("Data", "CP_MLML_to_2019.csv"))
+
+
+```
+
+```{r}
+
+lcd_test <- full_cp_ml %>%
+  filter(species == "LCD") %>%
+  group_by(drift, gridcell, site, area, year) %>%
+  summarise(cpue_drift = sum(cpue))
+
+```
+

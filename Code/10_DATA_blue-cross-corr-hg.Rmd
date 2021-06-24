@@ -1,0 +1,1431 @@
+---
+title: "Cross Correlation CPUE + MOCI"
+author: "Erin Johnston"
+date: "12/14/2020"
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = F, warning = F)
+
+```
+
+```{r libraries}
+
+library(tidyverse)
+library(here)
+
+
+```
+
+### Is there a lag in biological response to oceanographic condition?
+#### Blue Rockfish
+
+**Biological Response**: I will use Blue Rockfish catch per unit effort (CPUE) to start because they are the most abundant species in the south-central coast of California.
+
+**Oceanographic Index**: I am going to use the Multivariate Ocean Climate Index (MOCI) to start since it's component parts include the pacific decadal oscillation, multivariate ENSO index, sea surface temperature, upwelling index, etc. The data can be found here: http://www.faralloninstitute.org/moci
+
+
+### Sub-question: Is there a difference in lag time between juvenile and adult blue rockfish?
+
+Below is the growth curve of Blue rockfish for reference. When all fish are mature, they put less energy into growth and start to put their energy towards reproduction and the line flattens out. They are maturing somewhere in the steep slope of this curve, and I want to choose a size roughly halfway on that part of the curve. Additionally, a recent masters thesis on Blue rockfish found that 50% length at maturity is about 23 cm (Schmidt 2014). So I am using that as my size cut-off for juveniles and adults with 23 cm fish included in the juvenile data.
+
+
+
+![](/Users/erinj/Documents/Thesis/R Stuff/Thesis_Proj/Images/blurfvonbert.jpg){width=50%}
+
+**Terms Reference**:
+
+* site = protection status
+
+     * MPA = marine protected areas
+
+     * REF = reference site
+
+* area = sampling area
+
+     * PB = Point Buchon
+
+     * BL = Piedras Blancas
+
+     * AN = Ano Nuevo
+
+     * PL = Point Lobos
+
+* CPUE = catch per unit effort
+
+* MOCI = Multivariate Ocean Climate Index
+
+     * seasons are abbreviated by first letter of the month
+     
+
+<div style="margin-bottom:80px;">
+</div>
+
+
+```{r data}
+
+MOCI <- read_csv(here("Data", "Central_California_MOCI.csv"))
+
+full_cp_ml <- read_csv(here("Data/output", "2020-11-18_master_II.csv"))
+
+## filtering for Blue rockfish only
+blue_full <- full_cp_ml %>%
+  filter(species == "BLU")
+
+```
+
+### **Nested Design**
+
+drift > month > cell > site > area > year
+
+![](/Users/erinj/Documents/Thesis/R Stuff/Thesis_Proj/Images/buchon_sample_map.jpg){width=35%}
+
+#### Data cleaning to account for potential uneven sampling within nested design
+
+Namely, we sample cells randomly with replacement. So we can potentially sample a cell multiple times in a season (or not sample it at all).
+
+```{r random summaries, eval=F, include = F}
+
+howmany_tot <- blue_full%>%
+  filter(num_caught != 0)%>%
+  summarize(num_tot = sum(num_caught))
+
+howmany_juv <- blue_full %>%
+  filter(num_caught != 0, size <= 23)%>%
+  summarize(num_juv = sum(num_caught))
+
+howmany_adult <- blue_full %>%
+  filter(num_caught != 0, size > 23)%>%
+  summarize(num_adult = sum(num_caught))
+
+```
+
+```{r data cleaning, message=F, warning=F}
+
+size_cutoff <- 21
+
+## this is cpue at the drift level
+juv <- blue_full %>%
+  filter(size <= size_cutoff)%>%
+  group_by(drift, trip, area, site, month, day, year, gridcell) %>%
+  summarise(cpue_sum = sum(cpue))
+
+## mean cpue at the date (month) level 
+## take var at this level
+juv_2 <- juv %>%
+  group_by(trip, area, site, month, day, year, gridcell) %>%
+  summarise(cpue_date = mean(cpue_sum))
+
+
+## mean cpue at the cell level
+## take mean of var of the level before
+juv_3 <- juv_2 %>%
+  group_by( area, site, year, gridcell) %>%
+  summarise(cpue_cell = mean(cpue_date))
+            
+## mean cpue a the site (protection status level)
+## mean of the var of the level before
+## take var at end
+juv_4 <- juv_3 %>%
+  group_by( area, site, year) %>%
+  summarise(cpue_site = mean(cpue_cell),
+            var_site = var(cpue_cell))
+
+## Ben: "tracking variance across the level" -if we don't expect variation across some of these levels (i.e. months) why would we need to track variance across the level? 
+
+juv_5 <- juv_4 %>%
+  group_by(area, site) %>%
+  summarise(cpue_year = mean(cpue_site),
+            var_year = var(cpue_site))
+
+
+
+#%>% mutate(var_date = replace_na(var_date, 0))
+
+## all in one step for adults
+adult <- blue_full %>%
+  filter(size > size_cutoff)%>%
+  group_by(drift, trip, area, site, month, day, year, gridcell) %>%
+  summarise(cpue_sum = sum(cpue))%>%
+  group_by(trip, area, site, month, year, gridcell) %>%
+  summarise(cpue_date = mean(cpue_sum)) %>%
+  group_by( area, site, year, gridcell) %>%
+  summarise(cpue_cell = mean(cpue_date)) %>%
+  group_by( area, site, year) %>%
+  summarise(cpue_site = mean(cpue_cell))
+
+#write_csv(adult, here("Data/output", "2021-2-9_adult.csv"))
+
+## not separated by size
+full <- blue_full %>%
+  group_by(drift, trip, area, site, month, day, year, gridcell) %>%
+  summarise(cpue_sum = sum(cpue))%>%
+  group_by(trip, area, site, month, year, gridcell) %>%
+  summarise(cpue_date = mean(cpue_sum)) %>%
+  group_by( area, site, year, gridcell) %>%
+  summarise(cpue_cell = mean(cpue_date)) %>%
+  group_by( area, site, year) %>%
+  summarise(cpue_site = mean(cpue_cell))
+
+
+juv_moci <- left_join(juv_4, MOCI, by = "year") 
+
+adult_moci <- left_join(adult, MOCI, by = "year")
+
+
+full_moci <- left_join(full, MOCI, by = "year")
+
+
+adult_15 <- read_csv(here("Data", "2021-02-09_adult.csv"))
+adult_moci_15 <- left_join(adult_15, MOCI, by = "year")
+
+#write_csv(juv_moci, here("Data/output", "2021-03-02_juv_moci.csv"))
+#write_csv(adult_moci, here("Data/output", "2021-04-02_adult_moci.csv"))
+
+```
+
+Each of these datasets `juv_moci`, `adult_moci`, and `full_moci`, will now have the CPUE value and MOCI index value for each area + site + year + season combination.
+
+```{r dataset head}
+
+juv_moci %>% head()
+
+```
+
+## Cross correlation function loops
+
+#### Full data with protection status included
+
+```{r loop general setup}
+
+headers <- data.frame(area = character(), site = character(), 
+                      season = character(), lag = character(), corr_values = character())
+
+juv_corr <- headers
+adult_corr <- headers
+full_corr <- headers
+
+area_list <- c("PB", "BL", "AN", "PL")
+site_list <- c("MPA", "REF")
+season_list <- c("JFM", "AMJ", "JAS", "OND")
+
+
+```
+
+```{r full loop}
+
+for(j in area_list){
+  for(k in site_list){
+    for(l in season_list){
+      full_combos <- full_moci%>%
+      filter(area == j, site == k, season == l)
+      cross_corr <- ccf(full_combos$central_ca,
+                        full_combos$cpue_site, plot = F)
+      lag <- cross_corr$lag
+      corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      full_corr <- bind_rows(full_corr, c(area = j, site = k, season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+    }
+  }
+}
+
+```
+
+I only need the negative lag values and seasons are plotted in alphabetical order unless I set them as factors with each name being a level.
+
+```{r vis set up}
+
+vis_full <- full_corr %>%
+  filter(lag %in% c(-10:0))%>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_full$season <- factor(vis_full$season, levels = c("JFM", "AMJ", "JAS", "OND"))
+
+full_moci_plot <- ggplot() +
+  scale_color_manual(values = c(  "#999999" , "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_full, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Blue Rockfish Lag Correlation -MOCI", y = "correlation",
+       caption = "Fig 1")+
+  scale_x_continuous(limits=c(-8.5,0.5),breaks=seq(-8,0,1))+
+  scale_y_continuous(limits = c(-0.6, 0.9), breaks = seq(-0.6, 0.9, 0.2), 
+                     labels = c(-0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8) )+
+  theme_bw()+
+  facet_grid(site ~ area)+
+    theme(panel.grid=element_blank(),
+          plot.caption = element_text(size = 8))
+
+```
+
+
+```{r fig 1, fig.height= 6, fig.width= 10, fig.align= "center"}
+
+full_moci_plot
+
+```
+
+What I see here is that MPAs generally have higher correlation between cpue and whatever lag value it is evaluating, but that MPA and REF follow the same pattern within the same area. The between area differences are greater than between protection status.
+
+<div style="margin-bottom:50px;">
+</div>
+
+#### Juvenile vs Adult with protection status included
+
+```{r juv vs adult loop}
+
+## juv loop
+for(j in area_list){
+  for(k in site_list){
+    for(l in season_list){
+      juv_combos <- juv_moci%>%
+      filter(area == j, site == k, season == l)
+      cross_corr <- ccf(juv_combos$central_ca,
+                        juv_combos$cpue_site, plot = T)
+      lag <- cross_corr$lag
+      corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      juv_corr <- bind_rows(juv_corr, c(area = j, site = k, season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+    }
+  }
+}
+
+## adult loop
+for(j in area_list){
+  for(k in site_list){
+    for(l in season_list){
+      adult_combos <- adult_moci%>%
+      filter(area == j, site == k, season == l)
+      cross_corr <- ccf(adult_combos$central_ca,
+                        adult_combos$cpue_site, plot = F)
+      lag <- cross_corr$lag
+      corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      adult_corr <- bind_rows(adult_corr, c(area = j, site = k, season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+    }
+  }
+}
+
+## adult loop with BL 2015 NAs
+
+adult_corr_exclude <- headers
+adult_corr_pass <- headers
+
+for(j in area_list){
+  for(k in site_list){
+    for(l in season_list){
+      adult_combos_exclude <- adult_moci_15%>%
+      filter(area == j, site == k, season == l)
+      cross_corr_exclude <- ccf(adult_combos_exclude$central_ca,
+                        adult_combos_exclude$cpue_site, plot = F, 
+                        na.action = na.exclude)
+      lag <- cross_corr_exclude$lag
+      corr_values <- cross_corr_exclude$acf
+      for(m in 1:length(lag)){
+      adult_corr_exclude <- bind_rows(adult_corr_exclude, c(area = j, site = k,
+                                                            season = l, lag = lag[m],
+                                                            corr_values = corr_values[m]))
+      }
+
+    }
+  }
+}
+
+for(j in area_list){
+  for(k in site_list){
+    for(l in season_list){
+      adult_combos_pass <- adult_moci_15%>%
+      filter(area == j, site == k, season == l)
+      cross_corr_pass <- ccf(adult_combos_pass$central_ca,
+                        adult_combos_pass$cpue_site, plot = F, 
+                        na.action = na.pass)
+      lag <- cross_corr_pass$lag
+      corr_values <- cross_corr_pass$acf
+      for(m in 1:length(lag)){
+      adult_corr_pass <- bind_rows(adult_corr_pass, c(area = j, site = k, season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+    }
+  }
+}
+
+
+
+## no difference between na.pass and na.exclude
+different1 <- anti_join(adult_corr_exclude, adult_corr_pass)
+
+#different2 <- anti_join(adult_corr, adult_corr_15)
+
+```
+
+```{r juv vs adult set up}
+
+## juv plot set up
+vis_juv <- juv_corr %>%
+  filter(lag %in% c(-10:0))%>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_juv$season <- factor(vis_juv$season, levels = c("JFM", "AMJ", "JAS", "OND"))
+
+juv_moci_plot <- ggplot() +
+  scale_color_manual(values = c(  "#999999" , "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_juv, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Juvenile Blue Rockfish Lag Correlation -MOCI", y = "correlation",
+       caption = "")+
+  scale_x_continuous(limits=c(-8.5,0.5),breaks=seq(-8,0,1))+
+  scale_y_continuous(limits = c(-0.6, 0.95), breaks = seq(-0.6, 0.9, 0.2), 
+                     labels = c(-0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8) )+
+  theme_bw()+
+  facet_grid(site ~ area)+
+    theme(panel.grid=element_blank(),
+          plot.title = element_text(hjust = 0.5),
+          plot.caption = element_text(size = 8))
+
+## adult plot set up
+vis_adult <- adult_corr %>%
+  filter(lag %in% c(-10:0))%>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_adult$season <- factor(vis_adult$season, levels = c("JFM", "AMJ", "JAS", "OND"))
+
+adult_moci_plot <- ggplot() +
+  scale_color_manual(values = c(  "#999999" , "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_adult, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Adult Blue Rockfish Lag Correlation -MOCI", y = "correlation",
+       caption = "Fig 3")+
+  scale_x_continuous(limits=c(-8.5,0.5),breaks=seq(-8,0,1))+
+  scale_y_continuous(limits = c(-0.6, 0.9), breaks = seq(-0.6, 0.9, 0.2), 
+                     labels = c(-0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8) )+
+  theme_bw()+
+  facet_grid(site ~ area)+
+    theme(panel.grid=element_blank(),
+          plot.caption = element_text(size = 8))
+
+## adult plot set up with BL 2015 NA
+
+vis_adult_15 <- adult_corr_pass %>%
+  filter(lag %in% c(-10:0)) %>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_adult_15_2 <- adult_corr_exclude %>%
+  filter(lag %in% c(-10:0)) %>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_adult_15$season <- factor(vis_adult_15$season, levels = c("JFM", "AMJ", "JAS", "OND"))
+
+adult_moci_plot_15 <- ggplot() +
+  scale_color_manual(values = c(  "#999999" , "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_adult_15, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Adult Blue Rockfish Lag Correlation -MOCI", y = "correlation",
+       caption = "Fig 3")+
+  scale_x_continuous(limits=c(-8.5,0.5),breaks=seq(-8,0,1))+
+  scale_y_continuous(limits = c(-0.6, 0.9), breaks = seq(-0.6, 0.9, 0.2), 
+                     labels = c(-0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8) )+
+  theme_bw()+
+  facet_grid(site ~ area)+
+    theme(panel.grid=element_blank(),
+          plot.caption = element_text(size = 8))
+
+#different3 <- anti_join(vis_adult, vis_adult_15)
+
+```
+
+
+```{r fig 2, fig.height= 6, fig.width= 10, fig.align= "center"}
+
+juv_moci_plot
+
+```
+
+```{r fig 3, fig.height= 6, fig.width= 10, fig.align= "center"}
+
+adult_moci_plot
+
+```
+
+At the size cutoff of 20 cm, the correlation values look pretty different for Blue rockfish. I need to figure out if this size cutoff is actually telling me something important though.
+
+
+<div style="margin-bottom:50px;">
+</div>
+
+#### Full data without protection status
+
+
+There is some indication that area is more important than protection status, so I have also run these without the `site` aspect. 
+
+```{r ns set up}
+
+full_corr_ns <- headers
+
+
+for(j in area_list){
+  for(l in season_list){
+      full_combos_ns <- full_moci%>%
+      filter(area == j, season == l)
+      cross_corr <- ccf(full_combos_ns$central_ca,
+                        full_combos_ns$cpue_site, plot = F) #plot = F
+      lag <- cross_corr$lag
+      corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      full_corr_ns <- bind_rows(full_corr_ns, c(area = j,  season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+  }
+}
+
+vis_full_ns <- full_corr_ns %>%
+  filter(lag %in% c(-10:0))%>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+vis_full_ns$season <- factor(vis_full_ns$season, levels = c("JFM", "AMJ", "JAS", "OND"))
+
+full_moci_ns <-ggplot() +
+  scale_color_manual(values = c( "#999999" ,  "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_full_ns, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Blue Rockfish Lag Correlation -MOCI", y = "correlation",
+       caption = "Fig 4")+
+  scale_x_continuous(limits=c(-10.5,0.5),breaks=seq(-10,0,1))+
+  scale_y_continuous(limits = c(-0.6, 0.85), breaks = seq(-0.6, 0.8, 0.2),
+                     labels = c(-0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8))+
+  theme_bw()+
+  facet_wrap(.~ area)+
+    theme(panel.grid=element_blank(),
+          plot.caption = element_text(size = 8))
+
+```
+
+
+```{r fig 4, fig.height= 6, fig.width= 10, fig.align= "center"}
+
+full_moci_ns
+
+```
+
+When I compare this figure with combined MPA/REF to the first figure, the patterns are more similar to the MPA, so the MPA may be driving the combined correlation values.
+
+## MOCI vs Component Parts
+
+MOCI includes the following:
+
+* Upwelling Index
+
+* Sea level from shore stations
+
+* Alongshore wind, sea surface temperature, air temperature, sea level pressure
+
+* MEI (Multivariate ENSO Index)
+
+* PDO (Pacific Decadal Oscillation)
+
+* NOI (Norhtern Oscillation Index)
+
+An interesting direction would be to run the same `ccf()` function with each of the component parts to see what is driving the relationship seen in MOCI vs CPUE. I am also going to investigate other fish besides Blue rockfish.
+
+### Questions for you:
+
+1. In the data cleaning section, I use `group_by()` and `summarise()` several times to make sure that I am accounting for cpue across multiple levels instead of jumping straight to the last step and taking the mean cpue of the entire year. Can I track variance/sd/standard error the same way? For example, asking for the variance of the level before in each of the `summarise()` functions (look in the last line of each `summarise()`)? 
+
+```{r question 1, eval = F, echo== T}
+
+## this is cpue at the drift level
+juv <- blue_full %>%
+  filter(size <= size_cutoff)%>%
+  group_by(drift, trip, area, site, month, day, year, gridcell) %>%
+  summarise(cpue_sum = sum(cpue))
+
+## mean cpue at the date (month) level 
+juv_2 <- juv %>%
+  group_by(trip, area, site, month, year, gridcell) %>%
+  summarise(cpue_date = mean(cpue_sum),
+            var_date = var(cpue_sum)) ## look here
+
+## mean cpue at the cell level
+juv_3 <- juv_2 %>%
+  group_by( area, site, year, gridcell) %>%
+  summarise(cpue_cell = mean(cpue_date),
+            var_cell = var(cpue_date)) ## look here
+
+## mean cpue a the site (protection status level)
+juv_4 <- juv_3 %>%
+  group_by( area, site, year) %>%
+  summarise(cpue_site = mean(cpue_cell),
+            var_site = var(cpue_cell)) ## look here
+
+```
+
+
+2020-1-11 NOTES: think about what I really want. sums or averages. Figure out before var ques answered.
+
+2. We only sample in one 'season' out of the year, so I assigned the same catch per unit effort value from an area-site-year to each MOCI season in that year so that I would be able to get correlation values for each season. Otherwise I would have to average the MOCI values across seasons to get one value per year and use that for the cross correlation. Do you have thoughts on if that is okay to do? See below for example: all AN-MPA-2007 will have a cpue value of 1.45 even though each season has a separate MOCI value.
+
+```{r question 2, echo = F}
+
+full_moci %>% head()
+
+```
+
+
+3. I just want to double check that the cross correlation function is doing what I think it is doing. What I think is that it takes the cpue value for every area-site-season-year combination and compares it to the MOCI value for every area-site-season-year combination and spits out a correlation. Then it shifts the values in one direction and evaluates it again (and again etc. in both directions). In the first figure, for the Ano Nuevo (AN) MPA I see a correlation value of ~0.9 for the -2 lag in the July-August-September (JAS) season - so my interpretation would be something like 'Blue rockfish cpue in the Ano Nuevo MPA has the highest correlation with the MOCI value two summers in the past'.  See below for close up of that part of Fig 1.
+
+```{r question 3, echo= F}
+
+q3 <- vis_full %>%
+  filter(area == "AN", site == "MPA")
+
+q3_plot <-ggplot() +
+  scale_color_manual(values = c( "#999999" ,  "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = q3, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Ano Nuevo MPA Blue RF Lag", y = "correlation")+
+  scale_x_continuous(limits=c(-8.5,0.5),breaks=seq(-8,0,1))+
+  scale_y_continuous(limits = c(-0.6, 0.9), breaks = seq(-0.6, 0.8, 0.2),
+                     labels = c(-0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8))+
+  theme_bw()+
+    theme(panel.grid=element_blank())
+
+q3_plot
+
+```
+
+2020-1-11 Notes: relabel x axis so it doesnt suck for interp, use only JAS MOCI and see what that does
+
+<div style="margin-bottom:80px;">
+</div>
+
+subset area and site, redo ccf with moci and cpue
+
+```{r meeting notes}
+
+hg_atmpt <- full_moci %>%
+  filter(area == "AN", site == "MPA")
+
+
+## in this plot each lag is one season, not one year
+ccf_atmpt <- ccf(hg_atmpt$central_ca, hg_atmpt$cpue_site)
+
+```
+
+```{r adding lag}
+
+juv_moci_plot
+
+#juv_moci %>% head()
+
+juv_moci_lag <- juv_moci
+juv_moci_lag$lag_1 <- lag(juv_moci_lag$central_ca, 1)
+juv_moci_lag$lag_2 <- lag(juv_moci_lag$central_ca, 8)
+
+## am I interested in this? 
+## maybe not for lag
+
+
+#glm(cpue_juv_blue ~ year + site + area + interactions, data = data)
+
+#glm(cpue_juv_blue ~ year + site + area + lag_year1 + lag_year2, data = juv_moci_lag)
+
+
+
+
+#gplot(juv_moci_lag)+
+#  geom_line(aes(x = year, y = cpue_site))
+
+```
+
+## just high correlations
+
+```{r}
+
+## according to 'rule of thumb' = Usually, a correlation is significant when the absolute value is greater than 2/sqrt((n)-abs(k)) , where n is the number of observations and k is the lag. https://support.minitab.com/en-us/minitab/18/help-and-how-to/modeling-statistics/time-series/how-to/cross-correlation/interpret-the-results/all-statistics-and-graphs/
+
+#for lag of 0
+2/sqrt((13)-abs(0)) ##0.5547002
+#for lag of -1
+2/sqrt((13)-abs(-1)) ##0.5773503
+#for lag of -2
+2/sqrt((13)-abs(-2)) ##0.6030227
+#for lag of -3
+2/sqrt((13)-abs(-3)) ##0.6324555
+
+## juvenile
+juv_high_lag0 <- vis_juv %>%
+  filter(lag == 0, corr_values > 0.5547002)
+
+juv_high_lag1 <- vis_juv %>%
+  filter(lag == -1, corr_values > 0.5773503)
+
+juv_high_lag2 <- vis_juv %>%
+  filter(lag == -2, corr_values > 0.6030227)
+
+juv_high_lag3 <- vis_juv %>%
+  filter(lag == -3, corr_values > 0.6324555)
+
+juv_high_lags <- bind_rows(juv_high_lag0, juv_high_lag1, juv_high_lag2, juv_high_lag3)
+
+#anti_join(juv_high_lags, juv_high)
+
+
+## adult
+adult_high_lag0 <- vis_adult %>%
+  filter(lag == 0, corr_values > 0.5547002)
+
+adult_high_lag1 <- vis_adult %>%
+  filter(lag == -1, corr_values > 0.5773503)
+
+adult_high_lag2 <- vis_adult %>%
+  filter(lag == -2, corr_values > 0.6030227)
+
+adult_high_lag3 <- vis_adult %>%
+  filter(lag == -3, corr_values > 0.6324555)
+
+adult_high_lags <- bind_rows(adult_high_lag0, adult_high_lag1, adult_high_lag2, adult_high_lag3)
+
+
+## full
+full_high_lag0 <- vis_full %>%
+  filter(lag == 0, corr_values > 0.5547002)
+
+full_high_lag1 <- vis_full %>%
+  filter(lag == -1, corr_values > 0.5773503)
+
+full_high_lag2 <- vis_full %>%
+  filter(lag == -2, corr_values > 0.6030227)
+
+full_high_lag3 <- vis_full %>%
+  filter(lag == -3, corr_values > 0.6324555)
+
+full_high_lags <- bind_rows(full_high_lag0, full_high_lag1, full_high_lag2, full_high_lag3)
+
+#write_csv(juv_high_lags, here("Data/output", "2020-1-27_juv_high_moci_lags.csv"))
+#write_csv(adult_high_lags, here("Data/output", "2020-1-27_adult_high_moci_lags.csv"))
+#write_csv(full_high_lags, here("Data/output", "2020-1-27_full_high_moci_lags.csv"))
+
+
+```
+
+2021-2-3. 
+Hunter: autocorrelation. How do we evaluate and importance.
+
+Questions 
+- broad: is there a correlation between ()rockfish cpue and large oceanographic index
+- (1) Can we predict a signal of large oceanog events/(is there an impact of..) on abun of key species and life stages
+- (sub1) - juvs vs adults. spp based on life history
+- (2) Resilience? Are perturbations the same in MPA vs REF? Make sure abundance is similar in both areas. Fishing effects not for juv, but for adults. MPA red variability. 
+
+To Do
+- BPUE juv blues and all spp.
+- figure out p-value. Can it be calculated? UPDATE: YES. SEE BELOW
+- PDO and ENSO
+
+life history of spp framework
+- Blues, relatively short lived, 3-4 year mat, sporatic recruitment -most resp to oceanographic changes. Don't worry about mechanism of response. What mech drives - discussion section.
+- expect longer lived, better rec spp to respond diff
+- BGOVL
+
+Figures
+- mult spp (colors, points), life stages (facet wrap) or location/protection (facet wrap), max corr (y), life history att (x)
+
+# Obtaining a p-value
+
+https://stackoverflow.com/questions/38173544/how-to-calculate-p-values-from-cross-correlation-function-in-r
+
+*Null hypothesis*: the correlation is 0
+*Alt hypothesis*: the correlation is not 0
+
+```{r calculate p values attempt}
+
+#2 * (1 - pnorm(abs(max.cor), mean = 0, sd = 1/sqrt(ccf1$n.used)))
+
+#making sure n.used is 13
+cross_corr$n.used
+
+############juv top corr p-value###################
+
+2 * (1 - pnorm(abs(0.8936744), mean = 0, sd = 1/sqrt(13)))
+## same as this
+2 * (1 - pnorm(abs(max(juv_high_lags$corr_values)), mean = 0, sd = 1/sqrt(13)))
+#p-value is 0.001272153
+
+## potentially put this in instead of '13'
+## cross_corr$n.used - abs(cross_corr$lag)
+## controlling for multiple comparisons - future investigation
+
+#juv_pvalue <- 2 * (1 - pnorm(abs(juv_high_lags$corr_values), mean = 0, sd = 1/sqrt(13)))
+
+juv_p_values <- juv_high_lags %>%
+  mutate(pval = 2 * (1 - pnorm(abs(juv_high_lags$corr_values),
+                               mean = 0, sd = 1/sqrt(13))))
+
+#############adult top corr p-value###################
+
+2 * (1 - pnorm(abs(max(adult_high_lags$corr_values)), mean = 0, sd = 1/sqrt(13)))
+# p-value is 0.004010236
+
+adult_p_values <- adult_high_lags %>%
+  mutate(pval = 2 * (1 - pnorm(abs(adult_high_lags$corr_values),
+                               mean = 0, sd = 1/sqrt(13))))
+
+#############full top corr p-value###################
+
+2 * (1 - pnorm(abs(max(full_high_lags$corr_values)), mean = 0, sd = 1/sqrt(13)))
+# p-value is 0.001258376
+
+full_p_values <- full_high_lags %>%
+  mutate(pval = 2 * (1 - pnorm(abs(full_high_lags$corr_values),
+                               mean = 0, sd = 1/sqrt(13))))
+
+```
+
+I could put p-values on the full dataset and not have to subset out what is significant based on the rule of thumb from above.
+
+```{r pvalues full corr sets}
+
+#############juv############
+
+juv_p_values2 <- vis_juv %>%
+  mutate(pval = 2 * (1 - pnorm(abs(vis_juv$corr_values),
+                               mean = 0, sd = 1/sqrt(13))))
+
+#############adult############
+
+adult_p_values2 <- vis_adult %>%
+  mutate(pval = 2 * (1 - pnorm(abs(vis_adult$corr_values),
+                               mean = 0, sd = 1/sqrt(13))))
+
+#########adult2015#########
+adult_15_p_values <- vis_adult_15 %>%
+  mutate(pval = 2 * (1 - pnorm(abs(vis_adult_15$corr_values),
+                               mean = 0, sd = 1/sqrt(13))))
+
+#############full############
+
+full_p_values2 <- vis_full %>%
+  mutate(pval = 2 * (1 - pnorm(abs(vis_full$corr_values),
+                               mean = 0, sd = 1/sqrt(13))))
+
+top_juv <- juv_p_values2 %>% 
+  arrange(desc(corr_values)) %>% 
+  group_by(area, site) %>% slice(1)
+
+top_adult15 <- adult_15_p_values %>%
+  arrange(desc(corr_values)) %>%
+  group_by(area, site) %>%
+  slice(1)
+
+top_adult <- adult_p_values2 %>%
+  arrange(desc(corr_values)) %>%
+  group_by(area, site) %>%
+  slice(1)
+
+top_full <- full_p_values2 %>%
+  arrange(desc(corr_values)) %>%
+  group_by(area, site) %>%
+  slice(1)
+
+```
+
+
+Seems like correlations of about 0.54 and higher have a significant p-value (<0.05)
+
+# 95% confidence intervals calculation?
+
+```{r}
+
+upperCI <- qnorm((1+0.95)/2)/sqrt(cross_corr$n.used)
+lowerCI <- -qnorm((1+0.95)/2)/sqrt(cross_corr$n.used)
+
+
+```
+
+The upper and lower CI are +/- 0.5435! That's exactly right... so the calculation for p-value is probably right.
+
+Could graph with just the significant lags
+
+```{r significant lags figures}
+#############juv############
+juv_sig_lag <- juv_p_values2 %>%
+  filter(pval < 0.05) %>%
+  ggplot() +
+  scale_color_manual(values = c(  "#CCCCCC" , "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#CCCCCC", "#009999", "#666666", "#000000"))+
+  geom_segment(aes(x=lag, xend=lag, y=0.0, yend=corr_values))+
+  geom_point(size = 5, aes(lag, y = corr_values, color = season), alpha = 0.7)+
+  labs(title = "Juvenile Blue Rockfish Lag Correlation -MOCI", y = "correlation",
+       caption = "")+
+  scale_x_continuous(limits=c(-3.5,0.5),breaks=seq(-3,0,1))+
+  scale_y_continuous(limits = c(0.0, 0.95), breaks = seq(0.0, 0.9, 0.2), 
+                     labels = c(0.0, 0.2, 0.4, 0.6, 0.8) )+
+  theme_bw()+
+  facet_grid(site ~ area)+
+    theme(panel.grid=element_blank(),
+          plot.caption = element_text(size = 8))
+
+
+
+
+#############adult############
+adult_sig_lag <- adult_p_values2 %>%
+  filter(pval < 0.05) %>%
+  ggplot() +
+  scale_color_manual(values = c(  "#CCCCCC" , "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#CCCCCC", "#009999", "#666666", "#000000"))+
+  geom_segment(aes(x=lag, xend=lag, y=0.0, yend=corr_values))+
+  geom_point(size = 5, aes(lag, y = corr_values, color = season), alpha = 0.7)+
+  labs(title = "Adult Blue Rockfish Lag Correlation -MOCI", y = "correlation",
+       caption = "")+
+  scale_x_continuous(limits=c(-4.5,0.5),breaks=seq(-4,0,1))+
+  scale_y_continuous(limits = c(0.0, 0.95), breaks = seq(0.0, 0.9, 0.2), 
+                     labels = c(0.0, 0.2, 0.4, 0.6, 0.8) )+
+  theme_bw()+
+  facet_grid(site ~ area)+
+    theme(panel.grid=element_blank(),
+          plot.caption = element_text(size = 8))
+
+
+
+#############adult2015############
+adult_sig_lag_15 <- adult_15_p_values %>%
+  filter(pval < 0.05) %>%
+  ggplot() +
+  scale_color_manual(values = c(  "#CCCCCC" , "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#CCCCCC", "#009999", "#666666", "#000000"))+
+  geom_segment(aes(x=lag, xend=lag, y=0.0, yend=corr_values))+
+  geom_point(size = 5, aes(lag, y = corr_values, color = season), alpha = 0.7)+
+  labs(title = "Adult Blue Rockfish Lag Correlation -MOCI", y = "correlation",
+       caption = "")+
+  scale_x_continuous(limits=c(-4.5,0.5),breaks=seq(-4,0,1))+
+  scale_y_continuous(limits = c(0.0, 0.95), breaks = seq(0.0, 0.9, 0.2), 
+                     labels = c(0.0, 0.2, 0.4, 0.6, 0.8) )+
+  theme_bw()+
+  facet_grid(site ~ area)+
+    theme(panel.grid=element_blank(),
+          plot.caption = element_text(size = 8))
+
+
+
+#############full############
+full_sig_lag <- full_p_values2 %>%
+  filter(pval < 0.05) %>%
+  ggplot() +
+  scale_color_manual(values = c(  "#CCCCCC" , "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#CCCCCC", "#009999", "#666666", "#000000"))+
+  geom_segment(aes(x=lag, xend=lag, y=0.0, yend=corr_values))+
+  geom_point(size = 5, aes(lag, y = corr_values, color = season), alpha = 0.7)+
+  labs(title = "Blue Rockfish Lag Correlation -MOCI", y = "correlation",
+       caption = "")+
+  scale_x_continuous(limits=c(-3.5,0.5),breaks=seq(-3,0,1))+
+  scale_y_continuous(limits = c(0.0, 0.95), breaks = seq(0.0, 0.9, 0.2), 
+                     labels = c(0.0, 0.2, 0.4, 0.6, 0.8) )+
+  theme_bw()+
+  facet_grid(site ~ area)+
+    theme(panel.grid=element_blank(),
+          plot.caption = element_text(size = 8))
+
+
+juv_sig_lag
+
+full_sig_lag
+adult_sig_lag
+adult_sig_lag_15
+
+```
+
+
+With only the single top correlation
+
+```{r}
+
+#############juv############
+juv_top_lag <-  ggplot(data = top_juv) +
+  scale_color_manual(values = c("#666666"))+
+  scale_fill_manual(values = c( "#666666"))+
+  #geom_segment(aes(x=lag, xend=lag, y=0.0, yend=corr_values))+
+  geom_point(size = 5, aes(lag, y = corr_values, color = season), alpha = 0.7)+
+  labs(title = "Juvenile Blue Rockfish Lag Correlation -MOCI", y = "correlation",
+       caption = "")+
+  scale_x_continuous(limits=c(-3.5,0.5),breaks=seq(-3,0,1))+
+  scale_y_continuous(limits = c(0.0, 0.95), breaks = seq(0.0, 0.9, 0.2), 
+                     labels = c(0.0, 0.2, 0.4, 0.6, 0.8) )+
+  theme_bw()+
+  facet_grid(site ~ area)+
+    theme(panel.grid=element_blank(),
+          plot.caption = element_text(size = 8))
+
+
+
+
+
+#############adult2015############
+adult_top_lag_15 <- ggplot(data = top_adult) +
+  scale_color_manual(values = c("#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#009999", "#666666", "#000000"))+
+  #geom_segment(aes(x=lag, xend=lag, y=0.0, yend=corr_values))+
+  geom_point(size = 5, aes(lag, y = corr_values, color = season), alpha = 0.7)+
+  labs(title = "Adult Blue Rockfish Lag Correlation -MOCI", y = "correlation",
+       caption = "")+
+  scale_x_continuous(limits=c(-4.5,0.5),breaks=seq(-4,0,1))+
+  scale_y_continuous(limits = c(0.0, 0.95), breaks = seq(0.0, 0.9, 0.2), 
+                     labels = c(0.0, 0.2, 0.4, 0.6, 0.8) )+
+  theme_bw()+
+  facet_grid(site ~ area)+
+    theme(panel.grid=element_blank(),
+          plot.caption = element_text(size = 8))
+
+
+
+#############full############
+full_top_lag <- ggplot(data = top_full) +
+  scale_color_manual(values = c( "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c(  "#009999", "#666666", "#000000"))+
+  #geom_segment(aes(x=lag, xend=lag, y=0.0, yend=corr_values))+
+  geom_point(size = 5, aes(lag, y = corr_values, color = season), alpha = 0.7)+
+  labs(title = "Blue Rockfish Lag Correlation -MOCI", y = "correlation",
+       caption = "")+
+  scale_x_continuous(limits=c(-3.5,0.5),breaks=seq(-3,0,1))+
+  scale_y_continuous(limits = c(0.0, 0.95), breaks = seq(0.0, 0.9, 0.2), 
+                     labels = c(0.0, 0.2, 0.4, 0.6, 0.8) )+
+  theme_bw()+
+  facet_grid(site ~ area)+
+    theme(panel.grid=element_blank(),
+          plot.caption = element_text(size = 8))
+
+juv_top_lag
+adult_top_lag_15
+full_top_lag
+
+```
+
+
+```{r}
+
+top_juv_meeting <- top_juv %>%
+  mutate(Season = case_when(
+    season == "JFM" ~ "Winter",
+    season == "AMJ" ~ "Spring",
+    season == "JAS" ~ "Summer",
+    season == "OND" ~ "Fall"
+  ), Lag = case_when(
+    lag == "-2" ~ "2",
+    lag == "-1" ~ "1"
+  ))
+
+top_juv_meeting$area <- factor(top_juv_meeting$area, levels = c("AN", "PL", "BL", "PB"))
+top_juv_meeting$Season <- factor(top_juv_meeting$Season, 
+                                 levels = c("Winter", "Spring", "Summer", "Fall"))
+#top_juv_meeting$Lag <- factor(top_juv_meeting$Lag, levels = c(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10))
+
+
+top_juv_plot <- top_juv_meeting %>%
+  ggplot()+
+  geom_point(size = 4, aes(x = area, y = corr_values, color = Season, 
+                           fill = Season, shape = Lag))+
+  scale_color_manual(values = c("#666666"))+
+  scale_fill_manual(values = c( "#666666"))+
+  scale_shape_manual(values = c(18, 19))+
+  labs(title = "Juvenile Blue Rockfish Top Correlation CPUE-MOCI", 
+       y = "Correlation\n", x = "\nArea (N to S)", caption = "")+
+  scale_y_continuous(limits = c(0.0, 1.0), 
+                     breaks = c(0.0, 0.2, 0.4, 0.6, 0.8, 1.0))+
+  facet_wrap(.~site)+
+  theme_bw()+
+    theme(panel.grid = element_blank(),
+          plot.title = element_text(hjust = 0.5),
+          plot.caption = element_text(size = 8))
+
+
+
+top_adult_meeting <- top_adult %>%
+  mutate(Season = case_when(
+    season == "JFM" ~ "Winter",
+    season == "AMJ" ~ "Spring",
+    season == "JAS" ~ "Summer",
+    season == "OND" ~ "Fall"
+  ), Lag = case_when(
+    lag == "0" ~ "0",
+    lag == "-1" ~ "1",
+    lag == "-2" ~ "2",
+    lag == "-3" ~ "3",
+    lag == "-4" ~ "4"
+  )) 
+
+top_adult_meeting$area <- factor(top_adult_meeting$area, levels = c("AN", "PL", "BL", "PB"))
+top_adult_meeting$Season <- factor(top_adult_meeting$Season, 
+                                 levels = c("Winter", "Spring", "Summer", "Fall"))
+#top_adult_meeting$Lag <- factor(top_adult_meeting$Lag, levels = c(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10))
+
+
+top_adult_plot <- top_adult_meeting %>%
+  #mutate(lag = as.factor(lag))%>%
+  ggplot()+
+  geom_point(size = 4, aes(x = area, y = corr_values, 
+                           color = Season, fill = Season, shape = Lag))+
+  scale_color_manual(values = c("#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c("#009999", "#666666", "#000000"))+
+  scale_shape_manual(values = c(17, 16, 15, 18))+
+  labs(title = "Adult Blue Rockfish Top Correlation CPUE-MOCI", y = "Correlation\n",
+       x = "\nArea (N to S)", caption = "")+
+  scale_y_continuous(limits = c(0.0, 1.0), 
+                     breaks = c(0.0, 0.2, 0.4, 0.6, 0.8, 1.0))+  
+  facet_wrap(.~site)+
+  theme_bw()+
+    theme(panel.grid=element_blank(),
+          plot.title = element_text(hjust = 0.5),
+          plot.caption = element_text(size = 8))
+
+str(top_adult)
+
+## 2021-02-16 Notes
+### try shape as season...or color as season to be consistent with previous graph X
+## scale_y_manual from 0 to 1 X
+## areas north to south X
+## introduce more complicated plot and then simplified X
+## leave off full data, juv & adults only X
+
+#ggsave("top_juv_plot_meeting.png", plot = top_juv_plot, 
+#       path = "C:/Users/erinj/Documents/Thesis/Figures/Lag", dpi = 1000, width = 6,
+#       height = 4)
+
+```
+
+
+2021-2-9 Items: 
+1. p-value seems to be correct based off of UCI and LCI calculations X
+2. how do I evaluate autocorrelation and is it important
+3. Blancas, missing 2015 -ccf function not 'smart' enough to know that. How do I tell it? There is the `na.action` argument in ccf, but its unclear what to do. Don't actually have rows of NA, but I can create them
+
+2021-2-9 Notes
+(1)potentially put this in instead of '13' - not always going to be 13, adjust for which lag you are testing for. Cutoffs slightly different
+Use this code instead of 13. # cross_corr$n.used - abs(cross_corr$lag)
+controlling for multiple comparisons - future investigation
+-only interested in highest correlation?
+-set significance level. doesnt have to be 0.05, perhaps lower
+
+(2)autocorr: 
+trying to capture the unexplained variation that oceanographt may not explain. Just not in the scope of the lag analysis. -does knowing something about the catch in one season add to predicting catch in the next season?
+
+(3) Ways to deal with 2015 BL
+Put NAs into the df.
+na.action tells function how to treat NA. Do I want it to ignore NA after inputting it for 2015. ?na.pass 
+
+Q for Melissa M. Time series missing year, do you drop or infill data?
+
+means? splines? Trend the same for CPOP?
+
+na.exclude - CI widens slightly, less lags in the denominator
+
+
+
+```{r}
+
+bl_w_na <- vis_adult_15 %>%
+  filter(area == "BL")
+bl_wo_na <- vis_adult %>%
+  filter(area == "BL")
+
+```
+
+
+one correlation by hand
+
+Pearson's correlation formula:
+
+$r = \frac{n(\Sigma{xy}) - (\Sigma{x})(\Sigma{y})}{\sqrt{(n\Sigma{x^2}-(\Sigma{x})^2)(n\Sigma{y^2}-(\Sigma{y})^2)}}$
+
+```{r}
+
+blancas_mpa_jas <- adult_moci_15 %>%
+  filter(area == "BL", site == "MPA", season == "JAS")%>%
+  mutate(xy = cpue_site*central_ca,
+         x_sq = cpue_site^2,
+         y_sq = central_ca^2,
+         sum_x = sum(cpue_site, na.rm = T),
+         sum_y = sum(central_ca),
+         sum_xy = sum(xy, na.rm = T),
+         sum_x_sq = sum(x_sq, na.rm = T),
+         sum_y_sq = sum(y_sq))
+
+b_m_j_lags <- adult_moci_15 %>%
+  filter(area == "BL", site == "MPA", season == "JAS")%>%
+  select(area, site, year, season, central_ca, cpue_site)%>%
+  mutate(cpue_site = replace_na(cpue_site, 0)) %>%
+  mutate(lag1 = lag(cpue_site),
+         lag2 = lag(lag1),
+         lag3 = lag(lag2),
+         lag4 = lag(lag3),
+         lag5 = lag(lag4),
+         lag1 = replace_na(lag1, 0),
+         lag2 = replace_na(lag2, 0),
+         lag3 = replace_na(lag3, 0),
+         lag4 = replace_na(lag4, 0),
+         lag5 = replace_na(lag5, 0))
+
+cor_1lag <- b_m_j_lags %>%
+  filter(year %in% 2009:2019)
+cor_2lag <- b_m_j_lags %>%
+  filter(year %in% 2010:2019)
+cor_3lag <- b_m_j_lags %>%
+  filter(year %in% 2011:2019)
+cor_4lag <- b_m_j_lags %>%
+  filter(year %in% 2012:2019)
+cor_5lag <- b_m_j_lags %>%
+  filter(year %in% 2013:2019)
+
+
+cor(b_m_j_lags$central_ca, b_m_j_lags$cpue_site, method = "pearson")
+
+cor(b_m_j_lags$central_ca, b_m_j_lags$lag1, method = "pearson")
+cor(cor_1lag$central_ca, cor_1lag$lag1, method = "pearson")
+
+cor(b_m_j_lags$central_ca, b_m_j_lags$lag2, method = "pearson")
+cor(cor_2lag$central_ca, cor_2lag$lag2, method = "pearson")
+
+cor(b_m_j_lags$central_ca, b_m_j_lags$lag3, method = "pearson")
+cor(cor_3lag$central_ca, cor_3lag$lag3, method = "pearson")
+
+cor(b_m_j_lags$central_ca, b_m_j_lags$lag4, method = "pearson")
+cor(cor_4lag$central_ca, cor_4lag$lag4, method = "pearson")
+
+cor(b_m_j_lags$central_ca, b_m_j_lags$lag5, method = "pearson")
+cor(cor_5lag$central_ca, cor_5lag$lag5, method = "pearson")
+
+
+
+```
+
+```{r}
+
+((12*70.21918)-(58.52111*11.73839))/sqrt((12*767.0936-58.52111^2)*(12*253.814-11.73839^2))
+
+```
+
+
+```{r}
+
+ggplot(data = blancas_mpa_jas) +
+  geom_point(aes(x = cpue_site, y = central_ca))+
+  theme_classic()
+
+
+blancas_mpa_jas2 <- blancas_mpa_jas %>%
+  drop_na()
+
+blancas_mpa_jas3 <- blancas_mpa_jas %>%
+  mutate(moci_lag1 = lag(central_ca),
+         moci_lag2 = lag(moci_lag1),
+         moci_lag3 = lag(moci_lag2),
+         moci_lag4 = lag(moci_lag3),
+         moci_lag5 = lag(moci_lag4))%>%
+  select(area, site, year, season, central_ca, cpue_site, moci_lag1, moci_lag2, moci_lag3, moci_lag4, moci_lag5) 
+
+blancas_atmp <- blancas_mpa_jas %>%
+  select(area, site, year, season, central_ca, cpue_site) %>%
+  drop_na()%>%
+  mutate(moci_lag1 = lag(central_ca),
+         moci_lag2 = lag(moci_lag1),
+         moci_lag3 = lag(moci_lag2),
+         moci_lag4 = lag(moci_lag3),
+         moci_lag5 = lag(moci_lag4))
+
+cor(blancas_atmp$central_ca, blancas_atmp$cpue_site)
+cor(blancas_mpa_jas3$central_ca, blancas_mpa_jas3$cpue_site, use = "pairwise.complete.obs")
+
+cor(blancas_atmp$moci_lag1, blancas_atmp$cpue_site, use = "pairwise.complete.obs")
+
+cor(blancas_atmp$moci_lag2, blancas_atmp$cpue_site, use = "pairwise.complete.obs")
+
+
+cor(blancas_mpa_jas3$moci_lag1, blancas_mpa_jas3$cpue_site, use = "pairwise.complete.obs")
+cor(blancas_mpa_jas3$moci_lag2, blancas_mpa_jas3$cpue_site, use = "pairwise.complete.obs")
+cor(blancas_mpa_jas3$moci_lag3, blancas_mpa_jas3$cpue_site, use = "pairwise.complete.obs")
+cor(blancas_mpa_jas3$moci_lag4, blancas_mpa_jas3$cpue_site, use = "pairwise.complete.obs")
+cor(blancas_mpa_jas3$moci_lag5, blancas_mpa_jas3$cpue_site, use = "pairwise.complete.obs")
+
+
+buchon_test <- adult_moci_15 %>%
+  filter(area == "PB", site == "MPA", season == "JAS")%>%
+  mutate(moci_lag1 = lag(central_ca),
+         moci_lag2 = lag(moci_lag1))
+
+cor(buchon_test$cpue_site, buchon_test$central_ca)
+
+cor(buchon_test$moci_lag1, buchon_test$cpue_site, use = "na.or.complete")
+cor(buchon_test$moci_lag2, buchon_test$cpue_site, use = "pairwise.complete.obs",
+    method = "pearson")
+
+blancas_mpa_jas4 <- blancas_mpa_jas %>%
+  mutate(lag1 = lag(cpue_site)) %>%
+  drop_na()
+
+cor(blancas_mpa_jas2$cpue_site, blancas_mpa_jas2$central_ca)
+cor(blancas_mpa_jas3$lag1, blancas_mpa_jas3$cpue_site)
+
+cor(blancas_mpa_jas4$lag1, blancas_mpa_jas4$central_ca)
+
+
+```
+
+
+```{r visuals ccfrp presentation}
+
+vis_juv_meeting <- juv_corr %>%
+  filter(lag %in% c(-10:0))%>%
+  mutate(Season = case_when(
+    season == "JFM" ~ "Winter",
+    season == "AMJ" ~ "Spring",
+    season == "JAS" ~ "Summer",
+    season == "OND" ~ "Fall"
+  ))%>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_juv_meeting$Season <- factor(vis_juv_meeting$Season, levels = c("Winter", "Spring", "Summer", "Fall"))
+vis_juv_meeting$area <- factor(vis_juv_meeting$area, levels = c("AN", "PL", "BL", "PB"))
+
+
+juv_moci_plot_meeting <- ggplot() +
+  scale_color_manual(values = c(  "#999999" , "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_juv_meeting, aes(lag, y = corr_values,  color = Season,
+                                               fill = Season))+
+  labs(title = "Juvenile Blue Rockfish Lag Correlation -MOCI", y = "correlation",
+       caption = "")+
+  scale_x_continuous(limits=c(-8.5,0.5),breaks=seq(-8,0,1), labels = c("-8" = "8", "-7" = "7", "-6" = "6", "-5" = "5", "-4" = "4", "-3" = "3", "-2" = "2", "-1" = "1", "0" = "0"))+
+  scale_y_continuous(limits = c(-0.6, 0.95), breaks = seq(-0.6, 0.9, 0.2), 
+                     labels = c(-0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8) )+
+  theme_bw()+
+  facet_grid(site ~ area)+
+    theme(panel.grid=element_blank(),
+          plot.title = element_text(hjust = 0.5),
+          plot.caption = element_text(size = 8))
+
+vis_an_meeting <- vis_juv_meeting %>%
+  filter(area == "AN", site == "MPA")
+vis_an_meeting$Season <- factor(vis_an_meeting$Season, levels = c("Winter", "Spring", "Summer", "Fall"))
+
+juv_an_meeting <- ggplot() +
+  scale_color_manual(values = c(  "#999999" , "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_an_meeting, aes(lag, y = corr_values,  color = Season,
+                                               fill = Season))+
+  labs(title = "Juvenile Blue Rockfish Lag Correlation -MOCI", y = "correlation",
+       caption = "")+
+  scale_x_continuous(limits=c(-8.5,0.5),breaks=seq(-8,0,1), labels = c("-8" = "8", "-7" = "7", "-6" = "6", "-5" = "5", "-4" = "4", "-3" = "3", "-2" = "2", "-1" = "1", "0" = "0"))+
+  scale_y_continuous(limits = c(-0.6, 0.95), breaks = seq(-0.6, 0.9, 0.2), 
+                     labels = c(-0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8) )+
+  theme_bw()+
+  facet_grid(site ~ area)+
+    theme(panel.grid=element_blank(),
+          plot.title = element_text(hjust = 0.5),
+          plot.caption = element_text(size = 8))
+
+
+
+ggsave("juv_an_plot_meeting.png", plot = juv_an_meeting, 
+       path = "C:/Users/erinj/Documents/Thesis/Figures/Lag", dpi = 1000, width = 6,
+       height = 4)
+
+
+
+```
+
+
+```{r}
+
+ccf <- function (x, y, lag.max = NULL, type = c("correlation", 
+    "covariance"), plot = TRUE, na.action = na.fail, ...) 
+{
+    type <- match.arg(type)
+    if (is.matrix(x) || is.matrix(y)) 
+        stop("univariate time series only")
+    X <- ts.intersect(as.ts(x), as.ts(y))
+    colnames(X) <- c(deparse(substitute(x))[1L], deparse(substitute(y))[1L])
+    acf.out <- acf(X, lag.max = lag.max, plot = FALSE, type = type, 
+        na.action = na.action)
+    lag <- c(rev(acf.out$lag[-1, 2, 1]), acf.out$lag[, 1, 2])
+    y <- c(rev(acf.out$acf[-1, 2, 1]), acf.out$acf[, 1, 2])
+    acf.out$acf <- array(y, dim = c(length(y), 1L, 1L))
+    acf.out$lag <- array(lag, dim = c(length(y), 1L, 1L))
+    acf.out$snames <- paste(acf.out$snames, collapse = " & ")
+    if (plot) {
+        plot(acf.out, ...)
+        return(invisible(acf.out))
+    }
+    else return(acf.out)
+}
+
+
+acf <- function (x, lag.max = NULL, type = c("correlation", "covariance", 
+    "partial"), plot = TRUE, na.action = na.fail, demean = TRUE, 
+    ...) 
+{
+    type <- match.arg(type)
+    if (type == "partial") {
+        m <- match.call()
+        m[[1L]] <- quote(stats::pacf)
+        m$type <- NULL
+        return(eval(m, parent.frame()))
+    }
+    series <- deparse(substitute(x))
+    x <- na.action(as.ts(x))
+    x.freq <- frequency(x)
+    x <- as.matrix(x)
+    if (!is.numeric(x)) 
+        stop("'x' must be numeric")
+    sampleT <- as.integer(nrow(x))
+    nser <- as.integer(ncol(x))
+    if (is.na(sampleT) || is.na(nser)) 
+        stop("'sampleT' and 'nser' must be integer")
+    if (is.null(lag.max)) 
+        lag.max <- floor(10 * (log10(sampleT) - log10(nser)))
+    lag.max <- as.integer(min(lag.max, sampleT - 1L))
+    if (is.na(lag.max) || lag.max < 0) 
+        stop("'lag.max' must be at least 0")
+    if (demean) 
+        x <- sweep(x, 2, colMeans(x, na.rm = TRUE), check.margin = FALSE)
+    lag <- matrix(1, nser, nser)
+    lag[lower.tri(lag)] <- -1
+    acf <- .Call(C_acf, x, lag.max, type == "correlation")
+    lag <- outer(0:lag.max, lag/x.freq)
+    acf.out <- structure(list(acf = acf, type = type, n.used = sampleT, 
+        lag = lag, series = series, snames = colnames(x)), class = "acf")
+    if (plot) {
+        plot.acf(acf.out, ...)
+        invisible(acf.out)
+    }
+    else acf.out
+}
+
+```
+
+
+**Reference**
+
+Schmidt, K. T. *Life History Changes in Female Blue Rockfish, Sebastes Mystinus, Before and After Overfishing, in Central California*. Masters Thesis
+California State University, Monterey Bay (2014)

@@ -1,0 +1,442 @@
+---
+title: "Adding Zeros CPUE"
+author: "Erin Johnston"
+date: "10/25/2020"
+output: html_document
+---
+
+This is code for cleaning CCFRP data and adding zeros for CPUE analysis and visualization. Each fish species analyzed is not caught on every single drift, therefore it is necessary to add zeros for the drifts in which we don't catch that species.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      warning = F,
+                      message = F)
+```
+
+```{r libraries} 
+
+library(tidyverse)
+library(here) ## to read in data
+library(plotrix) ## for standard error
+library(patchwork) ## arrange multiple plots
+
+```
+
+# Cal Poly
+
+This is code originally for just Cal Poly. See end of Rmd for similar code to clean and add zeros to Cal Poly and Moss Landing data
+
+```{r data}
+
+CP_07_19 <- read_csv(here("Data", "CP20072019.csv"))
+
+CP_07_19 %>%
+  head ()
+
+```
+
+These data are from Cal Poly from 2007 to 2019. In this dataset, I queries access for the name of the school that collected the data, the trip identification number, the trip identification, area, protection status, species, length, gear type, year, and amount of time spent fishing.
+
+
+## NA's in the data
+
+```{r data clean step 1}
+
+CP_07_19 <- CP_07_19 %>%
+  select(-gear)
+
+CP_07_19 %>%
+  select(everything())%>%
+  summarise_all(funs(sum(is.na(.))))
+
+
+```
+
+Yes, there are 74 fishes that do not have a length, there are 55 fishes that the angler hours were not recorded - it turns out that this all comes from one drift.
+
+## Adding Zeros
+
+This code will count the number of each species caught by drift, add NA's to drifts in which there are none of that species caught, then add 0's where the NA's appear
+
+```{r adding zeros}
+
+CP_count_zeros <- CP_07_19 %>%
+  
+  ## NAs:for 74 fish we didn't take length, for one drift there were no angler hours
+  drop_na() %>%
+  
+  ## number of fish caught per drift by species
+  count(drift, species)%>%
+  
+  ## from dply, renames the column 'n' into 'numbercaught
+  rename(numbercaught = n)%>%
+  
+  ## this adds in NAs for the drifts where no fish were caught for a given species
+  pivot_wider(names_from = drift,
+              values_from = numbercaught) %>%
+  
+  ## back into long form
+  pivot_longer(-species,
+               names_to = "drift",
+               values_to = "numbercaught") %>%
+  
+  #replacing NA with 0 where no fish were caught
+  mutate(numbercaught=case_when(
+    is.na(numbercaught)~0,
+    TRUE~ as.numeric(numbercaught)
+  ))
+
+```
+
+## Forming Dataset
+
+This code will join drift metadata to the long-form dataset that includes zeros
+
+```{r joining datasets}
+
+drift_metadata <- CP_07_19 %>% 
+  ## from dplyr: selecting the metadata, changing site to lowercase
+  select(area, site=Site, year, anglerhours, drift) %>%
+  ## gives us the metadata for each unique drift
+  distinct()
+
+
+## join the metadata and the zero's data
+numcaught_withdrift <- left_join(CP_count_zeros, drift_metadata, by = "drift")
+
+```
+
+
+```{r checking data, include = FALSE}
+
+#quick check that there's the right number of rows in the cleaned dataset
+CP_count_zeros %>% select(drift) %>% n_distinct() ## 2156 unique drifts
+CP_count_zeros %>% select(species) %>% n_distinct() ## 52 unique species
+2156*52 ## There should be 112112 rows in dataset
+nrow(numcaught_withdrift)==112112 #true if row num is correct
+
+```
+
+## Catch Per Unit Effort (CPUE)
+
+To get CPUE, divide number of fishes of each species caught on drift by number of angler hours on that drift
+
+```{r cpue}
+
+cpue_cp_zeros <- numcaught_withdrift %>%
+  mutate(cpue = numbercaught/anglerhours)
+
+## write out the csv
+#write_csv(cpue_cp_zeros, here("Data/output", "2020-10-25_CPUE_calpoly.csv"))
+
+```
+
+
+# Cal Poly, SLO and Moss Landing Marine Laboratories
+## Oct 2020: Will now be working with both CP and MLML data
+
+```{r data cp mlml, message=F, warning=F}
+
+CP_MLML_to_2019 <- read_csv(here("Data", "CP_MLML_to_2019.csv"))
+#cp_ml_raw_07_19 <- read_csv(here("Data", "CP_MLML_to_2019.csv"))
+
+
+CP_MLML_to_2019 %>%
+  select(everything())%>%
+  summarise_all(funs(sum(is.na(.))))
+
+```
+
+There are 74 fishes from Cal Poly and 86 fishes from MLML missing length. There is one drift (PBM0911180603) that is missing information about angler hours which is where the 55 obs of NA come from in that column. I checked out the paper datasheets for the 74 CP fishes missing lengths, but did not have this opportunity for the ML fish. I drop the one drift that is missing angler hours, but I will keep the 160 fish that have NA in the length because CPUE only accounts for counts of each species, so not having a length will not affect the CPUE value. 
+
+```{r data drop na, message=F, warning=F}
+
+CP_MLML_to_2019 <- CP_MLML_to_2019 %>%
+  drop_na(anglerhours)
+
+#blueblueblue <- CP_MLML_to_2019 %>%
+#  filter(species == "BLU")
+
+```
+
+Similar to the code for Cal Poly data, this code will create a dataframe that contains counts of the number of each species caught by drift, adds NA's for species that were not caught on a drift, then replaces the NA values with 0. A second dataframe is created that contains all the metadata for each drift (e.g. `trip`, `area`, `site`, `cell`, `date`, etc.). Finally, the two dataframes are joined into one.
+
+```{r add zeros and cpue}
+
+## number caught of each species for each drift
+CP_ML_count_zeros <- CP_MLML_to_2019 %>%
+  count(drift, species)%>%
+  rename(numbercaught = n)%>%
+  pivot_wider(names_from = drift,
+              values_from = numbercaught)%>%
+  pivot_longer(-species,
+               names_to = "drift",
+               values_to = "numbercaught") %>%
+   mutate(numbercaught = case_when(
+    is.na(numbercaught)~0,
+    TRUE~ as.numeric(numbercaught)))
+
+## metadata
+## drift number is what will make this distinct
+metadata_CP_ML <- CP_MLML_to_2019 %>% 
+  select(group, trip, area, site, month, day, year, gridcell, anglerhours, drift)%>%
+  distinct()
+
+## joined df
+cpue_cp_ml <- left_join(CP_ML_count_zeros, metadata_CP_ML, by = "drift") %>%
+  mutate(drift_cpue = numbercaught/anglerhours)
+
+## Ben 2020-11-18
+## Need to add another step for cpue by DATE.. before drift
+## date - drift - cell - site - area - year
+
+```
+
+
+MPA/REF code cleaning. There are instances in which `site` was recorded as 'MPA/REF' instead of one or the other. We can tell which site was sampled by splicing out the third letter of the drift ID which will either be 'M' or 'R'
+
+```{r mpa ref data clean}
+
+cpue_cp_ml_clean <- cpue_cp_ml %>%
+  ##change `site` to `site_1`
+  rename(site_1 = site)%>%
+  ## take the 'M' or 'R' out of the drift name, which will make it clear if the MPA or REF was sampled
+  transform(site_2 = substr(drift, 3, 3))%>%
+  ## make new column called 'site'
+  mutate(
+    site = case_when(
+      site_2 == "M" ~ "MPA",
+      site_2 == "R" ~ "REF"
+    )
+  )%>%
+  ## delete the other two site variations
+  select(-site_1, - site_2)
+
+#write_csv(cpue_cp_ml_clean, here("Data/output", "2020-10-25_CPUE_calpoly-mosslanding.csv"))
+
+```
+
+The reason I need to do this next step of several summarizations of cpue is to accoutn for potentially uneven sampling design. Cells are randomly selected with replacement throughout the season, which means that in a given year it is possible that CCFRP samples the same cell multiple times. Summarizing CPUE straight from the drift level to the year level does not account for this uneven sampling.
+
+The `cpue_by_cell` and `cpue_by_site` dataframes below will guarantee that any uneven sampling is accounted for. Without it cpue may be artifically high for years in which one cell got sampled multiple times.
+
+#### CPUE summarized at the cell level
+
+The data in df `cpue_cp_ml_clean` are already summarized at the drift level. This df has two new columns: `cell_cpue` and `cell_se`, which are the mean cpue and standard error that occurs within each unique cell in each year for each species (regardless of drift in that year).
+
+```{r summarized by cell}
+
+cpue_by_cell <- cpue_cp_ml_clean %>%
+  group_by(species, gridcell, site, area, year) %>%
+  summarise(cell_cpue = mean(drift_cpue),
+            cell_var = var(drift_cpue))
+
+cpue_by_cell %>% filter(species == "BLU") %>% head(2)
+
+```
+
+
+#### CPUE summarized at the site level
+
+The new df `cpue_by_site` has two new columns which are the standard error and mean of the cpue that occurs within each site (MPA or REF) in each area, in each year for each species in the dataset (regardless of cell + drift in that year).
+
+```{r summarized by site}
+
+## Ben 2020-11-11 calc of se probably wrong.
+##track variance through levels, take mean var, sqrt = sd
+## cpue calc prob right
+
+
+cpue_by_site <- cpue_by_cell %>%
+  group_by(species, site, area, year) %>%
+  summarise(site_cpue = mean(cell_cpue),
+            site_mean_var = mean(cell_var))
+
+cpue_by_site %>% filter(species == "BLU") %>% head(2)
+
+```
+
+
+#### CPUE summarized at the area level
+
+The new df `cpue_by_area` has two new columns which are the standard error and mean of the cpue that occurs within each area in each year for each species in the dataset (regardless of site + cell + drift in that year).
+
+```{r summarized by area}
+
+cpue_by_area <- cpue_by_site %>%
+  group_by(species, area, year) %>%
+  summarise(area_cpue = mean(site_cpue),
+            area_se = std.error(site_cpue))
+
+cpue_by_area %>% filter(species == "BLU") %>% head(2)
+
+```
+
+
+#### CPUE summarized at the year level
+
+The new df `cpue_by_year` has two new columns which are the standard error and mean of the cpue that occurs within each year for each species (regardless of area + site + cell + drift in that year).
+
+```{r summarized by year}
+
+cpue_by_year <- cpue_by_area %>%
+  group_by(species, year) %>%
+  summarise(year_cpue = mean(area_cpue),
+            year_se = std.error(area_cpue))
+
+cpue_by_year %>% filter(species == "BLU") %>% head(2)
+
+```
+
+I took this same summarization all the way to the year level, but I think I am going to use the dataframe `cpue_by_site` for visualization because it retained area and site, so that I can break up graphs by those levels. I don't expect the graphs will look too dissimilar to what I had before. I will graph the same plots with the original way of summarizing one cpue value per year from the drift data and then by summarizing to the cell level first.
+
+## Example visualization
+
+### The Original Graph
+
+```{r}
+
+orig_example <- cpue_cp_ml_clean %>%
+  filter(species == "BLU", area == "PB")%>%
+  group_by(year, site)%>%
+  summarise(mean = mean(drift_cpue),
+                    sd = sd (drift_cpue),
+                    n = n(),
+                    se = std.error (drift_cpue))%>%
+  ggplot(aes(x = year, y = mean, color = site, group = site))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), width = 0.2,
+                position = position_dodge(0))+
+  scale_color_manual(values = c("#CC0000", "#0066CC"))+
+  labs(y = "CPUE (number of fishes/angler hours", x = "",
+       title = "Blue Rockfish CPUE Point Buchon", 
+       subtitle = "averaged by drift" )+
+  scale_x_continuous(limits=c(2007,2019),breaks=seq(2007,2019,1))+
+  theme_bw()+
+  theme(panel.grid=element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 12),
+        plot.subtitle = element_text(hjust = 0.5, size = 10))
+
+plot(orig_example)
+
+#ggsave("orig.png", plot = orig_example, path = "C:/Users/erinj/Documents/Thesis/Figures", dpi = 1000, width = 6, height = 4)
+#ggsave("new.png", plot = cell_sum_example,  path = "C:/Users/erinj/Documents/Thesis/Figures", dpi = 1000, width = 6, height = 4)
+
+```
+
+
+### The Cell Summarized Graph
+
+```{r}
+
+cell_sum_example <- cpue_by_site %>%
+  filter(species == "BLU", area == "PB")%>%
+  ggplot(aes(x = year, y = site_cpue, color = site, group = site))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin = site_cpue - site_se, ymax = site_cpue + site_se), width = 0.2,
+                position = position_dodge(0))+
+  scale_color_manual(values = c("#CC0000", "#0066CC"))+
+  labs(y = "CPUE (number of fishes/angler hours", x = "",
+       title = "Blue Rockfish CPUE Point Buchon", 
+       subtitle = "averaged by cell" )+
+  scale_x_continuous(limits=c(2007,2019),breaks=seq(2007,2019,1))+
+  theme_bw()+
+  theme(panel.grid=element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 12),
+        plot.subtitle = element_text(hjust = 0.5, size = 10))
+
+plot(cell_sum_example)
+
+```
+
+I was right and wrong. The general trends are unaffected, but the graphs do look different. At first glance, it looks like the original yearly mean for the MPA was an overestimate of CPUE and the original yearly mean for REF was an underestimate of CPUE. 
+
+Write out data. Can be found in `Data/output/2020-11-10_CPUE_by_site_cpslo_mlml_for_vis.csv`. Will be used in visualization code. Original code file `11_VIS_cpue-bgovl-calpoly-mosslanding.Rmd`, new code file `13_VIS_cpue-bgovl-cpslo-mlml-update.Rmd`
+
+```{r}
+
+#write_csv(cpue_by_site, here("Data/output", "2020-11-10_CPUE_by_site_cpslo_mlml_for_vis.csv"))
+
+```
+
+
+```{r, include = F}
+## Nevermind, looks bad
+#viz_plot <- orig_example + cell_sum_example
+#ggsave("together.png", plot = viz_plot,  path = "C:/Users/erinj/Documents/Thesis/Figures", dpi = 1000, width = 7, height = 3)
+
+```
+
+
+
+```{r code with Ben, include = F}
+
+###########################################################################
+###########################################################################
+####### Coding with Ben for a "master" dataset. Ignore for this Rmd. ######
+###########################################################################
+###########################################################################
+
+
+#CP_MLML_to_2019$drift_size <- paste(CP_MLML_to_2019$drift, CP_MLML_to_2019$length, sep = "_")
+
+#CP_ML_count_zeros_ben <- CP_MLML_to_2019 %>%
+#  count(drift_size, species)%>%
+#  rename(numbercaught = n)%>%
+#  pivot_wider(names_from = drift_size,
+#              values_from = numbercaught)%>%
+#  pivot_longer(-species,
+#               names_to = "drift_size",
+#               values_to = "numbercaught") %>%
+#   mutate(numbercaught=case_when(
+#    is.na(numbercaught)~0,
+#    TRUE~ as.numeric(numbercaught)
+#  ))
+
+#metadata_CP_ML <- CP_MLML_to_2019 %>% 
+#  select(group, trip, area, site, month, day, year, gridcell, anglerhours, drift, drift_size)%>%
+#  distinct()
+
+#cpue_cp_ml <- left_join(CP_ML_count_zeros_ben, metadata_CP_ML, by = "drift_size") %>%
+#  mutate(cpue = numbercaught/anglerhours) ## ben = take out cpue ##a and b values for bpue
+
+#cpue_cp_ml_len <- cpue_cp_ml %>%
+#  separate(drift_size, into = c("drift", "length"), sep = "_")
+
+#atmp <- cpue_cp_ml_len %>%
+#  group_by(species, drift) %>%
+#  summarise(cpue_sum = sum(cpue))
+
+
+```
+
+```{r data check ben, include = F}
+
+
+#cpue_first <- read_csv(here("Data/output", "2020-10-25_CPUE_calpoly-mosslanding.csv"))%>% select(species, drift, cpue)
+
+#data_check <- left_join(atmp, cpue_first, by = c("drift", "species"))%>% mutate(cpue_diff = (cpue_sum - cpue))%>% arrange(desc(cpue_diff))
+
+#max(abs(data_check$cpue_diff))
+
+
+## ANM0907121404, BLA - what happened between CPUE and cpue_sum
+
+#data_that_sucked <- CP_MLML_to_2019 %>% filter(drift == "PLM0731080604", species == "BLU")      
+
+#data_that_sucked_2 <- cpue_cp_ml_len
+
+#data_that_sucked_OG <- CP_ML_count_zeros %>%
+#  filter(drift == "PLM0731080604", species == "BLU") 
+
+```
+
+
+# Tracking Variance
+
+Formula:
+$s^2 = \frac{\Sigma(x_i - \overline{x})^2}{n-1}$
+
+

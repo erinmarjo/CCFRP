@@ -1,0 +1,90 @@
+---
+title: "Adding Zeros BPUE"
+author: "Erin Johnston"
+date: "10/25/2020"
+output: html_document
+---
+
+This code is for cleaning CCFRP data for biomass per unit effort visualization and analysis. 
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+
+```
+
+## Calculating Biomass for Five Species
+### Blue, Gopher, Olive, Vermilion, Lingcod
+
+```{r library dependencies}
+
+library(tidyverse)
+library(here)
+
+```
+
+```{r data exploration, warning = FALSE}
+
+CP_MLML_to_2019 <- read_csv(here("Data", "CP_MLML_to_2019.csv"))
+
+## BEN: biomass - possibly replace missing length with mean/median length for year/area/site combo?
+## take full dist of lengths of spp/year/region and randomly sample them. (not best option)
+## gen table. aggregat at --median and mean len at year/area/site.  Hunter q if this is the best way to deal with.
+## mutate(case_when... its NA go into table)
+
+CP_MLML_to_2019 <- CP_MLML_to_2019 %>%
+  drop_na()
+
+## the reason for this tidbit of code is that for some reason, moss writes MPA/REF for their 'site' column when they sample the MPA and REF on the same day, even though that particular drift is inside either the MPA or REF.
+cp_mlml_cleaned <- CP_MLML_to_2019 %>%
+  ##change `site` to `site_1`
+  rename(site_1 = site)%>%
+  ## take the 'M' or 'R' out of the drift name, which will make it clear if the MPA or REF was sampled
+  transform(site_2 = substr(drift, 3, 3))%>%
+  ## make new column called 'site'
+  mutate(
+    site = case_when(
+      site_2 == "M" ~ "MPA",
+      site_2 == "R" ~ "REF"
+    )
+  )%>%
+  ## delete the other two site variations
+  select(-site_1, - site_2)
+
+```
+
+Biomass per angler hour for the five species. This is on the drift level. 
+
+```{r bpue calculation}
+## filter for the five species
+bgovl <- cp_mlml_cleaned %>%
+  filter(species %in% c("BLU", "GPR", "OLV", "VER", "LCD"))
+
+## read in this data set that has the length weight relationships
+len_weight <- read_csv(here("Data", "lw_relationship_bgovl.csv"))
+
+
+## join the two datasets by species code
+biomass_cp_mlml <- left_join(bgovl, len_weight, by = "species")%>%
+  ## calculate the weight from the length weight relationship
+  ## weight will be in grams
+  mutate(weight = a * length^b)%>%
+  ## sum weight of each species per drift
+  group_by(drift, area, site, species, year, anglerhours) %>%
+  summarise(sumweight= sum(weight))%>%
+  ## pivot wider gives each species a column and adds NAs where species were not caught on a drift
+  pivot_wider(names_from = species,
+              values_from = sumweight)%>%
+  ## put in 0 value instead of NA
+  mutate_if(is.numeric, replace_na, replace = 0)%>%
+  ## calculate column for BPUE for each species
+  mutate(BLU_bpue = BLU/anglerhours,
+         GPR_bpue = GPR/anglerhours,
+         OLV_bpue = OLV/anglerhours,
+         VER_bpue = VER/anglerhours,
+         LCD_bpue = LCD/anglerhours)
+
+## write csv
+#write_csv(biomass_cp_mlml, here("Data/output", "2020-10-25_BPUE_calpoly-mosslanding.csv"))
+
+```

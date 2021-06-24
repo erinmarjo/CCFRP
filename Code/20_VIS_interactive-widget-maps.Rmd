@@ -1,0 +1,248 @@
+---
+title: "CCFRP Fishing Maps"
+author: "Erin Johnston"
+date: "2/9/2021"
+output: 
+  prettydoc::html_pretty:
+    theme: cayman
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = F, warning = F)
+
+```
+
+[back](https://erinmarjo.github.io/CCFRP/27_thesis_progress_report.html)
+
+```{r packages}
+
+library(leaflet)
+library(tidyverse)
+library(here)
+
+```
+
+Red fishing cells are within the bounds of Marine Protected Areas. Blue fishing cells are in adjacent references sites.
+
+# San Mateo County
+
+### Año Nuevo
+
+```{r ano map setup, echo = F}
+
+an_cells <- read_csv(here("Data", "AN_cellcoords.csv")) %>%
+  dplyr::select(longitude, latitude, name, comment)
+
+an_cell_names <- unique(an_cells$name)
+
+an_mpa_cells <- an_cell_names[12:22]
+an_ref_cells <- an_cell_names[1:11]
+
+an_corner1_mpa <- an_cells %>%
+  filter(comment == 1, name %in% an_mpa_cells)
+
+an_corner2_mpa <- an_cells %>%
+  filter(comment == 4, name %in% an_mpa_cells)
+
+an_corner1_ref <- an_cells %>%
+  filter(comment == 1, name %in% an_ref_cells)
+
+an_corner2_ref <- an_cells %>%
+  filter(comment == 4, name %in% an_ref_cells)
+
+
+```
+
+
+```{r ano map, fig.width= 9, fig.align= "center", echo = F}
+
+leaflet()%>%
+  setView(lng = -122.338427, lat = 37.139187, zoom = 12)%>%
+  addTiles() %>%
+  addRectangles(lng1 = an_corner1_mpa$longitude , lat1 = an_corner1_mpa$latitude, 
+                lng2 = an_corner2_mpa$longitude  , lat2 = an_corner2_mpa$latitude,
+                fillColor = "transparent", label = an_corner2_mpa$name, 
+                color = "#990000")%>%
+  addRectangles(lng1 = an_corner1_ref$longitude , lat1 = an_corner1_ref$latitude, 
+                lng2 = an_corner2_ref$longitude  , lat2 = an_corner2_ref$latitude,
+                fillColor = "transparent", label = an_corner2_ref$name)%>%
+  addMiniMap(position = "bottomleft", width = 200, height = 200) %>%
+  addProviderTiles("Esri.WorldImagery")
+
+```
+
+<div style="margin-bottom:50px;">
+</div>
+
+# Monterey County
+
+### Point Lobos
+
+```{r lobos map setup, echo = F}
+
+pl_cells <- read_csv(here("Data", "PL_cellcoords.csv")) %>%
+  dplyr::select(longitude, latitude, name, comment)
+
+pl_cell_names <- unique(pl_cells$name)
+
+pl_mpa_cells <- pl_cell_names[6:13]
+pl_ref_cells <- pl_cell_names[c(1, 2, 3, 4, 5, 14, 15, 16, 17)]
+
+pl_corner1_mpa <- pl_cells %>%
+  filter(comment == 1, name %in% pl_mpa_cells)
+
+pl_corner2_mpa <- pl_cells %>%
+  filter(comment == 4, name %in% pl_mpa_cells)
+
+pl_corner1_ref <- pl_cells %>%
+  filter(comment == 1, name %in% pl_ref_cells)
+
+pl_corner2_ref <- pl_cells %>%
+  filter(comment == 4, name %in% pl_ref_cells)
+
+
+```
+
+```{r lobos map, fig.width= 9, fig.align= "center", echo = F}
+
+leaflet()%>%
+  setView(lng = -121.926418, lat = 36.522488, zoom = 12)%>%
+  addTiles() %>%
+  addRectangles(lng1 = pl_corner1_mpa$longitude , lat1 = pl_corner1_mpa$latitude, 
+                lng2 = pl_corner2_mpa$longitude  , lat2 = pl_corner2_mpa$latitude,
+                fillColor = "transparent", label = pl_corner2_mpa$name, 
+                color = "#990000")%>%
+  addRectangles(lng1 = pl_corner1_ref$longitude , lat1 = pl_corner1_ref$latitude, 
+                lng2 = pl_corner2_ref$longitude  , lat2 = pl_corner2_ref$latitude,
+                fillColor = "transparent", label = pl_corner2_ref$name)%>%
+  addMiniMap(position = "bottomleft", width = 200, height = 200) %>%
+  addProviderTiles("Esri.WorldImagery")
+
+```
+
+<div style="margin-bottom:50px;">
+</div>
+
+# San Luis Obispo County
+
+### Piedras Blancas
+
+```{r blancas map setup, echo = F}
+
+bl_cells <- read_csv(here("Data", "BL_cellcoords.csv")) %>%
+  dplyr::select(longitude, latitude, name, comment)
+
+bl_cell_names <- unique(bl_cells$name)
+
+bl_mpa_cells <- bl_cell_names[1:31]
+bl_ref_cells <- bl_cell_names[32:57]
+
+bl_corner1_mpa <- bl_cells %>%
+  filter(comment == 1, name %in% bl_mpa_cells)
+
+bl_corner2_mpa <- bl_cells %>%
+  filter(comment == 4, name %in% bl_mpa_cells)
+
+bl_corner1_ref <- bl_cells %>%
+  filter(comment == 1, name %in% bl_ref_cells)
+
+bl_corner2_ref <- bl_cells %>%
+  filter(comment == 4, name %in% bl_ref_cells)
+
+
+  #addMarkers(lng = -121.28544, lat = 35.66501, label = "cha")%>%
+  #addPopups(lat = 35.271530016598085, lng = -120.664385528092, "Fish Queen E-Rin") %>%
+  #addPopups(lat = 35.66501, lng = -121.28544, "Blancas!") %>%
+
+```
+
+
+```{r blancas map, fig.width= 9, fig.align= "center", echo = F}
+
+leaflet()%>%
+  setView(lng = -121.28544, lat = 35.66501, zoom = 12)%>%
+  addTiles() %>%
+  addRectangles(lng1 = bl_corner1_mpa$longitude , lat1 = bl_corner1_mpa$latitude, 
+                lng2 = bl_corner2_mpa$longitude  , lat2 = bl_corner2_mpa$latitude,
+                fillColor = "transparent", label = bl_corner2_mpa$name, 
+                color = "#990000")%>%
+  addRectangles(lng1 = bl_corner1_ref$longitude , lat1 = bl_corner1_ref$latitude, 
+                lng2 = bl_corner2_ref$longitude  , lat2 = bl_corner2_ref$latitude,
+                fillColor = "transparent", label = bl_corner2_ref$name)%>%
+  addMiniMap(position = "bottomleft", width = 200, height = 200) %>%
+  addProviderTiles("Esri.WorldImagery")
+
+
+
+```
+
+<div style="margin-bottom:10px;">
+</div>
+
+
+### Point Buchon
+
+```{r buchon map set up, echo = F, message = F, warnig = F}
+
+pb_cells <- read_csv(here("Data", "PB_cellcoords.csv")) %>%
+  dplyr::select(longitude, latitude, name, comment)
+
+pb_cell_names <- unique(pb_cells$name)
+
+pb_mpa_cells <- pb_cell_names[1:11]
+pb_ref_cells <- pb_cell_names[12:22]
+
+pb_corner1_mpa <- pb_cells %>%
+  filter(comment == 1, name %in% pb_mpa_cells)
+
+pb_corner2_mpa <- pb_cells %>%
+  filter(comment == 4, name %in% pb_mpa_cells)
+
+pb_corner1_ref <- pb_cells %>%
+  filter(comment == 1, name %in% pb_ref_cells)
+
+pb_corner2_ref <- pb_cells %>%
+  filter(comment == 4, name %in% pb_ref_cells)
+
+```
+
+
+```{r buchon map, fig.width= 9, fig.align= "center", echo = F}
+
+leaflet()%>%
+  setView(lng = -120.8966, lat = 35.2473, zoom = 12)%>%
+  addTiles() %>%
+  addRectangles(lng1 = pb_corner1_mpa$longitude , lat1 = pb_corner1_mpa$latitude, 
+                lng2 = pb_corner2_mpa$longitude  , lat2 = pb_corner2_mpa$latitude,
+                fillColor = "transparent", label = pb_corner2_mpa$name, 
+                color = "#990000")%>%
+  addRectangles(lng1 = pb_corner1_ref$longitude , lat1 = pb_corner1_ref$latitude, 
+                lng2 = pb_corner2_ref$longitude  , lat2 = pb_corner2_ref$latitude,
+                fillColor = "transparent", label = pb_corner2_ref$name)%>%
+  addMiniMap(position = "bottomleft", width = 200, height = 200) %>%
+  addProviderTiles("Esri.WorldImagery")
+
+```
+
+
+
+
+
+
+
+
+
+
+
+```{r, echo = F, eval=F}
+## extra stuff. Not sure SST anomalies
+
+sstanom <- read_csv(here("Data", "jplMURSST41anommday.csv"))
+
+sstpb <- sstanom %>%
+  filter(latitude > 35.24964 & latitude < 35.25415,
+         longitude < -120.9133	)
+
+```
+

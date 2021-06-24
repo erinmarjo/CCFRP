@@ -1,0 +1,155 @@
+---
+title: "CRFS/RecFin Data Blue RF"
+author: "Erin Johnston"
+date: "2/9/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = F, message = F)
+```
+
+```{r}
+
+library(tidyverse)
+library(here)
+
+```
+
+```{r, message = F, warning = F}
+
+recfin <- read_csv(here("Data", "SD001-CALIFORNIA-2014---2017.csv"))
+recfinolive <- read_csv(here("Data", "SD001-CALIFORNIA-2014---2017_olives.csv"))
+
+recfin2 <- recfin %>%
+  select(RECFIN_YEAR, AGENCY_LENGTH, AGENCY_WEIGHT)
+
+
+recfinolive2 <- recfinolive %>%
+  dplyr::select(RECFIN_YEAR, AGENCY_LENGTH, AGENCY_WEIGHT)%>%
+  drop_na()%>%
+  rename(weight = AGENCY_WEIGHT, length = AGENCY_LENGTH)%>%
+  mutate(weight = weight*1000,
+         length = length/10)
+
+write_csv(recfinolive2, here("Data/output", "2021-02-09_recfin_olive2.csv"))
+
+#write_csv(recfinolive2, here("Data/output", "2021-02-09_recfin_olive.csv"))
+
+ggplot(data = recfinolive2, aes( x = AGENCY_LENGTH, y = AGENCY_WEIGHT,)) +
+  #geom_point()+
+  stat_smooth()
+```
+
+
+```{r blue recfin}
+
+b1 <- read_csv(here("Data/RecFin", "SD001-CALIFORNIA-2007---2010_blue.csv"))
+b2 <- read_csv(here("Data/RecFin", "SD001-CALIFORNIA-2011---2013_blue.csv"))
+b3 <- read_csv(here("Data/RecFin", "SD001-CALIFORNIA-2014_blue.csv"))
+b4 <- read_csv(here("Data/RecFin", "SD001-CALIFORNIA-2015_blue.csv"))
+b5 <- read_csv(here("Data/RecFin", "SD001-CALIFORNIA-2016_blue.csv"))
+b6 <- read_csv(here("Data/RecFin", "SD001-CALIFORNIA-2017_blue.csv"))
+b7 <- read_csv(here("Data/RecFin", "SD001-CALIFORNIA-2018_blue.csv"))
+b8 <- read_csv(here("Data/RecFin", "SD001-CALIFORNIA-2019_blue.csv"))
+
+b_recfin <- bind_rows(b1, b2, b3, b4, b5, b6, b7, b8)
+
+blue_recfin <- b_recfin %>%
+  dplyr::select(RECFIN_YEAR, AGENCY_LENGTH, AGENCY_WEIGHT)%>%
+  drop_na()%>%
+  rename(weight = AGENCY_WEIGHT, length = AGENCY_LENGTH)%>%
+  mutate(weight = weight*1000,
+         length = length/10)
+
+```
+
+```{r gopher recfin}
+
+g1 <- read_csv(here("Data/RecFin", "SD001-CALIFORNIA-2007---2011_gopher.csv"))
+g2 <- read_csv(here("Data/RecFin", "SD001-CALIFORNIA-2012---2013_gopher.csv"))
+g3 <- read_csv(here("Data/RecFin", "SD001-CALIFORNIA-2014---2015_gopher.csv"))
+g4 <- read_csv(here("Data/RecFin", "SD001-CALIFORNIA-2016---2017_gopher.csv"))
+g5 <- read_csv(here("Data/RecFin", "SD001-CALIFORNIA-2018---2020_gopher.csv"))
+
+g_recfin <- bind_rows(g1, g2, g3, g4, g5)
+
+gopher_recfin <- g_recfin %>%
+  dplyr::select(RECFIN_YEAR, AGENCY_LENGTH, AGENCY_WEIGHT)%>%
+  drop_na()%>%
+  rename(weight = AGENCY_WEIGHT, length = AGENCY_LENGTH)%>%
+  mutate(weight = weight*1000,
+         length = length/10)
+
+```
+
+```{r olive recfin}
+
+o1 <- read_csv(here("Data/RecFin", "SD001-CALIFORNIA-2007---2010_olive.csv"))
+o2 <- read_csv(here("Data/RecFin", "SD001-CALIFORNIA-2011---2014_olive.csv"))
+o3 <- read_csv(here("Data/RecFin", "SD001-CALIFORNIA-2015---2017_olive.csv"))
+o4 <- read_csv(here("Data/RecFin", "SD001-CALIFORNIA-2018---2020_olive.csv"))
+
+o_recfin <- bind_rows(o1, o2, o3, o4)
+
+olive_recfin <- o_recfin %>%
+  dplyr::select(RECFIN_YEAR, AGENCY_LENGTH, AGENCY_WEIGHT)%>%
+  drop_na()%>%
+  rename(weight = AGENCY_WEIGHT, length = AGENCY_LENGTH)%>%
+  mutate(weight = weight*1000,
+         length = length/10)
+
+```
+
+
+```{r vermilion recfin}
+
+v1 <- read_csv(here("Data/RecFin", "SD001-CALIFORNIA-2007---2010_vermilion.csv"))
+v2 <- read_csv(here("Data/RecFin", "SD001-CALIFORNIA-2011---2013_vermilion.csv"))
+v3 <- read_csv(here("Data/RecFin", "SD001-CALIFORNIA-2014---2016_vermilion.csv"))
+v4 <- read_csv(here("Data/RecFin", "SD001-CALIFORNIA-2017---2018_vermilion.csv"))
+v5 <- read_csv(here("Data/RecFin", "SD001-CALIFORNIA-2019---2020_vermilion.csv"))
+
+v_recfin <- bind_rows(v1, v2, v3, v4, v5)
+
+vermilion_recfin <- v_recfin %>%
+  dplyr::select(RECFIN_YEAR, AGENCY_LENGTH, AGENCY_WEIGHT)%>%
+  drop_na()%>%
+  rename(weight = AGENCY_WEIGHT, length = AGENCY_LENGTH)%>%
+  mutate(weight = weight*1000,
+         length = length/10)
+
+```
+
+
+```{r lingcod recfin}
+
+l1 <- read_csv(here("Data/RecFin", "SD001-CALIFORNIA-2007---2013_lingcod.csv"))
+l2 <- read_csv(here("Data/RecFin", "SD001-CALIFORNIA-2014_lingcod.csv"))
+l3 <- read_csv(here("Data/RecFin", "SD001-CALIFORNIA-2015_lingcod.csv"))
+l4 <- read_csv(here("Data/RecFin", "SD001-CALIFORNIA-2016_lingcod.csv"))
+l5 <- read_csv(here("Data/RecFin", "SD001-CALIFORNIA-2017_lingcod.csv"))
+l6 <- read_csv(here("Data/RecFin", "SD001-CALIFORNIA-2018---2020_lingcod.csv"))
+
+l_recfin <- bind_rows(l1, l2, l3, l4, l5, l6)
+
+lingcod_recfin <- l_recfin %>%
+  dplyr::select(RECFIN_YEAR, AGENCY_LENGTH, AGENCY_WEIGHT)%>%
+  drop_na()%>%
+  rename(weight = AGENCY_WEIGHT, length = AGENCY_LENGTH)%>%
+  mutate(weight = weight*1000,
+         length = length/10)
+
+```
+
+
+```{r write out data}
+
+write_csv(blue_recfin, here("Data/output", "2021-02-09_recfin_blue.csv"))
+write_csv(gopher_recfin, here("Data/output", "2021-02-09_recfin_gopher.csv"))
+write_csv(olive_recfin, here("Data/output", "2021-02-09_recfin_olive.csv"))
+write_csv(vermilion_recfin, here("Data/output", "2021-02-09_recfin_vermilion.csv"))
+write_csv(lingcod_recfin, here("Data/output", "2021-02-09_recfin_lingcod.csv"))
+
+```
+

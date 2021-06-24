@@ -1,0 +1,153 @@
+---
+title: "Basic Visuals"
+author: "Erin Johnston"
+date: "12/9/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE,
+                      message = F,
+                      warning = F)
+
+```
+
+```{r}
+
+library(tidyverse)
+library(here)
+library(ggridges)
+
+```
+
+```{r}
+
+full_cp_ml <- read_csv(here("Data/output", "2020-11-18_master_II.csv"))
+
+bgovl_full <- full_cp_ml %>%
+  filter(species %in% c("BLU", "GPR", "OLV", "VER", "LCD"), area != "FN", year %in% c(2013:2019))
+
+bgovl_vis <- bgovl_full %>%
+  group_by(species, drift, area, year, gridcell, site) %>%
+  summarise(drift_cpue = sum(cpue)) %>%
+  group_by(species, area, year, gridcell, site) %>%
+  summarise(cell_cpue = mean(drift_cpue)) %>%
+  mutate(year = as.factor(year))
+
+
+```
+
+```{r}
+
+ggplot() +
+  geom_boxplot(data = bgovl_vis, aes(x = year, y = cell_cpue, color = species))+
+  scale_color_manual(values = c("#0000CC", "#663300" , "#006699", "#999900", "#CC3300"))+
+  facet_grid(site~area)+
+  theme_bw()+
+  theme(panel.grid = element_blank())
+
+```
+
+## blue
+
+```{r}
+
+blue <- bgovl_vis %>%
+  filter(species == "BLU")
+
+ggplot() +
+  geom_boxplot(data = blue, aes(x = year, y = cell_cpue, color = species))+
+  scale_color_manual(values = c( "#0000CC"))+
+  facet_grid(site~area)+
+  theme_bw()+
+  theme(panel.grid = element_blank())
+
+
+```
+
+```{r}
+dens_dat_blue <- full_cp_ml %>%
+  filter(species == "BLU", num_caught != 0, area != "FN") %>%
+  mutate(year = as.factor(year))
+
+dens <- ggplot()+
+  geom_density_ridges(data = dens_dat_blue, aes(x = size, y = year, fill = year), 
+                      show.legend = F)+
+  geom_vline(xintercept = 21, col = "red")+
+  scale_fill_manual(values = c("#003399", "#0000FF", "#3366CC","#006699", "#336666",
+                               "#339999","#33CCCC", "#33FFFF", "#00FFCC", 
+                               "#00FF66", "#00FF33", "#009933", "#006633"))+
+  labs(title = "Blue Rockfish Size Density") +
+  facet_grid(site~area) +
+  theme_bw()+
+  theme(panel.grid = element_blank())
+
+dens
+
+#ggsave("lcd4_dense.png", plot = dens, path = "C:/Users/erinj/Documents/Thesis/Figures/F20", dpi = 1000, width = 6, height = 4)
+```
+
+
+```{r}
+dens_dat_g <- full_cp_ml %>%
+  filter(species == "VER", num_caught != 0, area != "FN") %>%
+  mutate(year = as.factor(year))
+
+ggplot()+
+  geom_density_ridges(data = dens_dat_g, aes(x = size, y = year, fill = year),
+                      show.legend = F)+
+  facet_wrap(.~area) +
+  theme_classic()
+```
+
+
+```{r}
+dens_dat_o <- full_cp_ml %>%
+  filter(species == "OLV", num_caught != 0) %>%
+  mutate(year = as.factor(year))
+
+ggplot()+
+  geom_density_ridges(data = dens_dat_o, aes(x = size, y = year, fill = year))
+```
+
+
+```{r}
+dens_dat_black <- full_cp_ml %>%
+  filter(species == "BLA", num_caught != 0) %>%
+  mutate(year = as.factor(year))
+
+ggplot()+
+  geom_density_ridges(data = dens_dat_black, aes(x = size, y = year, fill = year))
+```
+
+
+```{r}
+dens_dat_v <- full_cp_ml %>%
+  filter(species == "VER", num_caught != 0) %>%
+  mutate(year = as.factor(year))
+
+ggplot()+
+  geom_density_ridges(data = dens_dat_v, aes(x = size, y = year, fill = year))
+```
+
+
+```{r}
+dens_dat_l <- full_cp_ml %>%
+  filter(species == "LCD", num_caught != 0) %>%
+  mutate(year = as.factor(year))
+
+ggplot()+
+  geom_density_ridges(data = dens_dat_l, aes(x = size, y = year, fill = year))
+```
+
+
+Where are olive rf in AN REF?
+
+```{r}
+
+missingolv <- full_cp_ml %>%
+  filter(area == "AN", species == "OLV", year  %in% c( 2007:2012), num_caught > 0, site == "REF")
+
+```
+

@@ -1,0 +1,73 @@
+erin_ccf6 <- function(full_x, full_y, lag_x_rm, lag_y_rm) {
+  mean_x <- mean(full_x) 
+  mean_y <- mean(full_y, na.rm = T)
+  somex = 0.0
+  somey = 0.0
+  for(i in 1:length(full_x)){
+    if(!is.na(full_x[i] && full_y[i])){
+      #if(!is.na(full_y[i])){
+      somex <- somex + (full_x[i] - mean_x)^2
+      somey <- somey + (full_y[i] - mean_y)^2
+    }
+  }
+  corval <- (sum((lag_x_rm - mean_x)*
+                   (lag_y_rm - mean_y)))/
+    ((sqrt(somex)))* 
+       (sqrt(somey))
+  return(corval)
+  
+}
+
+erin_ccf6 <- function(full_x, full_y, lag_x_rm, lag_y_rm) {
+  mean_x <- mean(full_x) 
+  mean_y <- mean(full_y, na.rm = T)
+  somex = 0.0
+  somey = 0.0
+  for(i in 1:length(full_x)){
+    if(!is.na(full_x[i])){
+      if(!is.na(full_y[i])){
+      somex <- somex + (full_x[i] - mean_x)^2
+      somey <- somey + (full_y[i] - mean_y)^2
+    }}
+  }
+  corval <- (sum((lag_x_rm - mean_x)*
+                   (lag_y_rm - mean_y)))/
+    ((sqrt(somex)))* 
+       (sqrt(somey))
+  return(corval)
+  
+}
+
+
+
+erin_ccf9 <- function(full_x, full_y, lag_x_rm, lag_y_rm) {
+  mean_x <- mean(full_x, na.rm = T) ## could take na.rm out this line
+  mean_y <- mean(full_y, na.rm = T)
+  somelag = 0.0
+  some = 0.0
+  for(i in 1:length(full_y)){
+    if(!is.na(full_y[i])){
+      some <- some + (full_y[i] - mean_y)^2
+    }
+  }
+#  nu = 0
+  for(i in 1:length(lag_x_rm)){
+    if(!is.na(lag_x_rm[i])){
+      if(!is.na(lag_y_rm[i])){
+      somelag = somelag + ((lag_x_rm[i] - mean_x)*(lag_y_rm[i] - mean_y))
+#      nu = nu + 1
+      }
+    }
+    else{
+      somelag = somelag + 0.000006
+    }
+  } 
+#  if(nu == 0){
+#    somelag == 0.000000006
+#  }
+  corval <- somelag/
+    ((sqrt(sum((full_x - mean_x)^2)))* 
+       (sqrt(some)))
+  return(corval)
+  
+}

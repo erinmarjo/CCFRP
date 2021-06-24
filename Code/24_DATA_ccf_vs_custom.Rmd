@@ -1,0 +1,862 @@
+---
+title: "24_DATA_ccf_vs_custom"
+author: "Erin Johnston"
+date: "3/23/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+
+library(tidyverse)
+library(here)
+library(zoo) ## for na.approx
+library(forecast) ## for na.interp
+
+juv_moci_na <- read_csv(here("Data", "2021-03-02_juv_moci_na.csv"))
+
+adult_moci_na <- read_csv(here("Data", "2021-04-02_adult_moci_na.csv"))
+
+bl_mean <- juv_moci %>%
+  filter(area == "BL", year %in% c(2014, 2016))%>%
+  summarise(mean = mean(cpue_site, na.rm = T))
+
+juv_moci_na_real <- juv_moci %>%
+  select(-var_site) %>%
+  mutate(cpue_site = replace_na(data = cpue_site, 2e-16))
+  
+
+juv_moci2 <- juv_moci %>%
+  mutate(cpue_site2 = na.interp(juv_moci$cpue_site),
+         cpue_site3 = na.approx(juv_moci$cpue_site))%>%
+  select(-cpue_site, -var_site)
+
+##### NO MHW ######
+
+juv_no_mhw <- read_csv(here("Data", "2021-03-24_juv_moci_no_mhw_years.csv"))
+
+```
+
+```{r}
+## OG custom function
+## must use drop_na() in loop for the lag_df
+erin_ccf <- function(full_x, full_y, lag_x_rm, lag_y_rm) {
+  mean_x <- mean(full_x, na.rm = T)
+  mean_y <- mean(full_y, na.rm = T)
+  corval <- (sum((lag_x_rm - mean_x)*
+                   (lag_y_rm - mean_y)))/
+    ((sqrt(sum((full_x - mean_x)^2, na.rm = T)))*
+       (sqrt(sum((full_y - mean_y)^2, na.rm = T))))
+  return(corval)
+  
+}
+
+
+
+
+
+## dropping NA after means
+## forget this one
+erin_ccf2 <- function(full_x, full_y, lag_x_rm, lag_y_rm) {
+  mean_x <- mean(full_x)
+  mean_y <- mean(full_y)
+  #full_xtemp <- full_x %>% drop_na()
+  #full_ytemp <- full_y %>% drop_na()
+  #full_x <- full_x[!is.na(full_x)]
+  #full_y <- full_y[!is.na(full_y)]
+  corval <- (sum((lag_x_rm - mean_x)*
+                   (lag_y_rm - mean_y)))/
+    ((sqrt(sum((full_x - mean_x)^2)))*
+       (sqrt(sum((full_y - mean_y)^2))))
+  return(corval)
+  
+}
+
+
+## force sums div by 13
+## gives different answer
+## forget this one. Sucks hard.
+erin_ccf3 <- function(full_x, full_y, lag_x_rm, lag_y_rm) {
+  mean_x <- ((sum(full_x, na.rm = T))/13)
+  mean_y <- ((sum(full_y, na.rm = T))/13)
+  corval <- (sum((lag_x_rm - mean_x)*
+                   (lag_y_rm - mean_y)))/
+    ((sqrt(sum((full_x - mean_x)^2, na.rm = T)))*
+       (sqrt(sum((full_y - mean_y)^2, na.rm = T))))
+  return(corval)
+  
+}
+
+## with running sum like filter.c
+## forget this one it sucks
+erin_ccf4 <- function(full_x, full_y, lag_x_rm, lag_y_rm) {
+  mean_x <- mean(full_x) 
+  mean_y <- mean(full_y, na.rm = T)
+  for(i in full_y){
+    if(!is.na(i)){
+   try <-  sum((full_y - mean_y)^2)
+  }
+  corval <- (sum((lag_x_rm - mean_x)*
+                   (lag_y_rm - mean_y)))/
+    ((sqrt(sum((full_x - mean_x)^2)))* 
+       (sqrt(try)))
+  return(corval)
+  }
+}
+
+
+### LMFAO THIS IS THE SAME AS THE ORIGINAL FUNCTION
+### as long as you are still useing drop_na() for lag_df in loop
+erin_ccf5 <- function(full_x, full_y, lag_x_rm, lag_y_rm) {
+  mean_x <- mean(full_x) 
+  mean_y <- mean(full_y, na.rm = T)
+  some = 0.0
+  for(i in 1:length(full_y)){
+    if(!is.na(full_y[i])){
+      some <- some + (full_y[i] - mean_y)^2
+    }
+  }
+  corval <- (sum((lag_x_rm - mean_x)*
+                   (lag_y_rm - mean_y)))/
+    ((sqrt(sum((full_x - mean_x)^2)))* 
+       (sqrt(some)))
+  return(corval)
+  
+}
+
+
+## idk
+## what am I doing here. It sucks
+## get NA values for everything except the 0 lag.
+## forget this, sucks x 10000
+erin_ccf6 <- function(full_x, full_y, lag_x_rm, lag_y_rm) {
+  mean_x <- mean(full_x) 
+  mean_y <- mean(full_y, na.rm = T)
+  some = 0.0
+  some2 = 0.0
+  for(i in 1:length(full_x)){
+    if(!is.na(full_x[i]) && !is.na(full_y[i])){
+      some <- some + ((full_x[i] - mean_x)^2 )
+      some2 <- some2 + ((full_y[i] - mean_y)^2)
+    }
+  }
+  corval <- (sum((lag_x_rm - mean_x)*
+                   (lag_y_rm - mean_y)))/
+    (sqrt(some*some2))
+  return(corval)
+  
+}
+
+## as above, get NA everywhere but lag 0
+## forgetttt this one
+erin_ccf7 <- function(full_x, full_y, lag_x_rm, lag_y_rm) {
+  mean_x <- mean(full_x, na.rm = T) ## could take na.rm out this line
+  mean_y <- mean(full_y, na.rm = T)
+  full_t <- data.frame(full_x, full_y)
+  full_t <- full_t %>% drop_na()
+  corval <- (sum((lag_x_rm - mean_x)*
+                   (lag_y_rm - mean_y)))/
+    ((sqrt(sum((full_t$full_x - mean_x)^2, na.rm = T)))* ## ditto above
+       (sqrt(sum((full_t$full_y - mean_y)^2, na.rm = T))))
+  return(corval)
+  
+}
+
+
+## same issues as erin_ccf6 and erin_ccf7
+## forget forget forget
+erin_ccf8 <- function(full_x, full_y, lag_x_rm, lag_y_rm) {
+  mean_x <- mean(full_x) 
+  mean_y <- mean(full_y, na.rm = T)
+  somex = 0.0
+  somey = 0.0
+  for(i in 1:length(full_x)){
+    if(!is.na(full_x[i])){
+      if(!is.na(full_y[i])){
+      somex <- somex + (full_x[i] - mean_x)^2
+      somey <- somey + (full_y[i] - mean_y)^2
+    }}
+  }
+  corval <- (sum((lag_x_rm - mean_x)*
+                   (lag_y_rm - mean_y)))/
+    ((sqrt(somex))* 
+       (sqrt(somey)))
+       
+  return(corval)
+  
+}
+
+## works, is complicated, still doesn't solve my problem
+## basically the same as erin_ccf() except you don't have to use drop_na() in loop
+erin_ccf9 <- function(full_x, full_y, lag_x_rm, lag_y_rm) {
+  mean_x <- mean(full_x)
+  mean_y <- mean(full_y)
+  somelag = 0.0
+  some = 0.0
+  for(i in 1:length(full_y)){
+    if(!is.na(full_y[i])){
+      some <- some + (full_y[i] - mean_y)^2
+    }
+  }
+  for(i in 1:length(lag_x_rm)){
+    if(!is.na(lag_x_rm[i])){
+      if(!is.na(lag_y_rm[i])){
+      somelag = somelag + ((lag_x_rm[i] - mean_x)*(lag_y_rm[i] - mean_y))
+      }
+    }
+    else{
+      somelag = somelag + 0.000006
+    }
+  } 
+  corval <- somelag/
+    ((sqrt(sum((full_x - mean_x)^2)))* 
+       (sqrt(some)))
+  return(corval)
+  
+}
+
+```
+
+
+```{r}
+
+## erins ccf
+juv_corr <- data.frame(area = character(), site = character(), season = character(), lag = character(), correlation = character())
+
+## ccf no app
+juv_corr_2 <- data.frame(area = character(), site = character(), season = character(), lag = character(), correlation = character())
+
+## for ccf with na.approx
+juv_corr_3 <- data.frame(area = character(), site = character(), season = character(), lag = character(), correlation = character())
+
+
+######## NO MHW #########
+juv_corr_no_mhw <- data.frame(area = character(), site = character(), season = character(), lag = character(), correlation = character())
+
+area_list <- c("PB", "BL", "AN", "PL")
+site_list <- c("MPA", "REF")
+season_list <- c("JFM", "AMJ", "JAS", "OND")
+
+
+
+```
+
+```{r}
+
+for(j in area_list){
+  for(k in site_list){
+    for(l in season_list){
+      juvenile <- juv_moci_na %>%
+        filter(area == j, site == k, season == l)
+      for(i in 0:8){
+        lag_df <- juvenile %>%
+          mutate(central_ca = dplyr::lag(central_ca, n = i)) %>% drop_na()
+        cor <- erin_ccf(juvenile$central_ca, juvenile$cpue_site,
+                        lag_df$central_ca, lag_df$cpue_site)
+        for(m in 1:length(cor)){
+          juv_corr <- bind_rows(juv_corr, c(area = j, site = k, season = l, 
+                                            lag = -i, correlation = cor[m]))
+        }
+      }
+    }
+  }
+} 
+
+
+
+
+## with ccf() function
+for(j in area_list){
+  for(k in site_list){
+    for(l in season_list){
+      juvenile <- juv_moci %>%
+        filter(area == j, site == k, season == l)
+      cross_corr <- ccf(juvenile$central_ca,
+                        juvenile$cpue_site, plot = F, na.action = na.pass)
+      lag <- cross_corr$lag
+      correlation <- cross_corr$acf
+      for(m in 1:length(lag)){
+        juv_corr_2 <- bind_rows(juv_corr_2, c(area = j, site = k, season = l,
+                                              lag = lag[m], correlation = correlation[m]))
+      }
+    }
+  }
+}
+
+## ccf with na.approx
+for(j in area_list){
+  for(k in site_list){
+    for(l in season_list){
+      juvenile2 <- juv_moci2 %>%
+        filter(area == j, site == k, season == l)
+      cross_corr <- ccf(juvenile2$central_ca,
+                        juvenile2$cpue_site2, plot = F, na.action = na.pass)
+      lag <- cross_corr$lag
+      correlation <- cross_corr$acf
+      for(m in 1:length(lag)){
+        juv_corr_3 <- bind_rows(juv_corr_3, c(area = j, site = k, season = l,
+                                              lag = lag[m], correlation = correlation[m]))
+      }
+    }
+  }
+}
+
+
+######## NO MHW #######
+
+for(j in area_list){
+  for(k in site_list){
+    for(l in season_list){
+      juvenile <- juv_no_mhw %>%
+        filter(area == j, site == k, season == l)
+      for(i in 0:8){
+        lag_df <- juvenile %>%
+          mutate(central_ca = dplyr::lag(central_ca, n = i)) %>% drop_na()
+        #juvenile2 <- juvenile %>% drop_na()
+        cor <- erin_ccf(juvenile$central_ca, juvenile$cpue_site,
+                        lag_df$central_ca, lag_df$cpue_site)
+        for(m in 1:length(cor)){
+          juv_corr_no_mhw <- bind_rows(juv_corr_no_mhw, c(area = j, site = k, season = l, 
+                                            lag = -i, correlation = cor[m]))
+        }
+      }
+    }
+  }
+} 
+
+```
+
+```{r}
+
+juv_vis <- juv_corr %>%
+  mutate(correlation = as.numeric(correlation),
+         lag = as.numeric(lag))
+  
+juv_vis$season <- factor(juv_vis$season, levels = c("JFM", "AMJ" ,"JAS", "OND"))  
+
+juv_plot_erin_ccf <- ggplot()+
+  scale_color_manual(values = c("#999999", "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c("#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = juv_vis, aes(x = lag, y = correlation, color = season, fill = season))+
+  labs(title = "using custom ccf function")+
+  theme_bw()+
+  theme(panel.grid = element_blank(),
+        plot.title = element_text(hjust = 0.5))+
+  facet_grid(site~area)
+
+
+juv_vis2 <- juv_corr_2 %>%
+  mutate(correlation = as.numeric(correlation),
+         lag = as.numeric(lag)) %>%
+  filter(lag %in% c(-10:0))
+  
+juv_vis2$season <- factor(juv_vis2$season, levels = c("JFM", "AMJ" ,"JAS", "OND"))  
+
+juv_plot_ccf <- ggplot()+
+  scale_color_manual(values = c("#999999", "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c("#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = juv_vis2, aes(x = lag, y = correlation, color = season, fill = season))+
+  labs(title = "using ccf() with na.pass")+
+  facet_grid(site~area)+
+  theme_bw()+
+  theme(panel.grid = element_blank(),
+        plot.title = element_text(hjust = 0.5))
+
+
+
+
+juv_vis3 <- juv_corr_3 %>%
+  mutate(correlation = as.numeric(correlation),
+         lag = as.numeric(lag)) %>%
+  filter(lag %in% c(-10:0))
+
+####### NO MHW #########
+juv_vis_no_mhw <- juv_corr_no_mhw %>%
+  mutate(correlation = as.numeric(correlation),
+         lag = as.numeric(lag))
+  
+juv_vis_no_mhw$season <- factor(juv_vis_no_mhw$season, levels = c("JFM", "AMJ" ,"JAS", "OND"))  
+
+juv_plot_no_mhw <- ggplot()+
+  scale_color_manual(values = c("#999999", "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c("#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = juv_vis_no_mhw, aes(x = lag, y = correlation, color = season, fill = season))+
+  labs(title = "No MHW Year Data")+
+  theme_bw()+
+  theme(panel.grid = element_blank(),
+        plot.title = element_text(hjust = 0.5))+
+  facet_grid(site~area)
+
+```
+
+```{r}
+
+juv_plot_erin_ccf
+#juv_plot_ccf
+juv_plot_no_mhw
+
+```
+
+
+```{r}
+##erins function
+juv_vis %>%
+  arrange(desc(correlation)) %>%
+  group_by(area, site) %>%
+  slice(1)
+
+## ccf
+juv_vis2 %>%
+  arrange(desc(correlation)) %>%
+  group_by(area, site) %>%
+  slice(1)
+
+## ccf with na.approx
+juv_vis3 %>%
+  arrange(desc(correlation)) %>%
+  group_by(area, site) %>%
+  slice(1)
+
+```
+
+```{r}
+
+juv_moci2 <- juv_moci %>%
+  select(area, site, year, season, cpue_site, central_ca ) %>%
+  unite(col = asys, area:season, remove = F)%>%
+  rename(juv_cpue = cpue_site)
+
+adult_moci2 <- adult_moci %>%
+  select(area, site, year, season, cpue_site, central_ca ) %>%
+  unite(col = asys, area:season, remove = T) %>%
+  select(asys, cpue_site) %>%
+  rename(adult_cpue = cpue_site)
+
+juv_adult_moci <- left_join(juv_moci2, adult_moci2, by = "asys")
+
+juv_adult_corr <- data.frame(area = character(), site = character(), season = character(), lag = character(), correlation = character())
+
+
+for(j in area_list){
+  for(k in site_list){
+    for(l in season_list){
+      juvadult <- juv_adult_moci %>%
+        filter(area == j, site == k, season == l)
+      for(i in 0:8){
+        lag_df <- juvadult %>%
+          mutate(juv_cpue = dplyr::lag(juv_cpue, n = i)) %>% drop_na()
+        cor <- erin_ccf(juvadult$juv_cpue, juvadult$adult_cpue,
+                        lag_df$juv_cpue, lag_df$adult_cpue)
+        for(m in 1:length(cor)){
+          juv_adult_corr <- bind_rows(juv_adult_corr, c(area = j, site = k, season = l, 
+                                            lag = -i, correlation = cor[m]))
+        }
+      }
+    }
+  }
+}
+
+juv_adult_vis <- juv_adult_corr %>%
+  mutate(correlation = as.numeric(correlation),
+         lag = as.numeric(lag))
+  
+juv_adult_vis$season <- factor(juv_adult_vis$season, levels = c("JFM", "AMJ" ,"JAS", "OND"))  
+
+juv_adult_plot <- ggplot()+
+  scale_color_manual(values = c("#999999", "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c("#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = juv_adult_vis, aes(x = lag, y = correlation, color = season, fill = season))+
+  labs(title = "using custom ccf function")+
+  theme_bw()+
+  theme(panel.grid = element_blank(),
+        plot.title = element_text(hjust = 0.5))+
+  facet_grid(site~area)
+
+juv_adult_plot
+
+```
+
+# Adult
+
+```{r}
+
+adult_corr <- data.frame(area = character(), site = character(), season = character(), lag = character(), correlation = character())
+
+for(j in area_list){
+  for(k in site_list){
+    for(l in season_list){
+      adult <- adult_moci_na %>%
+        filter(area == j, site == k, season == l)
+      for(i in 0:8){
+        lag_df <- adult %>%
+          mutate(central_ca = dplyr::lag(central_ca, n = i)) %>% drop_na()
+        cor <- erin_ccf(adult$central_ca, adult$cpue_site,
+                        lag_df$central_ca, lag_df$cpue_site)
+        for(m in 1:length(cor)){
+          adult_corr <- bind_rows(adult_corr, c(area = j, site = k, season = l, 
+                                            lag = -i, correlation = cor[m]))
+        }
+      }
+    }
+  }
+} 
+
+
+adult_vis <- adult_corr %>%
+  mutate(correlation = as.numeric(correlation),
+         lag = as.numeric(lag))
+  
+adult_vis$season <- factor(adult_vis$season, levels = c("JFM", "AMJ" ,"JAS", "OND"))  
+
+adult_plot_erin_ccf <- ggplot()+
+  scale_color_manual(values = c("#999999", "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c("#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = adult_vis, aes(x = lag, y = correlation, color = season, fill = season))+
+  labs(title = "using custom ccf function")+
+  theme_bw()+
+  theme(panel.grid = element_blank(),
+        plot.title = element_text(hjust = 0.5))+
+  facet_grid(site~area)
+```
+
+
+# Juv and Adult Plots
+
+```{r}
+
+juv_plot_erin_ccf
+adult_plot_erin_ccf
+
+
+```
+
+# Top Correlation Graphs
+
+```{r}
+top_juv <- juv_vis %>% 
+  arrange(desc(correlation)) %>% 
+  group_by(area, site) %>% slice(1)
+
+top_adult <- adult_vis %>% 
+  arrange(desc(correlation)) %>% 
+  group_by(area, site) %>% slice(1)
+
+#######juv############
+top_juv_meeting <- top_juv %>%
+  mutate(Season = case_when(
+    season == "JFM" ~ "Winter",
+    season == "AMJ" ~ "Spring",
+    season == "JAS" ~ "Summer",
+    season == "OND" ~ "Fall"
+  ), Lag = case_when(
+    lag == "-2" ~ "2",
+    lag == "-1" ~ "1"
+  ), Area = case_when(
+    area == "AN" ~ "Ano Nuevo",
+    area == "PL" ~ "Point Lobos",
+    area == "BL" ~ "Piedras Blancas",
+    area == "PB" ~ "Point Buchon"
+  ))
+
+top_juv_meeting$area <- factor(top_juv_meeting$area, levels = c("AN", "PL", "BL", "PB"))
+top_juv_meeting$Area <- factor(top_juv_meeting$Area, levels = c("Ano Nuevo", "Point Lobos", "Piedras Blancas", "Point Buchon"))
+top_juv_meeting$Season <- factor(top_juv_meeting$Season, 
+                                 levels = c("Winter", "Spring", "Summer", "Fall"))
+#top_juv_meeting$Lag <- factor(top_juv_meeting$Lag, levels = c(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10))
+
+
+top_juv_plot <- top_juv_meeting %>%
+  ggplot()+
+  geom_point(size = 4, aes(x = Area, y = correlation, color = Season, 
+                           fill = Season, shape = Lag))+
+  scale_color_manual(values = c("#666666"))+
+  scale_fill_manual(values = c( "#666666"))+
+  scale_shape_manual(values = c(19))+
+  labs(title = "Juvenile Blue Rockfish Top Correlation CPUE-MOCI", 
+       y = "Correlation\n", x = "\nArea (N to S)", caption = "")+
+  scale_y_continuous(limits = c(0.0, 1.0), 
+                     breaks = c(0.0, 0.2, 0.4, 0.6, 0.8, 1.0))+
+  facet_wrap(.~site)+
+  theme_bw()+
+    theme(panel.grid = element_blank(),
+          plot.title = element_text(hjust = 0.5),
+          plot.caption = element_text(size = 8),
+          axis.text.x = element_text(face = "bold",angle = 45, hjust =1))
+
+```
+
+
+```{r}
+top_adult_meeting <- top_adult %>%
+  mutate(Season = case_when(
+    season == "JFM" ~ "Winter",
+    season == "AMJ" ~ "Spring",
+    season == "JAS" ~ "Summer",
+    season == "OND" ~ "Fall"
+  ), Lag = case_when(
+    lag == "0" ~ "0",
+    lag == "-1" ~ "1",
+    lag == "-2" ~ "2",
+    lag == "-3" ~ "3",
+    lag == "-4" ~ "4"
+  ), Area = case_when(
+    area == "AN" ~ "Ano Nuevo",
+    area == "PL" ~ "Point Lobos",
+    area == "BL" ~ "Piedras Blancas",
+    area == "PB" ~ "Point Buchon"
+  )) 
+
+top_adult_meeting$area <- factor(top_adult_meeting$area, levels = c("AN", "PL", "BL", "PB"))
+top_adult_meeting$Area <- factor(top_adult_meeting$Area, levels = c("Ano Nuevo", "Point Lobos", "Piedras Blancas", "Point Buchon"))
+top_adult_meeting$Season <- factor(top_adult_meeting$Season, 
+                                 levels = c("Winter", "Spring", "Summer", "Fall"))
+#top_adult_meeting$Lag <- factor(top_adult_meeting$Lag, levels = c(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10))
+
+
+top_adult_plot <- top_adult_meeting %>%
+  #mutate(lag = as.factor(lag))%>%
+  ggplot()+
+  geom_point(size = 4, aes(x = Area, y = correlation, 
+                           color = Season, fill = Season, shape = Lag))+
+  scale_color_manual(values = c("#666666", "#000000"))+
+  scale_fill_manual(values = c( "#666666", "#000000"))+
+  scale_shape_manual(values = c(19, 15, 18))+
+  labs(title = "Adult Blue Rockfish Top Correlation CPUE-MOCI", y = "Correlation\n",
+       x = "\nArea (N to S)", caption = "")+
+  scale_y_continuous(limits = c(0.0, 1.0), 
+                     breaks = c(0.0, 0.2, 0.4, 0.6, 0.8, 1.0))+  
+  facet_wrap(.~site)+
+  theme_bw()+
+    theme(panel.grid=element_blank(),
+          plot.title = element_text(hjust = 0.5),
+          plot.caption = element_text(size = 8),
+          axis.text.x = element_text(face = "bold",angle = 45, hjust =1))
+
+ggsave("2021-04-02_top_juv_plot.png", plot = top_juv_plot, 
+       path = "C:/Users/erinj/Documents/Thesis/Figures/Lag", dpi = 1000, width = 6,
+       height = 4)
+
+ggsave("2021-04-02_top_adult_plot_.png", plot = top_adult_plot, 
+       path = "C:/Users/erinj/Documents/Thesis/Figures/Lag", dpi = 1000, width = 6,
+       height = 4)
+```
+
+
+# Just Point Buchon
+
+```{r}
+
+vis_pb_meeting <- juv_vis %>%
+  filter(area == "PB", site == "MPA") %>%
+  mutate(Season = case_when(
+    season == "JFM" ~ "Winter",
+    season == "AMJ" ~ "Spring",
+    season == "JAS" ~ "Summer",
+    season == "OND" ~ "Fall"
+  ), Area = case_when(
+    area == "PB" ~ "Point Buchon"
+  ))
+
+vis_pb_meeting$Season <- factor(vis_pb_meeting$Season, levels = c("Winter", "Spring", "Summer", "Fall"))
+
+juv_pb_meeting <- ggplot() +
+  scale_color_manual(values = c(  "#999999" , "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_pb_meeting, aes(lag, y = correlation,  color = Season,
+                                               fill = Season))+
+  labs(title = "Juvenile Blue Rockfish Lag Correlation -MOCI", y = "correlation",
+       caption = "")+
+  scale_x_continuous(limits=c(-8.5,0.5),breaks=seq(-8,0,1), labels = c("-8" = "8", "-7" = "7", "-6" = "6", "-5" = "5", "-4" = "4", "-3" = "3", "-2" = "2", "-1" = "1", "0" = "0"))+
+  scale_y_continuous(limits = c(-0.6, 0.95), breaks = seq(-0.6, 0.9, 0.2), 
+                     labels = c(-0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8) )+
+  theme_bw()+
+  facet_grid(site ~ Area)+
+    theme(panel.grid=element_blank(),
+          plot.title = element_text(hjust = 0.5),
+          plot.caption = element_text(size = 8))
+
+
+ggsave("2021-04-02_juv_pb_plot.png", plot = juv_pb_meeting, 
+       path = "C:/Users/erinj/Documents/Thesis/Figures/Lag", dpi = 1000, width = 6,
+       height = 4)
+
+```
+
+# MOCI and CPUE
+
+```{r}
+MOCI <- read_csv(here("Data", "Central_California_MOCI.csv"))
+
+moci_meeting <- juv_moci_na %>%
+  filter(site == "MPA", area == "PB", season == "JAS") %>%
+  mutate(year = as.factor(year))
+
+moci_juvcpue <- ggplot(data = moci_meeting) +
+  geom_point( aes(x = year, y = central_ca))+
+  geom_line(aes(x = year, y = central_ca, group = 1), color = "orange")+
+  geom_point(aes(x = year, y = cpue_site))+
+  geom_line(aes(x = year, y = cpue_site, group = 1), color = "blue")+
+  geom_hline(yintercept = 0)+
+  labs(title = "MOCI vs Juvenile Blue rockfish CPUE", y = "", x = "Year")+
+  theme_bw()+
+  theme(panel.grid = element_blank(),
+        plot.title = element_text(hjust = 0.5))
+
+ggsave("2021-04-05_juvcpue_moci.png", plot = moci_juvcpue, 
+       path = "C:/Users/erinj/Documents/Thesis/Figures/Lag", dpi = 1000, width = 6,
+       height = 4)
+
+```
+
+
+## why are there differences w dummy data
+
+```{r}
+dummy_moci <- c(1, 4, 1, 0, 1, 0, 4, 5, 4, 5, 6, 5, 8)
+dummy_cpue <- c(NA, 3, 4, 7, 4, 3, 4, 3, NA, 8, 7, 8, 9)
+
+
+dummy_cpue2 <- c(4, 3, 4, 7, 4, 3, 4, 3, 7, 8, 7, 8, 9)
+dummy_cpue3 <- c(NA, 3, 4, 7, 4, 3, 4, 3, 7, 8, 7, 8, 9)
+dummy_cpue4 <- c(NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA)
+```
+
+
+### Vectors with NA
+
+slightly different answers between ccf and custom function
+
+```{r}
+
+
+d_df <- data.frame(dummy_moci, dummy_cpue4)
+
+
+dummy_ccf <- ccf(d_df$dummy_moci,d_df$dummy_cpue4, plot = F, na.action = na.pass)
+lag <- dummy_ccf$lag
+correlation <- dummy_ccf$acf
+
+d_cor <- data.frame(lag, correlation)
+
+dummy_cor_ccf <- d_cor %>%
+  filter(lag %in% c(0:-8))
+
+```
+
+```{r}
+dummy_cor_custom <- data.frame(lag = numeric(), correlation = numeric())
+
+for(i in 0:8){
+        dummy_lag_custom <- d_df %>% 
+          mutate(dummy_moci = dplyr::lag(dummy_moci, n = i)) %>% drop_na()
+        d_cor_custom <- erin_ccf(d_df$dummy_moci, d_df$dummy_cpue,
+                        dummy_lag_custom$dummy_moci, dummy_lag_custom$dummy_cpue)
+        for(m in 1:length(d_cor_custom)){
+          dummy_cor_custom <- bind_rows(dummy_cor_custom, 
+                                        c(lag = -i, correlation = d_cor_custom[m]))
+        }
+      }
+
+
+dummy_cor_ccf %>% arrange(desc(correlation))
+dummy_cor_custom %>% arrange(desc(correlation))
+
+```
+
+### vectors with no NA
+
+exactly the same between ccf and custom function
+
+```{r}
+
+d_df2 <- data.frame(dummy_moci, dummy_cpue2)
+
+
+dummy_ccf2 <- ccf(d_df2$dummy_moci, d_df2$dummy_cpue2, plot = F, na.action = na.pass)
+lag2 <- dummy_ccf2$lag
+correlation2 <- dummy_ccf2$acf
+
+d_cor2 <- data.frame(lag2, correlation2)
+
+dummy_cor_ccf2 <- d_cor2 %>%
+  filter(lag2 %in% c(0:-8))
+
+```
+
+```{r}
+
+dummy_cor_custom2 <- data.frame(lag2 = numeric(), correlation2 = numeric())
+
+for(i in 0:8){
+        dummy_lag_custom2 <- d_df2 %>%
+          mutate(dummy_moci = dplyr::lag(dummy_moci, n = i)) %>% drop_na()
+        d_cor_custom2 <- erin_ccf(d_df2$dummy_moci, d_df2$dummy_cpue2,
+                        dummy_lag_custom2$dummy_moci, dummy_lag_custom2$dummy_cpue2)
+        for(m in 1:length(d_cor_custom2)){
+          dummy_cor_custom2 <- bind_rows(dummy_cor_custom2, 
+                                        c(lag2 = -i, correlation2 = d_cor_custom2[m]))
+        }
+      }
+
+dummy_cor_ccf2 %>% arrange(desc(correlation2))
+dummy_cor_custom2 %>% arrange(desc(correlation2))
+
+```
+
+### vector with only one NA
+
+```{r}
+
+d_df3 <- data.frame(dummy_moci, dummy_cpue3)
+
+
+dummy_ccf3 <- ccf(d_df3$dummy_moci, d_df3$dummy_cpue3, plot = F, na.action = na.pass)
+lag3 <- dummy_ccf3$lag
+correlation3 <- dummy_ccf3$acf
+
+d_cor3 <- data.frame(lag3, correlation3)
+
+dummy_cor_ccf3 <- d_cor3 %>%
+  filter(lag3 %in% c(0:-8))
+
+
+```
+
+```{r}
+
+dummy_cor_custom3 <- data.frame(lag3 = numeric(), correlation3 = numeric())
+
+for(i in 0:8){
+        dummy_lag_custom3 <- d_df3 %>%
+          mutate(dummy_moci = dplyr::lag(dummy_moci, n = i)) %>% drop_na()
+        d_cor_custom3 <- erin_ccf(d_df3$dummy_moci, d_df3$dummy_cpue3,
+                        dummy_lag_custom3$dummy_moci, dummy_lag_custom3$dummy_cpue3)
+        for(m in 1:length(d_cor_custom3)){
+          dummy_cor_custom3 <- bind_rows(dummy_cor_custom3, 
+                                        c(lag3 = -i, correlation3 = d_cor_custom3[m]))
+        }
+      }
+
+dummy_cor_ccf3 %>% arrange(desc(correlation3))
+dummy_cor_custom3 %>% arrange(desc(correlation3))
+```
+
+
+### lag 0, step by step
+
+```{r}
+
+step_by_step <- d_df %>%
+  mutate(numerator1 = dummy_moci - 3.385,
+         numerator2 = dummy_cpue - 5.455,
+         mult = numerator1*numerator2,
+         denom1 = numerator1 ^ 2,
+         denom2 = numerator2 ^ 2)
+
+```
+
+
+

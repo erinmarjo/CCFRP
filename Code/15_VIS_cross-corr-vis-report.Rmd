@@ -1,0 +1,3439 @@
+---
+title: "Cross Correlation Visuals Report"
+author: "Erin Johnston"
+date: "12/20/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = F, warning = F)
+
+```
+
+```{r libraries, eval = T, echo= F}
+
+library(tidyverse)
+library(here)
+
+```
+
+```{r data, eval = T, echo=F}
+
+full_cp_ml <- read_csv(here("Data/output", "2020-11-18_master_II.csv"))
+
+MOCI <- read_csv(here("Data", "Central_California_MOCI.csv"))
+
+
+pdo <- read_csv(here("Data", "pdo_noaa_ncei.csv")) %>%
+  transform( year = substr(date, 1,4), month = substr(date, 5, 6))%>%
+  filter(year %in% c(2007:2019))%>%
+  mutate(season = case_when(
+    month %in% c("01", "02", "03") ~ "JFM",
+    month %in% c("04", "05", "06") ~ "AMJ",
+    month %in% c("07", "08", "09") ~ "JAS",
+    month %in% c("10", "11", "12") ~ "OND")) %>%
+  group_by(year, season) %>%
+  summarise(pdo_val = mean(value)) %>%
+  mutate(year = as.numeric(as.character(year)))
+
+headers <- data.frame(area = character(), site = character(), 
+                      season = character(), lag = character(), corr_values = character())
+
+headers2 <- data.frame(area = character(), season = character(), 
+                       lag = character(), corr_values = character())
+
+area_list <- c("PB", "BL", "AN", "PL")
+site_list <- c("MPA", "REF")
+season_list <- c("JFM", "AMJ", "JAS", "OND")
+
+```
+
+```{r species subsets, eval = T, echo = F}
+
+blu_full <- full_cp_ml %>%
+  filter(species == "BLU")
+
+gpr_full <- full_cp_ml %>%
+  filter(species == "GPR")
+
+olv_full <- full_cp_ml %>%
+  filter(species == "OLV")
+
+ver_full <- full_cp_ml %>%
+  filter(species == "VER")
+
+lcd_full <- full_cp_ml %>%
+  filter(species == "LCD")
+
+```
+
+### Blue rockfish, *Sebastes mystinus*
+
+```{r blu, include=F}
+
+b_size_cutoff <- 23
+
+juv_blu <- blu_full %>%
+  filter(size <= b_size_cutoff)%>%
+  group_by(drift, trip, area, site, month, day, year,
+           gridcell, anglerhours) %>%
+  summarise(cpue_sum = sum(cpue))%>%
+  group_by(trip, area, site, month, day, year,
+           gridcell) %>%
+  summarise(cpue_date = mean(cpue_sum)) %>%
+  group_by( area, site, year, gridcell) %>%
+  summarise(cpue_cell = mean(cpue_date)) %>%
+  group_by( area, site, year) %>%
+  summarise(cpue_site = mean(cpue_cell))
+
+adult_blu <- blu_full %>%
+  filter(size > b_size_cutoff)%>%
+  group_by(drift, trip, area, site, month, day, year, gridcell) %>%
+  summarise(cpue_sum = sum(cpue))%>%
+  group_by(trip, area, site, month, year, gridcell) %>%
+  summarise(cpue_date = mean(cpue_sum)) %>%
+  group_by( area, site, year, gridcell) %>%
+  summarise(cpue_cell = mean(cpue_date)) %>%
+  group_by( area, site, year) %>%
+  summarise(cpue_site = mean(cpue_cell))
+
+full_blu <- blu_full %>%
+  group_by(drift, trip, area, site, month, day, year, gridcell) %>%
+  summarise(cpue_sum = sum(cpue))%>%
+  group_by(trip, area, site, month, year, gridcell) %>%
+  summarise(cpue_date = mean(cpue_sum)) %>%
+  group_by( area, site, year, gridcell) %>%
+  summarise(cpue_cell = mean(cpue_date)) %>%
+  group_by( area, site, year) %>%
+  summarise(cpue_site = mean(cpue_cell))
+
+
+juv_moci_blu <- left_join(juv_blu, MOCI, by = "year") 
+adult_moci_blu <- left_join(adult_blu, MOCI, by = "year")
+full_moci_blu <- left_join(full_blu, MOCI, by = "year")
+
+juv_b <- headers
+adult_b <- headers
+full_b <- headers
+
+## juv loop
+for(j in area_list){
+  for(k in site_list){
+    for(l in season_list){
+      juv_combos_b <- juv_moci_blu %>%
+      filter(area == j, site == k, season == l)
+      cross_corr <- ccf(juv_combos_b$central_ca,
+                        juv_combos_b$cpue_site, plot = F)
+      lag <- cross_corr$lag
+      corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      juv_b <- bind_rows(juv_b, c(area = j, site = k, season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+    }
+  }
+}
+
+## adult loop
+for(j in area_list){
+  for(k in site_list){
+    for(l in season_list){
+      adult_combos_b <- adult_moci_blu %>%
+      filter(area == j, site == k, season == l)
+      cross_corr <- ccf(adult_combos_b$central_ca,
+                        adult_combos_b$cpue_site, plot = F)
+      lag <- cross_corr$lag
+      corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      adult_b <- bind_rows(adult_b, c(area = j, site = k, season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+    }
+  }
+}
+
+
+## full loop
+for(j in area_list){
+  for(k in site_list){
+    for(l in season_list){
+      full_combos_b <- full_moci_blu %>%
+      filter(area == j, site == k, season == l)
+      cross_corr <- ccf(full_combos_b$central_ca,
+                        full_combos_b$cpue_site, plot = F)
+      lag <- cross_corr$lag
+      corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      full_b <- bind_rows(full_b, c(area = j, site = k, season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+    }
+  }
+}
+
+
+## juv plot set up
+vis_juv_b <- juv_b %>%
+  filter(lag %in% c(-10:0))%>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_juv_b$season <- factor(vis_juv_b$season, levels = c("JFM", "AMJ", "JAS", "OND"))
+
+b_juv_moci_plot <- ggplot() +
+  scale_color_manual(values = c(  "#999999" , "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_juv_b, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Juvenile Blue Rockfish Lag Correlation -MOCI", y = "correlation",
+       caption = "Fig 1")+
+  scale_x_continuous(limits=c(-8.5,0.5),breaks=seq(-8,0,1))+
+  scale_y_continuous(limits = c(-0.6, 0.95), breaks = seq(-0.6, 0.9, 0.2), 
+                     labels = c(-0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8) )+
+  theme_bw()+
+  facet_grid(site ~ area)+
+    theme(panel.grid=element_blank(),
+          plot.caption = element_text(size = 8))
+
+## adult plot set up
+vis_adult_b <- adult_b %>%
+  filter(lag %in% c(-10:0))%>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_adult_b$season <- factor(vis_adult_b$season, levels = c("JFM", "AMJ", "JAS", "OND"))
+
+b_adult_moci_plot <- ggplot() +
+  scale_color_manual(values = c(  "#999999" , "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_adult_b, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Adult Blue Rockfish Lag Correlation -MOCI", y = "correlation",
+       caption = "Fig 2")+
+  scale_x_continuous(limits=c(-8.5,0.5),breaks=seq(-8,0,1))+
+  scale_y_continuous(limits = c(-0.6, 0.9), breaks = seq(-0.6, 0.9, 0.2), 
+                     labels = c(-0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8) )+
+  theme_bw()+
+  facet_grid(site ~ area)+
+    theme(panel.grid=element_blank(),
+          plot.caption = element_text(size = 8))
+
+
+## full plot set up
+vis_full_b <- full_b %>%
+  filter(lag %in% c(-10:0))%>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_full_b$season <- factor(vis_full_b$season, levels = c("JFM", "AMJ", "JAS", "OND"))
+
+b_full_moci_plot <- ggplot() +
+  scale_color_manual(values = c(  "#999999" , "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_full_b, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Blue Rockfish Lag Correlation -MOCI", y = "correlation",
+       caption = "Fig 3")+
+  scale_x_continuous(limits=c(-8.5,0.5),breaks=seq(-8,0,1))+
+  scale_y_continuous(limits = c(-0.6, 0.9), breaks = seq(-0.6, 0.9, 0.2), 
+                     labels = c(-0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8) )+
+  theme_bw()+
+  facet_grid(site ~ area)+
+    theme(panel.grid=element_blank(),
+          plot.caption = element_text(size = 8))
+
+
+
+```
+
+
+#### Figures MOCI with protection status
+
+```{r fig1, fig.height= 6, fig.width= 10, fig.align= "center", echo=F}
+b_juv_moci_plot
+
+
+```
+
+
+```{r fig2, fig.height= 6, fig.width= 10, fig.align= "center", echo=F}
+b_adult_moci_plot
+
+
+```
+
+
+```{r fig3, fig.height= 6, fig.width= 10, fig.align= "center", echo=F}
+b_full_moci_plot
+
+ggsave("bfm.png", plot = b_full_moci_plot, path = "C:/Users/erinj/Documents/Thesis/Figures/F20", dpi = 1000, width = 6, height = 4)
+```
+
+
+```{r blu ns, include = F}
+
+juv_bns <- headers2
+adult_bns <- headers2
+full_bns <- headers2
+
+## juv no site loop
+for(j in area_list){
+  for(l in season_list){
+    juv_combos_bns <- juv_moci_blu %>%
+      filter(area == j, season == l)
+    cross_corr <- ccf(juv_combos_bns$central_ca,
+                      juv_combos_bns$cpue_site, plot = F)
+    lag <- cross_corr$lag
+    corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      juv_bns <- bind_rows(juv_bns, c(area = j,  season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+    }
+}
+
+
+## adult no site loop
+for(j in area_list){
+  for(l in season_list){
+    adult_combos_bns <- adult_moci_blu %>%
+      filter(area == j, season == l)
+    cross_corr <- ccf(adult_combos_bns$central_ca,
+                      adult_combos_bns$cpue_site, plot = F)
+    lag <- cross_corr$lag
+    corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      adult_bns <- bind_rows(adult_bns, c(area = j,  season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+    }
+}
+
+
+## together no site loop
+for(j in area_list){
+  for(l in season_list){
+    full_combos_bns <- full_moci_blu %>%
+      filter(area == j, season == l)
+    cross_corr <- ccf(full_combos_bns$central_ca,
+                      full_combos_bns$cpue_site, plot = F)
+    lag <- cross_corr$lag
+    corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      full_bns <- bind_rows(full_bns, c(area = j,  season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+    }
+}
+
+
+## juv no site set up
+vis_juv_bns <- juv_bns %>%
+  filter(lag %in% c(-10:0))%>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_juv_bns$season <- factor(vis_juv_bns$season, levels = c("JFM", "AMJ", "JAS", "OND"))
+
+bns_juv_moci_plot <- ggplot() +
+  scale_color_manual(values = c(  "#999999" , "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_juv_bns, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Juvenile Blue Rockfish Lag Correlation -MOCI", y = "correlation",
+       caption = "Fig 4")+
+  scale_x_continuous(limits=c(-10.5,0.5),breaks=seq(-10,0,1))+
+  #scale_y_continuous(limits = c(-0.1, 0.1), breaks = seq(-0.1, 0.1, 0.1))+
+  theme_bw()+
+  facet_wrap(.~ area)+
+    theme(panel.grid=element_blank())
+
+
+## adult no site set up
+vis_adult_bns <- adult_bns %>%
+  filter(lag %in% c(-10:0))%>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_adult_bns$season <- factor(vis_adult_bns$season, levels = c("JFM", "AMJ", "JAS", "OND"))
+
+bns_adult_moci_plot <- ggplot() +
+  scale_color_manual(values = c(  "#999999" , "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999",  "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_adult_bns, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Adult Blue Rockfish Lag Correlation -MOCI", y = "correlation",
+       caption = "Fig 5")+
+  scale_x_continuous(limits=c(-10.5,0.5),breaks=seq(-10,0,1))+
+  #scale_y_continuous(limits = c(-0.2, 0.4), breaks = seq(-0.2, 0.4, 0.1))+
+  theme_bw()+
+  facet_wrap(.~ area) +
+  theme(panel.grid=element_blank())
+
+
+## full no site set up
+vis_full_bns <- full_bns %>%
+  filter(lag %in% c(-10:0))%>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_full_bns$season <- factor(vis_full_bns$season, levels = c("JFM", "AMJ", "JAS", "OND"))
+
+bns_full_moci_plot <-ggplot() +
+  scale_color_manual(values = c( "#999999" ,  "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_full_bns, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Blue Rockfish Lag Correlation -MOCI", y = "correlation",
+       caption = "Fig 6")+
+  scale_x_continuous(limits=c(-10.5,0.5),breaks=seq(-10,0,1))+
+  #scale_y_continuous(limits = c(-0.2, 0.4), breaks = seq(-0.2, 0.4, 0.1))+
+  theme_bw()+
+  facet_wrap(.~ area)+
+    theme(panel.grid=element_blank())
+
+
+```
+
+#### MOCI without protection status
+
+```{r fig4, fig.height= 6, fig.width= 10, fig.align= "center", echo = F}
+
+bns_juv_moci_plot
+
+
+
+```
+
+
+```{r fig5, fig.height= 6, fig.width= 10, fig.align= "center", echo = F}
+
+bns_adult_moci_plot
+
+
+```
+
+
+```{r fig6, fig.height= 6, fig.width= 10, fig.align= "center", echo = F}
+
+bns_full_moci_plot
+
+
+
+```
+
+
+```{r blu pdo, include = F}
+
+juv_pdo_blu <- left_join(juv_blu, pdo, by = "year")
+adult_pdo_blu <- left_join(adult_blu, pdo, by = "year")
+full_pdo_blu <- left_join(full_blu, pdo, by = "year")
+
+juv_b_pdo <- headers
+adult_b_pdo <- headers
+full_b_pdo <- headers
+
+## juv loop
+for(j in area_list){
+  for(k in site_list){
+    for(l in season_list){
+      juv_combos_b_pdo <- juv_pdo_blu %>%
+      filter(area == j, site == k, season == l)
+      cross_corr <- ccf(juv_combos_b_pdo$pdo_val,
+                        juv_combos_b_pdo$cpue_site, plot = F)
+      lag <- cross_corr$lag
+      corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      juv_b_pdo <- bind_rows(juv_b_pdo, c(area = j, site = k, season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+    }
+  }
+}
+
+## adult loop
+for(j in area_list){
+  for(k in site_list){
+    for(l in season_list){
+      adult_combos_b_pdo <- adult_pdo_blu %>%
+      filter(area == j, site == k, season == l)
+      cross_corr <- ccf(adult_combos_b_pdo$pdo_val,
+                        adult_combos_b_pdo$cpue_site, plot = F)
+      lag <- cross_corr$lag
+      corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      adult_b_pdo <- bind_rows(adult_b_pdo, c(area = j, site = k, season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+    }
+  }
+}
+
+
+## full loop
+for(j in area_list){
+  for(k in site_list){
+    for(l in season_list){
+      full_combos_b_pdo <- full_pdo_blu %>%
+      filter(area == j, site == k, season == l)
+      cross_corr <- ccf(full_combos_b_pdo$pdo_val,
+                        full_combos_b_pdo$cpue_site, plot = F)
+      lag <- cross_corr$lag
+      corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      full_b_pdo <- bind_rows(full_b_pdo, c(area = j, site = k, season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+    }
+  }
+}
+
+
+## juv plot set up
+vis_juv_b_pdo <- juv_b_pdo %>%
+  filter(lag %in% c(-10:0))%>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_juv_b_pdo$season <- factor(vis_juv_b_pdo$season, levels = c("JFM", "AMJ", "JAS", "OND"))
+
+b_juv_pdo_plot <- ggplot() +
+  scale_color_manual(values = c(  "#999999" , "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_juv_b_pdo, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Juvenile Blue Rockfish Lag Correlation -PDO", y = "correlation",
+       caption = "Fig 7")+
+  scale_x_continuous(limits=c(-8.5,0.5),breaks=seq(-8,0,1))+
+  scale_y_continuous(limits = c(-0.6, 0.95), breaks = seq(-0.6, 0.9, 0.2), 
+                     labels = c(-0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8) )+
+  theme_bw()+
+  facet_grid(site ~ area)+
+    theme(panel.grid=element_blank(),
+          plot.caption = element_text(size = 8))
+
+## adult plot set up
+vis_adult_b_pdo <- adult_b_pdo %>%
+  filter(lag %in% c(-10:0))%>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_adult_b_pdo$season <- factor(vis_adult_b_pdo$season, levels = c("JFM", "AMJ", "JAS", "OND"))
+
+b_adult_pdo_plot <- ggplot() +
+  scale_color_manual(values = c(  "#999999" , "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_adult_b_pdo, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Adult Blue Rockfish Lag Correlation -PDO", y = "correlation",
+       caption = "Fig 8")+
+  scale_x_continuous(limits=c(-8.5,0.5),breaks=seq(-8,0,1))+
+  scale_y_continuous(limits = c(-0.6, 0.9), breaks = seq(-0.6, 0.9, 0.2), 
+                     labels = c(-0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8) )+
+  theme_bw()+
+  facet_grid(site ~ area)+
+    theme(panel.grid=element_blank(),
+          plot.caption = element_text(size = 8))
+
+
+## full plot set up
+vis_full_b_pdo <- full_b_pdo %>%
+  filter(lag %in% c(-10:0))%>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_full_b_pdo$season <- factor(vis_full_b_pdo$season, levels = c("JFM", "AMJ", "JAS", "OND"))
+
+b_full_pdo_plot <- ggplot() +
+  scale_color_manual(values = c(  "#999999" , "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_full_b_pdo, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Blue Rockfish Lag Correlation -PDO", y = "correlation",
+       caption = "Fig 9")+
+  scale_x_continuous(limits=c(-8.5,0.5),breaks=seq(-8,0,1))+
+  scale_y_continuous(limits = c(-0.6, 0.9), breaks = seq(-0.6, 0.9, 0.2), 
+                     labels = c(-0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8) )+
+  theme_bw()+
+  facet_grid(site ~ area)+
+    theme(panel.grid=element_blank(),
+          plot.caption = element_text(size = 8))
+
+
+```
+
+
+####  PDO with protection status
+
+```{r fig7, fig.height= 6, fig.width= 10, fig.align= "center", echo = F}
+
+b_juv_pdo_plot
+
+```
+
+
+```{r fig8, fig.height= 6, fig.width= 10, fig.align= "center", echo= F}
+
+b_adult_pdo_plot
+
+```
+
+
+```{r fig9, fig.height= 6, fig.width= 10, fig.align= "center", echo=F}
+
+b_full_pdo_plot
+
+```
+
+```{r blu ns pdo, include = F}
+
+juv_bns_pdo <- headers2
+adult_bns_pdo <- headers2
+full_bns_pdo <- headers2
+
+## juv no site loop
+for(j in area_list){
+  for(l in season_list){
+    juv_combos_bns_pdo <- juv_pdo_blu %>%
+      filter(area == j, season == l)
+    cross_corr <- ccf(juv_combos_bns_pdo$pdo_val,
+                      juv_combos_bns_pdo$cpue_site, plot = F)
+    lag <- cross_corr$lag
+    corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      juv_bns_pdo <- bind_rows(juv_bns_pdo, c(area = j,  season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+    }
+}
+
+
+## adult no site loop
+for(j in area_list){
+  for(l in season_list){
+    adult_combos_bns_pdo <- adult_pdo_blu %>%
+      filter(area == j, season == l)
+    cross_corr <- ccf(adult_combos_bns_pdo$pdo_val,
+                      adult_combos_bns_pdo$cpue_site, plot = F)
+    lag <- cross_corr$lag
+    corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      adult_bns_pdo <- bind_rows(adult_bns_pdo, c(area = j,  season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+    }
+}
+
+
+## together no site loop
+for(j in area_list){
+  for(l in season_list){
+    full_combos_bns_pdo <- full_pdo_blu %>%
+      filter(area == j, season == l)
+    cross_corr <- ccf(full_combos_bns_pdo$pdo_val,
+                      full_combos_bns_pdo$cpue_site, plot = F)
+    lag <- cross_corr$lag
+    corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      full_bns_pdo <- bind_rows(full_bns_pdo, c(area = j,  season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+    }
+}
+
+
+## juv no site set up
+vis_juv_bns_pdo <- juv_bns_pdo %>%
+  filter(lag %in% c(-10:0))%>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_juv_bns_pdo$season <- factor(vis_juv_bns_pdo$season, levels = c("JFM", "AMJ", "JAS", "OND"))
+
+bns_juv_pdo_plot <- ggplot() +
+  scale_color_manual(values = c(  "#999999" , "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_juv_bns_pdo, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Juvenile Blue Rockfish Lag Correlation -PDO", y = "correlation",
+       caption = "Fig 10")+
+  scale_x_continuous(limits=c(-10.5,0.5),breaks=seq(-10,0,1))+
+  #scale_y_continuous(limits = c(-0.1, 0.1), breaks = seq(-0.1, 0.1, 0.1))+
+  theme_bw()+
+  facet_wrap(.~ area)+
+    theme(panel.grid=element_blank())
+
+
+## adult no site set up
+vis_adult_bns_pdo <- adult_bns_pdo %>%
+  filter(lag %in% c(-10:0))%>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_adult_bns_pdo$season <- factor(vis_adult_bns_pdo$season, levels = c("JFM", "AMJ", "JAS", "OND"))
+
+bns_adult_pdo_plot <- ggplot() +
+  scale_color_manual(values = c(  "#999999" , "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999",  "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_adult_bns_pdo, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Adult Blue Rockfish Lag Correlation -PDO", y = "correlation",
+       caption = "Fig 11")+
+  scale_x_continuous(limits=c(-10.5,0.5),breaks=seq(-10,0,1))+
+  #scale_y_continuous(limits = c(-0.2, 0.4), breaks = seq(-0.2, 0.4, 0.1))+
+  theme_bw()+
+  facet_wrap(.~ area) +
+  theme(panel.grid=element_blank())
+
+
+## full no site set up
+vis_full_bns_pdo <- full_bns_pdo %>%
+  filter(lag %in% c(-10:0))%>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_full_bns_pdo$season <- factor(vis_full_bns_pdo$season, levels = c("JFM", "AMJ", "JAS", "OND"))
+
+bns_full_pdo_plot <-ggplot() +
+  scale_color_manual(values = c( "#999999" ,  "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_full_bns_pdo, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Blue Rockfish Lag Correlation -PDO", y = "correlation",
+       caption = "Fig 12")+
+  scale_x_continuous(limits=c(-10.5,0.5),breaks=seq(-10,0,1))+
+  #scale_y_continuous(limits = c(-0.2, 0.4), breaks = seq(-0.2, 0.4, 0.1))+
+  theme_bw()+
+  facet_wrap(.~ area)+
+    theme(panel.grid=element_blank())
+
+
+```
+
+#### PDO without protection status
+
+```{r fig10, fig.height= 6, fig.width= 10, fig.align= "center", echo = F}
+
+bns_juv_pdo_plot
+
+```
+
+
+```{r fig11, fig.height= 6, fig.width= 10, fig.align= "center", echo = F}
+
+bns_adult_pdo_plot
+
+```
+
+
+```{r fig12, fig.height= 6, fig.width= 10, fig.align= "center", echo = F}
+
+bns_full_pdo_plot
+
+```
+
+### Gopher rockfish, *Sebastes carnatus*
+
+```{r gpr, include = F}
+
+g_size_cutoff <- 20
+
+juv_gpr <- gpr_full %>%
+  filter(size <= g_size_cutoff)%>%
+  group_by(drift, trip, area, site, month, day, year,
+           gridcell, anglerhours) %>%
+  summarise(cpue_sum = sum(cpue))%>%
+  group_by(trip, area, site, month, day, year,
+           gridcell) %>%
+  summarise(cpue_date = mean(cpue_sum)) %>%
+  group_by( area, site, year, gridcell) %>%
+  summarise(cpue_cell = mean(cpue_date)) %>%
+  group_by( area, site, year) %>%
+  summarise(cpue_site = mean(cpue_cell))
+
+
+adult_gpr <- gpr_full %>%
+  filter(size > g_size_cutoff)%>%
+  group_by(drift, trip, area, site, month, day, year,
+           gridcell, anglerhours) %>%
+  summarise(cpue_sum = sum(cpue)) %>%
+  group_by(trip, area, site, month, day, year,
+           gridcell) %>%
+  summarise(cpue_date = mean(cpue_sum)) %>%
+  group_by( area, site, year, gridcell) %>%
+  summarise(cpue_cell = mean(cpue_date)) %>%
+  group_by( area, site, year) %>%
+  summarise(cpue_site = mean(cpue_cell))
+
+full_gpr <- gpr_full %>%
+  group_by(drift, trip, area, site, month, day, year,
+           gridcell, anglerhours) %>%
+  summarise(cpue_sum = sum(cpue))%>%
+  group_by(trip, area, site, month, day, year,
+           gridcell) %>%
+  summarise(cpue_date = mean(cpue_sum)) %>%
+  group_by( area, site, year, gridcell) %>%
+  summarise(cpue_cell = mean(cpue_date)) %>%
+  group_by( area, site, year) %>%
+  summarise(cpue_site = mean(cpue_cell))
+
+juv_moci_gpr <- left_join(juv_gpr, MOCI, by = "year")
+adult_moci_gpr <- left_join(adult_gpr, MOCI, by = "year")
+full_moci_gpr <- left_join(full_gpr, MOCI, by = "year")
+
+juv_g <- headers
+adult_g <- headers
+full_g <- headers
+
+## juv loop
+for(j in area_list){
+  for(k in site_list){
+    for(l in season_list){
+      juv_combos_g <- juv_moci_gpr %>%
+      filter(area == j, site == k, season == l)
+      cross_corr <- ccf(juv_combos_g$central_ca,
+                        juv_combos_g$cpue_site, plot = F)
+      lag <- cross_corr$lag
+      corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      juv_g <- bind_rows(juv_g, c(area = j, site = k, season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+    }
+  }
+}
+
+## adult loop
+for(j in area_list){
+  for(k in site_list){
+    for(l in season_list){
+      adult_combos_g <- adult_moci_gpr %>%
+      filter(area == j, site == k, season == l)
+      cross_corr <- ccf(adult_combos_g$central_ca,
+                        adult_combos_g$cpue_site, plot = F)
+      lag <- cross_corr$lag
+      corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      adult_g <- bind_rows(adult_g, c(area = j, site = k, season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+    }
+  }
+}
+
+
+## full loop
+for(j in area_list){
+  for(k in site_list){
+    for(l in season_list){
+      full_combos_g <- full_moci_gpr %>%
+      filter(area == j, site == k, season == l)
+      cross_corr <- ccf(full_combos_g$central_ca,
+                        full_combos_g$cpue_site, plot = F)
+      lag <- cross_corr$lag
+      corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      full_g <- bind_rows(full_g, c(area = j, site = k, season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+    }
+  }
+}
+
+
+## juv plot set up
+vis_juv_g <- juv_g %>%
+  filter(lag %in% c(-10:0))%>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_juv_g$season <- factor(vis_juv_g$season, levels = c("JFM", "AMJ", "JAS", "OND"))
+
+g_juv_moci_plot <- ggplot() +
+  scale_color_manual(values = c(  "#999999" , "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_juv_g, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Juvenile Gopher Rockfish Lag Correlation -MOCI", y = "correlation",
+       caption = "Fig 13")+
+  scale_x_continuous(limits=c(-8.5,0.5),breaks=seq(-8,0,1))+
+  scale_y_continuous(limits = c(-0.6, 0.95), breaks = seq(-0.6, 0.9, 0.2), 
+                     labels = c(-0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8) )+
+  theme_bw()+
+  facet_grid(site ~ area)+
+    theme(panel.grid=element_blank(),
+          plot.caption = element_text(size = 8))
+
+## adult plot set up
+vis_adult_g <- adult_g %>%
+  filter(lag %in% c(-10:0))%>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_adult_g$season <- factor(vis_adult_g$season, levels = c("JFM", "AMJ", "JAS", "OND"))
+
+g_adult_moci_plot <- ggplot() +
+  scale_color_manual(values = c(  "#999999" , "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_adult_g, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Adult Gopher Rockfish Lag Correlation -MOCI", y = "correlation",
+       caption = "Fig 14")+
+  scale_x_continuous(limits=c(-8.5,0.5),breaks=seq(-8,0,1))+
+  scale_y_continuous(limits = c(-0.6, 0.9), breaks = seq(-0.6, 0.9, 0.2), 
+                     labels = c(-0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8) )+
+  theme_bw()+
+  facet_grid(site ~ area)+
+    theme(panel.grid=element_blank(),
+          plot.caption = element_text(size = 8))
+
+
+## full plot set up
+vis_full_g <- full_g %>%
+  filter(lag %in% c(-10:0))%>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_full_g$season <- factor(vis_full_g$season, levels = c("JFM", "AMJ", "JAS", "OND"))
+
+g_full_moci_plot <- ggplot() +
+  scale_color_manual(values = c(  "#999999" , "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_full_g, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Gopher Rockfish Lag Correlation -MOCI", y = "correlation",
+       caption = "Fig 15")+
+  scale_x_continuous(limits=c(-8.5,0.5),breaks=seq(-8,0,1))+
+  scale_y_continuous(limits = c(-0.6, 0.9), breaks = seq(-0.6, 0.9, 0.2), 
+                     labels = c(-0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8) )+
+  theme_bw()+
+  facet_grid(site ~ area)+
+    theme(panel.grid=element_blank(),
+          plot.caption = element_text(size = 8))
+
+
+```
+
+#### Figures MOCI with protection status
+
+```{r fig13, fig.height= 6, fig.width= 10, fig.align= "center", echo=F}
+g_juv_moci_plot
+
+
+```
+
+
+```{r fig14, fig.height= 6, fig.width= 10, fig.align= "center", echo=F}
+g_adult_moci_plot
+
+
+```
+
+
+```{r fig15, fig.height= 6, fig.width= 10, fig.align= "center", echo=F}
+g_full_moci_plot
+
+
+```
+
+
+```{r gpr ns, include = F}
+
+juv_gns <- headers2
+adult_gns <- headers2
+full_gns <- headers2
+
+## juv no site loop
+for(j in area_list){
+  for(l in season_list){
+    juv_combos_gns <- juv_moci_gpr %>%
+      filter(area == j, season == l)
+    cross_corr <- ccf(juv_combos_gns$central_ca,
+                        juv_combos_gns$cpue_site, plot = F)
+    lag <- cross_corr$lag
+    corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      juv_gns <- bind_rows(juv_gns, c(area = j,  season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+    }
+}
+
+
+## adult no site loop
+for(j in area_list){
+  for(l in season_list){
+    adult_combos_gns <- adult_moci_gpr %>%
+      filter(area == j, season == l)
+    cross_corr <- ccf(adult_combos_gns$central_ca,
+                        adult_combos_gns$cpue_site, plot = F)
+    lag <- cross_corr$lag
+    corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      adult_gns <- bind_rows(adult_gns, c(area = j,  season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+    }
+}
+
+
+## together no site loop
+for(j in area_list){
+  for(l in season_list){
+    full_combos_gns <- full_moci_gpr %>%
+      filter(area == j, season == l)
+    cross_corr <- ccf(full_combos_gns$central_ca,
+                        full_combos_gns$cpue_site, plot = F)
+    lag <- cross_corr$lag
+    corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      full_gns <- bind_rows(full_gns, c(area = j,  season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+    }
+}
+
+
+## juv no site set up
+vis_juv_gns <- juv_gns %>%
+  filter(lag %in% c(-10:0))%>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_juv_gns$season <- factor(vis_juv_gns$season, levels = c("JFM", "AMJ", "JAS", "OND"))
+
+gns_juv_moci_plot <- ggplot() +
+  scale_color_manual(values = c(  "#999999" , "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_juv_gns, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Juvenile Gopher Rockfish Lag Correlation -MOCI", y = "correlation",
+       caption = "Fig 16")+
+  scale_x_continuous(limits=c(-10.5,0.5),breaks=seq(-10,0,1))+
+  #scale_y_continuous(limits = c(-0.1, 0.1), breaks = seq(-0.1, 0.1, 0.1))+
+  theme_bw()+
+  facet_wrap(.~ area)+
+    theme(panel.grid=element_blank())
+
+
+## adult no site set up
+vis_adult_gns <- adult_gns %>%
+  filter(lag %in% c(-10:0))%>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_adult_gns$season <- factor(vis_adult_gns$season, levels = c("JFM", "AMJ", "JAS", "OND"))
+
+gns_adult_moci_plot <- ggplot() +
+  scale_color_manual(values = c(  "#999999" , "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999",  "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_adult_gns, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Adult Gopher Rockfish Lag Correlation -MOCI", y = "correlation",
+       caption = "Fig 17")+
+  scale_x_continuous(limits=c(-10.5,0.5),breaks=seq(-10,0,1))+
+  #scale_y_continuous(limits = c(-0.2, 0.4), breaks = seq(-0.2, 0.4, 0.1))+
+  theme_bw()+
+  facet_wrap(.~ area) +
+  theme(panel.grid=element_blank())
+
+
+## full no site set up
+vis_full_gns <- full_gns %>%
+  filter(lag %in% c(-10:0))%>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_full_gns$season <- factor(vis_full_gns$season, levels = c("JFM", "AMJ", "JAS", "OND"))
+
+gns_full_moci_plot <-ggplot() +
+  scale_color_manual(values = c( "#999999" ,  "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_full_gns, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Gopher Rockfish Lag Correlation -MOCI", y = "correlation",
+       caption = "Fig 18")+
+  scale_x_continuous(limits=c(-10.5,0.5),breaks=seq(-10,0,1))+
+  #scale_y_continuous(limits = c(-0.2, 0.4), breaks = seq(-0.2, 0.4, 0.1))+
+  theme_bw()+
+  facet_wrap(.~ area)+
+    theme(panel.grid=element_blank())
+
+
+```
+
+#### MOCI without protection status
+
+```{r fig16, fig.height= 6, fig.width= 10, fig.align= "center", echo = F}
+
+gns_juv_moci_plot
+
+
+
+
+```
+
+
+```{r fig17, fig.height= 6, fig.width= 10, fig.align= "center", echo = F}
+
+gns_adult_moci_plot
+
+
+
+```
+
+
+```{r fig18, fig.height= 6, fig.width= 10, fig.align= "center", echo = F}
+
+gns_full_moci_plot
+
+
+
+```
+
+
+```{r gpr pdo, include = F}
+
+juv_pdo_gpr <- left_join(juv_gpr, pdo, by = "year")
+adult_pdo_gpr <- left_join(adult_gpr, pdo, by = "year")
+full_pdo_gpr <- left_join(full_gpr, pdo, by = "year")
+
+juv_g_pdo <- headers
+adult_g_pdo <- headers
+full_g_pdo <- headers
+
+## juv loop
+for(j in area_list){
+  for(k in site_list){
+    for(l in season_list){
+      juv_combos_g_pdo <- juv_pdo_gpr %>%
+      filter(area == j, site == k, season == l)
+      cross_corr <- ccf(juv_combos_g_pdo$pdo_val,
+                        juv_combos_g_pdo$cpue_site, plot = F)
+      lag <- cross_corr$lag
+      corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      juv_g_pdo <- bind_rows(juv_g_pdo, c(area = j, site = k, season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+    }
+  }
+}
+
+## adult loop
+for(j in area_list){
+  for(k in site_list){
+    for(l in season_list){
+      adult_combos_g_pdo <- adult_pdo_gpr %>%
+      filter(area == j, site == k, season == l)
+      cross_corr <- ccf(adult_combos_g_pdo$pdo_val,
+                        adult_combos_g_pdo$cpue_site, plot = F)
+      lag <- cross_corr$lag
+      corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      adult_g_pdo <- bind_rows(adult_g_pdo, c(area = j, site = k, season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+    }
+  }
+}
+
+
+## full loop
+for(j in area_list){
+  for(k in site_list){
+    for(l in season_list){
+      full_combos_g_pdo <- full_pdo_gpr %>%
+      filter(area == j, site == k, season == l)
+      cross_corr <- ccf(full_combos_g_pdo$pdo_val,
+                        full_combos_g_pdo$cpue_site, plot = F)
+      lag <- cross_corr$lag
+      corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      full_g_pdo <- bind_rows(full_g_pdo, c(area = j, site = k, season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+    }
+  }
+}
+
+
+## juv plot set up
+vis_juv_g_pdo <- juv_g_pdo %>%
+  filter(lag %in% c(-10:0))%>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_juv_g_pdo$season <- factor(vis_juv_g_pdo$season, levels = c("JFM", "AMJ", "JAS", "OND"))
+
+g_juv_pdo_plot <- ggplot() +
+  scale_color_manual(values = c(  "#999999" , "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_juv_g_pdo, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Juvenile Gopher Rockfish Lag Correlation -PDO", y = "correlation",
+       caption = "Fig 19")+
+  scale_x_continuous(limits=c(-8.5,0.5),breaks=seq(-8,0,1))+
+  scale_y_continuous(limits = c(-0.6, 0.95), breaks = seq(-0.6, 0.9, 0.2), 
+                     labels = c(-0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8) )+
+  theme_bw()+
+  facet_grid(site ~ area)+
+    theme(panel.grid=element_blank(),
+          plot.caption = element_text(size = 8))
+
+## adult plot set up
+vis_adult_g_pdo <- adult_g_pdo %>%
+  filter(lag %in% c(-10:0))%>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_adult_g_pdo$season <- factor(vis_adult_g_pdo$season, levels = c("JFM", "AMJ", "JAS", "OND"))
+
+g_adult_pdo_plot <- ggplot() +
+  scale_color_manual(values = c(  "#999999" , "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_adult_g_pdo, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Adult Gopher Rockfish Lag Correlation -PDO", y = "correlation",
+       caption = "Fig 20")+
+  scale_x_continuous(limits=c(-8.5,0.5),breaks=seq(-8,0,1))+
+  scale_y_continuous(limits = c(-0.6, 0.9), breaks = seq(-0.6, 0.9, 0.2), 
+                     labels = c(-0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8) )+
+  theme_bw()+
+  facet_grid(site ~ area)+
+    theme(panel.grid=element_blank(),
+          plot.caption = element_text(size = 8))
+
+
+## full plot set up
+vis_full_g_pdo <- full_g_pdo %>%
+  filter(lag %in% c(-10:0))%>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_full_g_pdo$season <- factor(vis_full_g_pdo$season, levels = c("JFM", "AMJ", "JAS", "OND"))
+
+g_full_pdo_plot <- ggplot() +
+  scale_color_manual(values = c(  "#999999" , "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_full_g_pdo, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Gopher Rockfish Lag Correlation -PDO", y = "correlation",
+       caption = "Fig 21")+
+  scale_x_continuous(limits=c(-8.5,0.5),breaks=seq(-8,0,1))+
+  scale_y_continuous(limits = c(-0.6, 0.9), breaks = seq(-0.6, 0.9, 0.2), 
+                     labels = c(-0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8) )+
+  theme_bw()+
+  facet_grid(site ~ area)+
+    theme(panel.grid=element_blank(),
+          plot.caption = element_text(size = 8))
+
+
+```
+
+
+####  PDO with protection status
+
+```{r fig19, fig.height= 6, fig.width= 10, fig.align= "center", echo = F}
+
+g_juv_pdo_plot
+
+```
+
+
+```{r fig20, fig.height= 6, fig.width= 10, fig.align= "center", echo= F}
+
+g_adult_pdo_plot
+
+```
+
+
+```{r fig21, fig.height= 6, fig.width= 10, fig.align= "center", echo=F}
+
+g_full_pdo_plot
+
+```
+
+```{r gpr ns pdo, include = F}
+
+juv_gns_pdo <- headers2
+adult_gns_pdo <- headers2
+full_gns_pdo <- headers2
+
+## juv no site loop
+for(j in area_list){
+  for(l in season_list){
+    juv_combos_gns_pdo <- juv_pdo_gpr %>%
+      filter(area == j, season == l)
+    cross_corr <- ccf(juv_combos_gns_pdo$pdo_val,
+                      juv_combos_gns_pdo$cpue_site, plot = F)
+    lag <- cross_corr$lag
+    corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      juv_gns_pdo <- bind_rows(juv_gns_pdo, c(area = j,  season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+    }
+}
+
+
+## adult no site loop
+for(j in area_list){
+  for(l in season_list){
+    adult_combos_gns_pdo <- adult_pdo_gpr %>%
+      filter(area == j, season == l)
+    cross_corr <- ccf(adult_combos_gns_pdo$pdo_val,
+                      adult_combos_gns_pdo$cpue_site, plot = F)
+    lag <- cross_corr$lag
+    corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      adult_gns_pdo <- bind_rows(adult_gns_pdo, c(area = j,  season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+    }
+}
+
+
+## together no site loop
+for(j in area_list){
+  for(l in season_list){
+    full_combos_gns_pdo <- full_pdo_gpr %>%
+      filter(area == j, season == l)
+    cross_corr <- ccf(full_combos_gns_pdo$pdo_val,
+                      full_combos_gns_pdo$cpue_site, plot = F)
+    lag <- cross_corr$lag
+    corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      full_gns_pdo <- bind_rows(full_gns_pdo, c(area = j,  season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+    }
+}
+
+
+## juv no site set up
+vis_juv_gns_pdo <- juv_gns_pdo %>%
+  filter(lag %in% c(-10:0))%>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_juv_gns_pdo$season <- factor(vis_juv_gns_pdo$season, levels = c("JFM", "AMJ", "JAS", "OND"))
+
+gns_juv_pdo_plot <- ggplot() +
+  scale_color_manual(values = c(  "#999999" , "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_juv_gns_pdo, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Juvenile Gopher Rockfish Lag Correlation -PDO", y = "correlation",
+       caption = "Fig 22")+
+  scale_x_continuous(limits=c(-10.5,0.5),breaks=seq(-10,0,1))+
+  #scale_y_continuous(limits = c(-0.1, 0.1), breaks = seq(-0.1, 0.1, 0.1))+
+  theme_bw()+
+  facet_wrap(.~ area)+
+    theme(panel.grid=element_blank())
+
+
+## adult no site set up
+vis_adult_gns_pdo <- adult_gns_pdo %>%
+  filter(lag %in% c(-10:0))%>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_adult_gns_pdo$season <- factor(vis_adult_gns_pdo$season, levels = c("JFM", "AMJ", "JAS", "OND"))
+
+gns_adult_pdo_plot <- ggplot() +
+  scale_color_manual(values = c(  "#999999" , "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999",  "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_adult_gns_pdo, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Adult Gopher Rockfish Lag Correlation -PDO", y = "correlation",
+       caption = "Fig 23")+
+  scale_x_continuous(limits=c(-10.5,0.5),breaks=seq(-10,0,1))+
+  #scale_y_continuous(limits = c(-0.2, 0.4), breaks = seq(-0.2, 0.4, 0.1))+
+  theme_bw()+
+  facet_wrap(.~ area) +
+  theme(panel.grid=element_blank())
+
+
+## full no site set up
+vis_full_gns_pdo <- full_gns_pdo %>%
+  filter(lag %in% c(-10:0))%>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_full_gns_pdo$season <- factor(vis_full_gns_pdo$season, levels = c("JFM", "AMJ", "JAS", "OND"))
+
+gns_full_pdo_plot <-ggplot() +
+  scale_color_manual(values = c( "#999999" ,  "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_full_gns_pdo, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Gopher Rockfish Lag Correlation -PDO", y = "correlation",
+       caption = "Fig 24")+
+  scale_x_continuous(limits=c(-10.5,0.5),breaks=seq(-10,0,1))+
+  #scale_y_continuous(limits = c(-0.2, 0.4), breaks = seq(-0.2, 0.4, 0.1))+
+  theme_bw()+
+  facet_wrap(.~ area)+
+    theme(panel.grid=element_blank())
+
+
+```
+
+#### PDO without protection status
+
+```{r fig22, fig.height= 6, fig.width= 10, fig.align= "center", echo = F}
+
+gns_juv_pdo_plot
+
+```
+
+
+```{r fig23, fig.height= 6, fig.width= 10, fig.align= "center", echo = F}
+
+gns_adult_pdo_plot
+
+```
+
+
+```{r fig24, fig.height= 6, fig.width= 10, fig.align= "center", echo = F}
+
+gns_full_pdo_plot
+
+```
+
+
+### Olive rockfish, *Sebastes serranoides*
+
+```{r olv, include=F}
+
+o_size_cutoff <- 29
+
+juv_olv <- olv_full %>%
+  filter(size <= o_size_cutoff)%>%
+  group_by(drift, trip, area, site, month, day, year,
+           gridcell, anglerhours) %>%
+  summarise(cpue_sum = sum(cpue))%>%
+  group_by(trip, area, site, month, day, year,
+           gridcell) %>%
+  summarise(cpue_date = mean(cpue_sum)) %>%
+  group_by( area, site, year, gridcell) %>%
+  summarise(cpue_cell = mean(cpue_date)) %>%
+  group_by( area, site, year) %>%
+  summarise(cpue_site = mean(cpue_cell))
+
+
+adult_olv <- olv_full %>%
+  filter(size > o_size_cutoff)%>%
+  group_by(drift, trip, area, site, month, day, year,
+           gridcell, anglerhours) %>%
+  summarise(cpue_sum = sum(cpue)) %>%
+  group_by(trip, area, site, month, day, year,
+           gridcell) %>%
+  summarise(cpue_date = mean(cpue_sum)) %>%
+  group_by( area, site, year, gridcell) %>%
+  summarise(cpue_cell = mean(cpue_date)) %>%
+  group_by( area, site, year) %>%
+  summarise(cpue_site = mean(cpue_cell))
+
+full_olv <- olv_full %>%
+  group_by(drift, trip, area, site, month, day, year,
+           gridcell, anglerhours) %>%
+  summarise(cpue_sum = sum(cpue))%>%
+  group_by(trip, area, site, month, day, year,
+           gridcell) %>%
+  summarise(cpue_date = mean(cpue_sum)) %>%
+  group_by( area, site, year, gridcell) %>%
+  summarise(cpue_cell = mean(cpue_date)) %>%
+  group_by( area, site, year) %>%
+  summarise(cpue_site = mean(cpue_cell))
+
+juv_moci_olv <- left_join(juv_olv, MOCI, by = "year")
+adult_moci_olv <- left_join(adult_olv, MOCI, by = "year")
+full_moci_olv <- left_join(full_olv, MOCI, by = "year")
+
+juv_o <- headers
+adult_o <- headers
+full_o <- headers
+
+## juv loop
+for(j in area_list){
+  for(k in site_list){
+    for(l in season_list){
+      juv_combos_o <- juv_moci_olv%>%
+      filter(area == j, site == k, season == l)
+      cross_corr <- ccf(juv_combos_o$central_ca,
+                        juv_combos_o$cpue_site, plot = F)
+      lag <- cross_corr$lag
+      corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      juv_o <- bind_rows(juv_o, c(area = j, site = k, season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+    }
+  }
+}
+
+## adult loop
+for(j in area_list){
+  for(k in site_list){
+    for(l in season_list){
+      adult_combos_o <- adult_moci_olv %>%
+      filter(area == j, site == k, season == l)
+      cross_corr <- ccf(adult_combos_o$central_ca,
+                        adult_combos_o$cpue_site, plot = F)
+      lag <- cross_corr$lag
+      corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      adult_o <- bind_rows(adult_o, c(area = j, site = k, season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+    }
+  }
+}
+
+
+## full loop
+for(j in area_list){
+  for(k in site_list){
+    for(l in season_list){
+      full_combos_o <- full_moci_olv %>%
+      filter(area == j, site == k, season == l)
+      cross_corr <- ccf(full_combos_o$central_ca,
+                        full_combos_o$cpue_site, plot = F)
+      lag <- cross_corr$lag
+      corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      full_o <- bind_rows(full_o, c(area = j, site = k, season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+    }
+  }
+}
+
+
+## juv plot set up
+vis_juv_o <- juv_o %>%
+  filter(lag %in% c(-10:0))%>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_juv_o$season <- factor(vis_juv_o$season, levels = c("JFM", "AMJ", "JAS", "OND"))
+
+o_juv_moci_plot <- ggplot() +
+  scale_color_manual(values = c(  "#999999" , "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_juv_o, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Juvenile Olive Rockfish Lag Correlation -MOCI", y = "correlation",
+       caption = "Fig 25")+
+  scale_x_continuous(limits=c(-8.5,0.5),breaks=seq(-8,0,1))+
+  scale_y_continuous(limits = c(-0.6, 0.95), breaks = seq(-0.6, 0.9, 0.2), 
+                     labels = c(-0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8) )+
+  theme_bw()+
+  facet_grid(site ~ area)+
+    theme(panel.grid=element_blank(),
+          plot.caption = element_text(size = 8))
+
+## adult plot set up
+vis_adult_o <- adult_o %>%
+  filter(lag %in% c(-10:0))%>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_adult_o$season <- factor(vis_adult_o$season, levels = c("JFM", "AMJ", "JAS", "OND"))
+
+o_adult_moci_plot <- ggplot() +
+  scale_color_manual(values = c(  "#999999" , "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_adult_o, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Adult Olive Rockfish Lag Correlation -MOCI", y = "correlation",
+       caption = "Fig 26")+
+  scale_x_continuous(limits=c(-8.5,0.5),breaks=seq(-8,0,1))+
+  scale_y_continuous(limits = c(-0.6, 0.9), breaks = seq(-0.6, 0.9, 0.2), 
+                     labels = c(-0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8) )+
+  theme_bw()+
+  facet_grid(site ~ area)+
+    theme(panel.grid=element_blank(),
+          plot.caption = element_text(size = 8))
+
+
+## full plot set up
+vis_full_o <- full_o %>%
+  filter(lag %in% c(-10:0))%>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_full_o$season <- factor(vis_full_o$season, levels = c("JFM", "AMJ", "JAS", "OND"))
+
+o_full_moci_plot <- ggplot() +
+  scale_color_manual(values = c(  "#999999" , "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_full_o, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Olive Rockfish Lag Correlation -MOCI", y = "correlation",
+       caption = "Fig 27")+
+  scale_x_continuous(limits=c(-8.5,0.5),breaks=seq(-8,0,1))+
+  scale_y_continuous(limits = c(-0.6, 0.9), breaks = seq(-0.6, 0.9, 0.2), 
+                     labels = c(-0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8) )+
+  theme_bw()+
+  facet_grid(site ~ area)+
+    theme(panel.grid=element_blank(),
+          plot.caption = element_text(size = 8))
+
+
+```
+
+#### MOCI with protection status
+
+```{r fig25, fig.height= 6, fig.width= 10, fig.align= "center", echo = F}
+o_juv_moci_plot
+
+
+```
+
+
+```{r fig26, fig.height= 6, fig.width= 10, fig.align= "center", echo = F}
+o_adult_moci_plot
+
+
+```
+
+
+```{r fig27, fig.height= 6, fig.width= 10, fig.align= "center", echo = F}
+o_full_moci_plot
+
+
+
+```
+
+```{r olv ns, include=F}
+
+juv_ons <- headers2
+adult_ons <- headers2
+full_ons <- headers2
+
+## juv no site loop
+for(j in area_list){
+  for(l in season_list){
+    juv_combos_ons <- juv_moci_olv %>%
+      filter(area == j, season == l)
+    cross_corr <- ccf(juv_combos_ons$central_ca,
+                        juv_combos_ons$cpue_site, plot = F)
+    lag <- cross_corr$lag
+    corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      juv_ons <- bind_rows(juv_ons, c(area = j,  season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+    }
+}
+
+
+## adult no site loop
+for(j in area_list){
+  for(l in season_list){
+    adult_combos_ons <- adult_moci_olv %>%
+      filter(area == j, season == l)
+    cross_corr <- ccf(adult_combos_ons$central_ca,
+                        adult_combos_ons$cpue_site, plot = F)
+    lag <- cross_corr$lag
+    corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      adult_ons <- bind_rows(adult_ons, c(area = j,  season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+    }
+}
+
+
+## together no site loop
+for(j in area_list){
+  for(l in season_list){
+    full_combos_ons <- full_moci_olv %>%
+      filter(area == j, season == l)
+    cross_corr <- ccf(full_combos_ons$central_ca,
+                        full_combos_ons$cpue_site, plot = F)
+    lag <- cross_corr$lag
+    corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      full_ons <- bind_rows(full_ons, c(area = j,  season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+    }
+}
+
+## juv no site set up
+vis_juv_ons <- juv_ons %>%
+  filter(lag %in% c(-10:0))%>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_juv_ons$season <- factor(vis_juv_ons$season, levels = c("JFM", "AMJ", "JAS", "OND"))
+
+ons_juv_moci_plot <- ggplot() +
+  scale_color_manual(values = c(  "#999999" , "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_juv_ons, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Juvenile Olive Rockfish Lag Correlation -MOCI", y = "correlation",
+       caption = "Fig 28")+
+  scale_x_continuous(limits=c(-10.5,0.5),breaks=seq(-10,0,1))+
+  #scale_y_continuous(limits = c(-0.1, 0.1), breaks = seq(-0.1, 0.1, 0.1))+
+  theme_bw()+
+  facet_wrap(.~ area)+
+    theme(panel.grid=element_blank())
+
+
+## adult no site set up
+vis_adult_ons <- adult_ons %>%
+  filter(lag %in% c(-10:0))%>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_adult_ons$season <- factor(vis_adult_ons$season, levels = c("JFM", "AMJ", "JAS", "OND"))
+
+ons_adult_moci_plot <- ggplot() +
+  scale_color_manual(values = c(  "#999999" , "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999",  "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_adult_ons, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Adult Olive Rockfish Lag Correlation -MOCI", y = "correlation",
+       caption = "Fig 29")+
+  scale_x_continuous(limits=c(-10.5,0.5),breaks=seq(-10,0,1))+
+  #scale_y_continuous(limits = c(-0.2, 0.4), breaks = seq(-0.2, 0.4, 0.1))+
+  theme_bw()+
+  facet_wrap(.~ area) +
+  theme(panel.grid=element_blank())
+
+
+## full no site set up
+vis_full_ons <- full_ons %>%
+  filter(lag %in% c(-10:0))%>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_full_ons$season <- factor(vis_full_ons$season, levels = c("JFM", "AMJ", "JAS", "OND"))
+
+ons_full_moci_plot <-ggplot() +
+  scale_color_manual(values = c( "#999999" ,  "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_full_ons, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Olive Rockfish Lag Correlation -MOCI", y = "correlation",
+       caption = "Fig 30")+
+  scale_x_continuous(limits=c(-10.5,0.5),breaks=seq(-10,0,1))+
+  #scale_y_continuous(limits = c(-0.2, 0.4), breaks = seq(-0.2, 0.4, 0.1))+
+  theme_bw()+
+  facet_wrap(.~ area)+
+    theme(panel.grid=element_blank())
+
+```
+
+#### MOCI without protection status
+
+```{r fig28, fig.height= 6, fig.width= 10, fig.align= "center", echo = F}
+
+ons_juv_moci_plot
+
+
+
+```
+
+
+```{r fig29, fig.height= 6, fig.width= 10, fig.align= "center", echo = F}
+
+ons_adult_moci_plot
+
+
+```
+
+
+```{r fig30, fig.height= 6, fig.width= 10, fig.align= "center", echo = F}
+
+ons_full_moci_plot
+
+
+```
+
+
+```{r olv pdo, include=F}
+  
+juv_pdo_olv <- left_join(juv_olv, pdo, by = "year")
+adult_pdo_olv <- left_join(adult_olv, pdo, by = "year")
+full_pdo_olv <- left_join(full_olv, pdo, by = "year")
+
+juv_o_pdo <- headers
+adult_o_pdo <- headers
+full_o_pdo <- headers
+
+## juv loop
+for(j in area_list){
+  for(k in site_list){
+    for(l in season_list){
+      juv_combos_o_pdo <- juv_pdo_olv %>%
+      filter(area == j, site == k, season == l)
+      cross_corr <- ccf(juv_combos_o_pdo$pdo_val,
+                        juv_combos_o_pdo$cpue_site, plot = F)
+      lag <- cross_corr$lag
+      corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      juv_o_pdo <- bind_rows(juv_o_pdo, c(area = j, site = k, season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+    }
+  }
+}
+
+## adult loop
+for(j in area_list){
+  for(k in site_list){
+    for(l in season_list){
+      adult_combos_o_pdo <- adult_pdo_olv %>%
+      filter(area == j, site == k, season == l)
+      cross_corr <- ccf(adult_combos_o_pdo$pdo_val,
+                        adult_combos_o_pdo$cpue_site, plot = F)
+      lag <- cross_corr$lag
+      corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      adult_o_pdo <- bind_rows(adult_o_pdo, c(area = j, site = k, season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+    }
+  }
+}
+
+
+## full loop
+for(j in area_list){
+  for(k in site_list){
+    for(l in season_list){
+      full_combos_o_pdo <- full_pdo_olv %>%
+      filter(area == j, site == k, season == l)
+      cross_corr <- ccf(full_combos_o_pdo$pdo_val,
+                        full_combos_o_pdo$cpue_site, plot = F)
+      lag <- cross_corr$lag
+      corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      full_o_pdo <- bind_rows(full_o_pdo, c(area = j, site = k, season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+    }
+  }
+}
+
+## juv plot set up
+vis_juv_o_pdo <- juv_o_pdo %>%
+  filter(lag %in% c(-10:0))%>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_juv_o_pdo$season <- factor(vis_juv_o_pdo$season, levels = c("JFM", "AMJ", "JAS", "OND"))
+
+o_juv_pdo_plot <- ggplot() +
+  scale_color_manual(values = c(  "#999999" , "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_juv_o_pdo, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Juvenile Olive Rockfish Lag Correlation -PDO", y = "correlation",
+       caption = "Fig 31")+
+  scale_x_continuous(limits=c(-8.5,0.5),breaks=seq(-8,0,1))+
+  scale_y_continuous(limits = c(-0.6, 0.95), breaks = seq(-0.6, 0.9, 0.2), 
+                     labels = c(-0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8) )+
+  theme_bw()+
+  facet_grid(site ~ area)+
+    theme(panel.grid=element_blank(),
+          plot.caption = element_text(size = 8))
+
+## adult plot set up
+vis_adult_o_pdo <- adult_o_pdo %>%
+  filter(lag %in% c(-10:0))%>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_adult_o_pdo$season <- factor(vis_adult_o_pdo$season, levels = c("JFM", "AMJ", "JAS", "OND"))
+
+o_adult_pdo_plot <- ggplot() +
+  scale_color_manual(values = c(  "#999999" , "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_adult_o_pdo, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Adult Olive Rockfish Lag Correlation -PDO", y = "correlation",
+       caption = "Fig 32")+
+  scale_x_continuous(limits=c(-8.5,0.5),breaks=seq(-8,0,1))+
+  scale_y_continuous(limits = c(-0.6, 0.9), breaks = seq(-0.6, 0.9, 0.2), 
+                     labels = c(-0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8) )+
+  theme_bw()+
+  facet_grid(site ~ area)+
+    theme(panel.grid=element_blank(),
+          plot.caption = element_text(size = 8))
+
+
+## full plot set up
+vis_full_o_pdo <- full_o_pdo %>%
+  filter(lag %in% c(-10:0))%>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_full_o_pdo$season <- factor(vis_full_o_pdo$season, levels = c("JFM", "AMJ", "JAS", "OND"))
+
+o_full_pdo_plot <- ggplot() +
+  scale_color_manual(values = c(  "#999999" , "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_full_o_pdo, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Olive Rockfish Lag Correlation -PDO", y = "correlation",
+       caption = "Fig 33")+
+  scale_x_continuous(limits=c(-8.5,0.5),breaks=seq(-8,0,1))+
+  scale_y_continuous(limits = c(-0.6, 0.9), breaks = seq(-0.6, 0.9, 0.2), 
+                     labels = c(-0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8) )+
+  theme_bw()+
+  facet_grid(site ~ area)+
+    theme(panel.grid=element_blank(),
+          plot.caption = element_text(size = 8))
+
+```
+
+
+#### PDO with protection status
+
+```{r fig31, fig.height= 6, fig.width= 10, fig.align= "center", echo = F}
+
+o_juv_pdo_plot
+
+```
+
+
+```{r fig32, fig.height= 6, fig.width= 10, fig.align= "center", echo=F}
+
+o_adult_pdo_plot
+
+```
+
+
+```{r fig33, fig.height= 6, fig.width= 10, fig.align= "center", echo = F}
+
+o_full_pdo_plot
+
+```
+
+```{r olv pdo ns, include=F}
+
+juv_ons_pdo <- headers2
+adult_ons_pdo <- headers2
+full_ons_pdo <- headers2
+
+## juv no site loop
+for(j in area_list){
+  for(l in season_list){
+    juv_combos_ons_pdo <- juv_pdo_olv %>%
+      filter(area == j, season == l)
+    cross_corr <- ccf(juv_combos_ons_pdo$pdo_val,
+                      juv_combos_ons_pdo$cpue_site, plot = F)
+    lag <- cross_corr$lag
+    corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      juv_ons_pdo <- bind_rows(juv_ons_pdo, c(area = j,  season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+    }
+}
+
+
+## adult no site loop
+for(j in area_list){
+  for(l in season_list){
+    adult_combos_ons_pdo <- adult_pdo_olv %>%
+      filter(area == j, season == l)
+    cross_corr <- ccf(adult_combos_ons_pdo$pdo_val,
+                      adult_combos_ons_pdo$cpue_site, plot = F)
+    lag <- cross_corr$lag
+    corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      adult_ons_pdo <- bind_rows(adult_ons_pdo, c(area = j,  season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+    }
+}
+
+
+## together no site loop
+for(j in area_list){
+  for(l in season_list){
+    full_combos_ons_pdo <- full_pdo_olv %>%
+      filter(area == j, season == l)
+    cross_corr <- ccf(full_combos_ons_pdo$pdo_val,
+                      full_combos_ons_pdo$cpue_site, plot = F)
+    lag <- cross_corr$lag
+    corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      full_ons_pdo <- bind_rows(full_ons_pdo, c(area = j,  season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+    }
+}
+
+## juv no site set up
+vis_juv_ons_pdo <- juv_ons_pdo %>%
+  filter(lag %in% c(-10:0))%>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_juv_ons_pdo$season <- factor(vis_juv_ons_pdo$season, levels = c("JFM", "AMJ", "JAS", "OND"))
+
+ons_juv_pdo_plot <- ggplot() +
+  scale_color_manual(values = c(  "#999999" , "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_juv_ons_pdo, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Juvenile Olive Rockfish Lag Correlation -PDO", y = "correlation",
+       caption = "Fig 34")+
+  scale_x_continuous(limits=c(-10.5,0.5),breaks=seq(-10,0,1))+
+  #scale_y_continuous(limits = c(-0.1, 0.1), breaks = seq(-0.1, 0.1, 0.1))+
+  theme_bw()+
+  facet_wrap(.~ area)+
+    theme(panel.grid=element_blank())
+
+
+## adult no site set up
+vis_adult_ons_pdo <- adult_ons_pdo %>%
+  filter(lag %in% c(-10:0))%>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_adult_ons_pdo$season <- factor(vis_adult_ons_pdo$season, levels = c("JFM", "AMJ", "JAS", "OND"))
+
+ons_adult_pdo_plot <- ggplot() +
+  scale_color_manual(values = c(  "#999999" , "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999",  "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_adult_ons_pdo, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Adult Olive Rockfish Lag Correlation -PDO", y = "correlation",
+       caption = "Fig 35")+
+  scale_x_continuous(limits=c(-10.5,0.5),breaks=seq(-10,0,1))+
+  #scale_y_continuous(limits = c(-0.2, 0.4), breaks = seq(-0.2, 0.4, 0.1))+
+  theme_bw()+
+  facet_wrap(.~ area) +
+  theme(panel.grid=element_blank())
+
+
+## full no site set up
+vis_full_ons_pdo <- full_ons_pdo %>%
+  filter(lag %in% c(-10:0))%>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_full_ons_pdo$season <- factor(vis_full_ons_pdo$season, levels = c("JFM", "AMJ", "JAS", "OND"))
+
+ons_full_pdo_plot <-ggplot() +
+  scale_color_manual(values = c( "#999999" ,  "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_full_ons_pdo, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Olive Rockfish Lag Correlation -PDO", y = "correlation",
+       caption = "Fig 36")+
+  scale_x_continuous(limits=c(-10.5,0.5),breaks=seq(-10,0,1))+
+  #scale_y_continuous(limits = c(-0.2, 0.4), breaks = seq(-0.2, 0.4, 0.1))+
+  theme_bw()+
+  facet_wrap(.~ area)+
+    theme(panel.grid=element_blank())
+
+```
+
+
+#### PDO without protection status
+
+```{r fig34, fig.height= 6, fig.width= 10, fig.align= "center", echo= F}
+
+ons_juv_pdo_plot
+
+```
+
+
+```{r fig35, fig.height= 6, fig.width= 10, fig.align= "center", echo = F}
+
+ons_adult_pdo_plot
+
+```
+
+
+```{r fig36, fig.height= 6, fig.width= 10, fig.align= "center", echo = F}
+
+ons_full_pdo_plot
+
+```
+
+### Vermilion rockfish, *Sebastes miniatus*
+
+```{r ver, include=F}
+
+v_size_cutoff <- 31
+
+juv_ver <- ver_full %>%
+  filter(size <= v_size_cutoff)%>%
+  group_by(drift, trip, area, site, month, day, year,
+           gridcell, anglerhours) %>%
+  summarise(cpue_sum = sum(cpue))%>%
+  group_by(trip, area, site, month, day, year,
+           gridcell) %>%
+  summarise(cpue_date = mean(cpue_sum)) %>%
+  group_by( area, site, year, gridcell) %>%
+  summarise(cpue_cell = mean(cpue_date)) %>%
+  group_by( area, site, year) %>%
+  summarise(cpue_site = mean(cpue_cell))
+
+
+adult_ver <- ver_full %>%
+  filter(size > v_size_cutoff)%>%
+  group_by(drift, trip, area, site, month, day, year,
+           gridcell, anglerhours) %>%
+  summarise(cpue_sum = sum(cpue)) %>%
+  group_by(trip, area, site, month, day, year,
+           gridcell) %>%
+  summarise(cpue_date = mean(cpue_sum)) %>%
+  group_by( area, site, year, gridcell) %>%
+  summarise(cpue_cell = mean(cpue_date)) %>%
+  group_by( area, site, year) %>%
+  summarise(cpue_site = mean(cpue_cell))
+
+full_ver <- ver_full %>%
+  group_by(drift, trip, area, site, month, day, year,
+           gridcell, anglerhours) %>%
+  summarise(cpue_sum = sum(cpue))%>%
+  group_by(trip, area, site, month, day, year,
+           gridcell) %>%
+  summarise(cpue_date = mean(cpue_sum)) %>%
+  group_by( area, site, year, gridcell) %>%
+  summarise(cpue_cell = mean(cpue_date)) %>%
+  group_by( area, site, year) %>%
+  summarise(cpue_site = mean(cpue_cell))
+
+juv_moci_ver <- left_join(juv_ver, MOCI, by = "year")
+adult_moci_ver <- left_join(adult_ver, MOCI, by = "year")
+full_moci_ver <- left_join(full_ver, MOCI, by = "year")
+
+juv_v <- headers
+adult_v <- headers
+full_v <- headers
+
+## juv loop
+for(j in area_list){
+  for(k in site_list){
+    for(l in season_list){
+      juv_combos_v <- juv_moci_ver%>%
+      filter(area == j, site == k, season == l)
+      cross_corr <- ccf(juv_combos_v$central_ca,
+                        juv_combos_v$cpue_site, plot = F)
+      lag <- cross_corr$lag
+      corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      juv_v <- bind_rows(juv_v, c(area = j, site = k, season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+    }
+  }
+}
+
+## adult loop
+for(j in area_list){
+  for(k in site_list){
+    for(l in season_list){
+      adult_combos_v <- adult_moci_ver %>%
+      filter(area == j, site == k, season == l)
+      cross_corr <- ccf(adult_combos_v$central_ca,
+                        adult_combos_v$cpue_site, plot = F)
+      lag <- cross_corr$lag
+      corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      adult_v <- bind_rows(adult_v, c(area = j, site = k, season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+    }
+  }
+}
+
+
+## full loop
+for(j in area_list){
+  for(k in site_list){
+    for(l in season_list){
+      full_combos_v <- full_moci_ver %>%
+      filter(area == j, site == k, season == l)
+      cross_corr <- ccf(full_combos_v$central_ca,
+                        full_combos_v$cpue_site, plot = F)
+      lag <- cross_corr$lag
+      corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      full_v <- bind_rows(full_v, c(area = j, site = k, season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+    }
+  }
+}
+
+
+## juv plot set up
+vis_juv_v <- juv_v %>%
+  filter(lag %in% c(-10:0))%>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_juv_v$season <- factor(vis_juv_v$season, levels = c("JFM", "AMJ", "JAS", "OND"))
+
+v_juv_moci_plot <- ggplot() +
+  scale_color_manual(values = c(  "#999999" , "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_juv_v, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Juvenile Vermilion Rockfish Lag Correlation -MOCI", y = "correlation",
+       caption = "Fig 37")+
+  scale_x_continuous(limits=c(-8.5,0.5),breaks=seq(-8,0,1))+
+  scale_y_continuous(limits = c(-0.6, 0.95), breaks = seq(-0.6, 0.9, 0.2), 
+                     labels = c(-0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8) )+
+  theme_bw()+
+  facet_grid(site ~ area)+
+    theme(panel.grid=element_blank(),
+          plot.caption = element_text(size = 8))
+
+## adult plot set up
+vis_adult_v <- adult_v %>%
+  filter(lag %in% c(-10:0))%>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_adult_v$season <- factor(vis_adult_v$season, levels = c("JFM", "AMJ", "JAS", "OND"))
+
+v_adult_moci_plot <- ggplot() +
+  scale_color_manual(values = c(  "#999999" , "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_adult_v, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Adult Vermilion Rockfish Lag Correlation -MOCI", y = "correlation",
+       caption = "Fig 38")+
+  scale_x_continuous(limits=c(-8.5,0.5),breaks=seq(-8,0,1))+
+  scale_y_continuous(limits = c(-0.6, 0.9), breaks = seq(-0.6, 0.9, 0.2), 
+                     labels = c(-0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8) )+
+  theme_bw()+
+  facet_grid(site ~ area)+
+    theme(panel.grid=element_blank(),
+          plot.caption = element_text(size = 8))
+
+
+## full plot set up
+vis_full_v <- full_v %>%
+  filter(lag %in% c(-10:0))%>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_full_v$season <- factor(vis_full_v$season, levels = c("JFM", "AMJ", "JAS", "OND"))
+
+v_full_moci_plot <- ggplot() +
+  scale_color_manual(values = c(  "#999999" , "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_full_v, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Vermilion Rockfish Lag Correlation -MOCI", y = "correlation",
+       caption = "Fig 39")+
+  scale_x_continuous(limits=c(-8.5,0.5),breaks=seq(-8,0,1))+
+  scale_y_continuous(limits = c(-0.6, 0.9), breaks = seq(-0.6, 0.9, 0.2), 
+                     labels = c(-0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8) )+
+  theme_bw()+
+  facet_grid(site ~ area)+
+    theme(panel.grid=element_blank(),
+          plot.caption = element_text(size = 8))
+
+```
+
+#### MOCI with protection status
+
+```{r fig37, fig.height= 6, fig.width= 10, fig.align= "center", echo=F}
+v_juv_moci_plot
+
+
+
+```
+
+
+```{r fig38, fig.height= 6, fig.width= 10, fig.align= "center", echo=F}
+v_adult_moci_plot
+
+
+```
+
+
+```{r fig39, fig.height= 6, fig.width= 10, fig.align= "center", echo=F}
+v_full_moci_plot
+
+
+
+```
+
+
+```{r ver ns, include=F}
+
+juv_vns <- headers2
+adult_vns <- headers2
+full_vns <- headers2
+
+## juv no site loop
+for(j in area_list){
+  for(l in season_list){
+    juv_combos_vns <- juv_moci_ver %>%
+      filter(area == j, season == l)
+    cross_corr <- ccf(juv_combos_vns$central_ca,
+                        juv_combos_vns$cpue_site, plot = F)
+    lag <- cross_corr$lag
+    corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      juv_vns <- bind_rows(juv_vns, c(area = j,  season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+    }
+}
+
+
+## adult no site loop
+for(j in area_list){
+  for(l in season_list){
+    adult_combos_vns <- adult_moci_ver %>%
+      filter(area == j, season == l)
+    cross_corr <- ccf(adult_combos_vns$central_ca,
+                        adult_combos_vns$cpue_site, plot = F)
+    lag <- cross_corr$lag
+    corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      adult_vns <- bind_rows(adult_vns, c(area = j,  season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+    }
+}
+
+
+## together no site loop
+for(j in area_list){
+  for(l in season_list){
+    full_combos_vns <- full_moci_ver %>%
+      filter(area == j, season == l)
+    cross_corr <- ccf(full_combos_vns$central_ca,
+                        full_combos_vns$cpue_site, plot = F)
+    lag <- cross_corr$lag
+    corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      full_vns <- bind_rows(full_vns, c(area = j,  season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+    }
+}
+
+
+## juv no site set up
+vis_juv_vns <- juv_vns %>%
+  filter(lag %in% c(-10:0))%>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_juv_vns$season <- factor(vis_juv_vns$season, levels = c("JFM", "AMJ", "JAS", "OND"))
+
+vns_juv_moci_plot <- ggplot() +
+  scale_color_manual(values = c(  "#999999" , "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_juv_vns, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Juvenile Vermilion Rockfish Lag Correlation -MOCI", y = "correlation",
+       caption = "Fig 40")+
+  scale_x_continuous(limits=c(-10.5,0.5),breaks=seq(-10,0,1))+
+  #scale_y_continuous(limits = c(-0.1, 0.1), breaks = seq(-0.1, 0.1, 0.1))+
+  theme_bw()+
+  facet_wrap(.~ area)+
+    theme(panel.grid=element_blank())
+
+
+## adult no site set up
+vis_adult_vns <- adult_vns %>%
+  filter(lag %in% c(-10:0))%>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_adult_vns$season <- factor(vis_adult_vns$season, levels = c("JFM", "AMJ", "JAS", "OND"))
+
+vns_adult_moci_plot <- ggplot() +
+  scale_color_manual(values = c(  "#999999" , "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999",  "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_adult_vns, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Adult Vermilion Rockfish Lag Correlation -MOCI", y = "correlation",
+       caption = "Fig 41")+
+  scale_x_continuous(limits=c(-10.5,0.5),breaks=seq(-10,0,1))+
+  #scale_y_continuous(limits = c(-0.2, 0.4), breaks = seq(-0.2, 0.4, 0.1))+
+  theme_bw()+
+  facet_wrap(.~ area) +
+  theme(panel.grid=element_blank())
+
+
+## full no site set up
+vis_full_vns <- full_vns %>%
+  filter(lag %in% c(-10:0))%>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_full_vns$season <- factor(vis_full_vns$season, levels = c("JFM", "AMJ", "JAS", "OND"))
+
+vns_full_moci_plot <-ggplot() +
+  scale_color_manual(values = c( "#999999" ,  "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_full_vns, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Vermilion Rockfish Lag Correlation -MOCI", y = "correlation",
+       caption = "Fig 42")+
+  scale_x_continuous(limits=c(-10.5,0.5),breaks=seq(-10,0,1))+
+  #scale_y_continuous(limits = c(-0.2, 0.4), breaks = seq(-0.2, 0.4, 0.1))+
+  theme_bw()+
+  facet_wrap(.~ area)+
+    theme(panel.grid=element_blank())
+
+```
+
+#### MOCI without protection status
+
+```{r fig40, fig.height= 6, fig.width= 10, fig.align= "center", echo=F}
+vns_juv_moci_plot
+
+
+```
+
+
+```{r fig41, fig.height= 6, fig.width= 10, fig.align= "center", echo=F}
+vns_adult_moci_plot
+
+
+```
+
+
+```{r fig42, fig.height= 6, fig.width= 10, fig.align= "center", echo=F}
+vns_full_moci_plot
+
+
+```
+
+```{r ver pdo, include=F}
+
+juv_pdo_ver <- left_join(juv_ver, pdo, by = "year")
+adult_pdo_ver <- left_join(adult_ver, pdo, by = "year")
+full_pdo_ver <- left_join(full_ver, pdo, by = "year")
+
+juv_v_pdo <- headers
+adult_v_pdo <- headers
+full_v_pdo <- headers
+
+## juv loop
+for(j in area_list){
+  for(k in site_list){
+    for(l in season_list){
+      juv_combos_v_pdo <- juv_pdo_ver %>%
+      filter(area == j, site == k, season == l)
+      cross_corr <- ccf(juv_combos_v_pdo$pdo_val,
+                        juv_combos_v_pdo$cpue_site, plot = F)
+      lag <- cross_corr$lag
+      corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      juv_v_pdo <- bind_rows(juv_v_pdo, c(area = j, site = k, season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+    }
+  }
+}
+
+## adult loop
+for(j in area_list){
+  for(k in site_list){
+    for(l in season_list){
+      adult_combos_v_pdo <- adult_pdo_ver %>%
+      filter(area == j, site == k, season == l)
+      cross_corr <- ccf(adult_combos_v_pdo$pdo_val,
+                        adult_combos_v_pdo$cpue_site, plot = F)
+      lag <- cross_corr$lag
+      corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      adult_v_pdo <- bind_rows(adult_v_pdo, c(area = j, site = k, season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+    }
+  }
+}
+
+
+## full loop
+for(j in area_list){
+  for(k in site_list){
+    for(l in season_list){
+      full_combos_v_pdo <- full_pdo_ver %>%
+      filter(area == j, site == k, season == l)
+      cross_corr <- ccf(full_combos_v_pdo$pdo_val,
+                        full_combos_v_pdo$cpue_site, plot = F)
+      lag <- cross_corr$lag
+      corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      full_v_pdo <- bind_rows(full_v_pdo, c(area = j, site = k, season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+    }
+  }
+}
+
+## juv plot set up
+vis_juv_v_pdo <- juv_v_pdo %>%
+  filter(lag %in% c(-10:0))%>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_juv_v_pdo$season <- factor(vis_juv_v_pdo$season, levels = c("JFM", "AMJ", "JAS", "OND"))
+
+v_juv_pdo_plot <- ggplot() +
+  scale_color_manual(values = c(  "#999999" , "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_juv_v_pdo, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Juvenile Vermilion Rockfish Lag Correlation -PDO", y = "correlation",
+       caption = "Fig 43")+
+  scale_x_continuous(limits=c(-8.5,0.5),breaks=seq(-8,0,1))+
+  scale_y_continuous(limits = c(-0.85, 0.95), breaks = seq(-0.8, 0.9, 0.2), 
+                     labels = c(-0.8, -0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8) )+
+  theme_bw()+
+  facet_grid(site ~ area)+
+    theme(panel.grid=element_blank(),
+          plot.caption = element_text(size = 8))
+
+## adult plot set up
+vis_adult_v_pdo <- adult_v_pdo %>%
+  filter(lag %in% c(-10:0))%>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_adult_v_pdo$season <- factor(vis_adult_v_pdo$season, levels = c("JFM", "AMJ", "JAS", "OND"))
+
+v_adult_pdo_plot <- ggplot() +
+  scale_color_manual(values = c(  "#999999" , "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_adult_v_pdo, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Adult Vermilion Rockfish Lag Correlation -PDO", y = "correlation",
+       caption = "Fig 44")+
+  scale_x_continuous(limits=c(-8.5,0.5),breaks=seq(-8,0,1))+
+  scale_y_continuous(limits = c(-0.6, 0.9), breaks = seq(-0.6, 0.9, 0.2), 
+                     labels = c(-0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8) )+
+  theme_bw()+
+  facet_grid(site ~ area)+
+    theme(panel.grid=element_blank(),
+          plot.caption = element_text(size = 8))
+
+
+## full plot set up
+vis_full_v_pdo <- full_v_pdo %>%
+  filter(lag %in% c(-10:0))%>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_full_v_pdo$season <- factor(vis_full_v_pdo$season, levels = c("JFM", "AMJ", "JAS", "OND"))
+
+v_full_pdo_plot <- ggplot() +
+  scale_color_manual(values = c(  "#999999" , "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_full_v_pdo, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Gopher Vermilion Lag Correlation -PDO", y = "correlation",
+       caption = "Fig 45")+
+  scale_x_continuous(limits=c(-8.5,0.5),breaks=seq(-8,0,1))+
+  scale_y_continuous(limits = c(-0.6, 0.9), breaks = seq(-0.6, 0.9, 0.2), 
+                     labels = c(-0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8) )+
+  theme_bw()+
+  facet_grid(site ~ area)+
+    theme(panel.grid=element_blank(),
+          plot.caption = element_text(size = 8))
+
+```
+
+#### PDO with protection status
+
+```{r fig43, fig.height= 6, fig.width= 10, fig.align= "center", echo=F}
+
+v_juv_pdo_plot
+
+```
+
+
+```{r fig44, fig.height= 6, fig.width= 10, fig.align= "center", echo=F}
+
+v_adult_pdo_plot
+
+```
+
+
+```{r fig45, fig.height= 6, fig.width= 10, fig.align= "center", echo=F}
+
+v_full_pdo_plot
+
+```
+
+```{r ver ns pdo, include=F}
+
+juv_vns_pdo <- headers2
+adult_vns_pdo <- headers2
+full_vns_pdo <- headers2
+
+## juv no site loop
+for(j in area_list){
+  for(l in season_list){
+    juv_combos_vns_pdo <- juv_pdo_ver %>%
+      filter(area == j, season == l)
+    cross_corr <- ccf(juv_combos_vns_pdo$pdo_val,
+                      juv_combos_vns_pdo$cpue_site, plot = F)
+    lag <- cross_corr$lag
+    corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      juv_vns_pdo <- bind_rows(juv_vns_pdo, c(area = j,  season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+    }
+}
+
+
+## adult no site loop
+for(j in area_list){
+  for(l in season_list){
+    adult_combos_vns_pdo <- adult_pdo_ver %>%
+      filter(area == j, season == l)
+    cross_corr <- ccf(adult_combos_vns_pdo$pdo_val,
+                      adult_combos_vns_pdo$cpue_site, plot = F)
+    lag <- cross_corr$lag
+    corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      adult_vns_pdo <- bind_rows(adult_vns_pdo, c(area = j,  season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+    }
+}
+
+
+## together no site loop
+for(j in area_list){
+  for(l in season_list){
+    full_combos_vns_pdo <- full_pdo_ver %>%
+      filter(area == j, season == l)
+    cross_corr <- ccf(full_combos_vns_pdo$pdo_val,
+                      full_combos_vns_pdo$cpue_site, plot = F)
+    lag <- cross_corr$lag
+    corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      full_vns_pdo <- bind_rows(full_vns_pdo, c(area = j,  season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+    }
+}
+
+## juv no site set up
+vis_juv_vns_pdo <- juv_vns_pdo %>%
+  filter(lag %in% c(-10:0))%>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_juv_vns_pdo$season <- factor(vis_juv_vns_pdo$season, levels = c("JFM", "AMJ", "JAS", "OND"))
+
+vns_juv_pdo_plot <- ggplot() +
+  scale_color_manual(values = c(  "#999999" , "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_juv_vns_pdo, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Juvenile Vermilion Rockfish Lag Correlation -PDO", y = "correlation",
+       caption = "Fig 46")+
+  scale_x_continuous(limits=c(-10.5,0.5),breaks=seq(-10,0,1))+
+  #scale_y_continuous(limits = c(-0.1, 0.1), breaks = seq(-0.1, 0.1, 0.1))+
+  theme_bw()+
+  facet_wrap(.~ area)+
+    theme(panel.grid=element_blank())
+
+
+## adult no site set up
+vis_adult_vns_pdo <- adult_vns_pdo %>%
+  filter(lag %in% c(-10:0))%>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_adult_vns_pdo$season <- factor(vis_adult_vns_pdo$season, levels = c("JFM", "AMJ", "JAS", "OND"))
+
+vns_adult_pdo_plot <- ggplot() +
+  scale_color_manual(values = c(  "#999999" , "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999",  "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_adult_vns_pdo, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Adult Vermilion Rockfish Lag Correlation -PDO", y = "correlation",
+       caption = "Fig 47")+
+  scale_x_continuous(limits=c(-10.5,0.5),breaks=seq(-10,0,1))+
+  #scale_y_continuous(limits = c(-0.2, 0.4), breaks = seq(-0.2, 0.4, 0.1))+
+  theme_bw()+
+  facet_wrap(.~ area) +
+  theme(panel.grid=element_blank())
+
+
+## full no site set up
+vis_full_vns_pdo <- full_vns_pdo %>%
+  filter(lag %in% c(-10:0))%>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_full_vns_pdo$season <- factor(vis_full_vns_pdo$season, levels = c("JFM", "AMJ", "JAS", "OND"))
+
+vns_full_pdo_plot <-ggplot() +
+  scale_color_manual(values = c( "#999999" ,  "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_full_vns_pdo, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Vermilion Rockfish Lag Correlation -PDO", y = "correlation",
+       caption = "Fig 48")+
+  scale_x_continuous(limits=c(-10.5,0.5),breaks=seq(-10,0,1))+
+  #scale_y_continuous(limits = c(-0.2, 0.4), breaks = seq(-0.2, 0.4, 0.1))+
+  theme_bw()+
+  facet_wrap(.~ area)+
+    theme(panel.grid=element_blank())
+
+```
+
+
+#### PDO without protection status
+
+```{r fig46, fig.height= 6, fig.width= 10, fig.align= "center", echo=F}
+
+vns_juv_pdo_plot
+
+```
+
+
+```{r fig47, fig.height= 6, fig.width= 10, fig.align= "center", echo=F}
+
+vns_adult_pdo_plot
+
+```
+
+
+```{r fig48, fig.height= 6, fig.width= 10, fig.align= "center", echo=F}
+
+vns_full_pdo_plot
+
+```
+
+### Lingcod, *Ophiodon elongatus*
+
+```{r lcd, include=F}
+
+l_size_cutoff <- 37
+
+juv_lcd <- lcd_full %>%
+  filter(size <= l_size_cutoff)%>%
+  group_by(drift, trip, area, site, month, day, year,
+           gridcell, anglerhours) %>%
+  summarise(cpue_sum = sum(cpue))%>%
+  group_by(trip, area, site, month, day, year,
+           gridcell) %>%
+  summarise(cpue_date = mean(cpue_sum)) %>%
+  group_by( area, site, year, gridcell) %>%
+  summarise(cpue_cell = mean(cpue_date)) %>%
+  group_by( area, site, year) %>%
+  summarise(cpue_site = mean(cpue_cell))
+
+
+adult_lcd <- lcd_full %>%
+  filter(size > l_size_cutoff)%>%
+  group_by(drift, trip, area, site, month, day, year,
+           gridcell, anglerhours) %>%
+  summarise(cpue_sum = sum(cpue)) %>%
+  group_by(trip, area, site, month, day, year,
+           gridcell) %>%
+  summarise(cpue_date = mean(cpue_sum)) %>%
+  group_by( area, site, year, gridcell) %>%
+  summarise(cpue_cell = mean(cpue_date)) %>%
+  group_by( area, site, year) %>%
+  summarise(cpue_site = mean(cpue_cell))
+
+full_lcd <- lcd_full %>%
+  group_by(drift, trip, area, site, month, day, year,
+           gridcell, anglerhours) %>%
+  summarise(cpue_sum = sum(cpue))%>%
+  group_by(trip, area, site, month, day, year,
+           gridcell) %>%
+  summarise(cpue_date = mean(cpue_sum)) %>%
+  group_by( area, site, year, gridcell) %>%
+  summarise(cpue_cell = mean(cpue_date)) %>%
+  group_by( area, site, year) %>%
+  summarise(cpue_site = mean(cpue_cell))
+
+juv_moci_lcd <- left_join(juv_lcd, MOCI, by = "year")
+adult_moci_lcd <- left_join(adult_lcd, MOCI, by = "year")
+full_moci_lcd <- left_join(full_lcd, MOCI, by = "year")
+
+juv_l <- headers
+adult_l <- headers
+full_l <- headers
+
+## juv loop
+for(j in area_list){
+  for(k in site_list){
+    for(l in season_list){
+      juv_combos_l <- juv_moci_lcd%>%
+      filter(area == j, site == k, season == l)
+      cross_corr <- ccf(juv_combos_l$central_ca,
+                        juv_combos_l$cpue_site, plot = F)
+      lag <- cross_corr$lag
+      corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      juv_l <- bind_rows(juv_l, c(area = j, site = k, season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+    }
+  }
+}
+
+## adult loop
+for(j in area_list){
+  for(k in site_list){
+    for(l in season_list){
+      adult_combos_l <- adult_moci_lcd %>%
+      filter(area == j, site == k, season == l)
+      cross_corr <- ccf(adult_combos_l$central_ca,
+                        adult_combos_l$cpue_site, plot = F)
+      lag <- cross_corr$lag
+      corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      adult_l <- bind_rows(adult_l, c(area = j, site = k, season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+    }
+  }
+}
+
+
+## full loop
+for(j in area_list){
+  for(k in site_list){
+    for(l in season_list){
+      full_combos_l <- full_moci_lcd %>%
+      filter(area == j, site == k, season == l)
+      cross_corr <- ccf(full_combos_l$central_ca,
+                        full_combos_l$cpue_site, plot = F)
+      lag <- cross_corr$lag
+      corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      full_l <- bind_rows(full_l, c(area = j, site = k, season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+    }
+  }
+}
+
+## juv plot set up
+vis_juv_l <- juv_l %>%
+  filter(lag %in% c(-10:0))%>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_juv_l$season <- factor(vis_juv_l$season, levels = c("JFM", "AMJ", "JAS", "OND"))
+
+l_juv_moci_plot <- ggplot() +
+  scale_color_manual(values = c(  "#999999" , "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_juv_l, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Juvenile Lingcod Lag Correlation -MOCI", y = "correlation",
+       caption = "Fig 49")+
+  scale_x_continuous(limits=c(-8.5,0.5),breaks=seq(-8,0,1))+
+  scale_y_continuous(limits = c(-0.6, 0.95), breaks = seq(-0.6, 0.9, 0.2), 
+                     labels = c(-0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8) )+
+  theme_bw()+
+  facet_grid(site ~ area)+
+    theme(panel.grid=element_blank(),
+          plot.caption = element_text(size = 8))
+
+## adult plot set up
+vis_adult_l <- adult_l %>%
+  filter(lag %in% c(-10:0))%>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_adult_l$season <- factor(vis_adult_l$season, levels = c("JFM", "AMJ", "JAS", "OND"))
+
+l_adult_moci_plot <- ggplot() +
+  scale_color_manual(values = c(  "#999999" , "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_adult_l, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Adult Lingcod Lag Correlation -MOCI", y = "correlation",
+       caption = "Fig 50")+
+  scale_x_continuous(limits=c(-8.5,0.5),breaks=seq(-8,0,1))+
+  scale_y_continuous(limits = c(-0.6, 0.9), breaks = seq(-0.6, 0.9, 0.2), 
+                     labels = c(-0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8) )+
+  theme_bw()+
+  facet_grid(site ~ area)+
+    theme(panel.grid=element_blank(),
+          plot.caption = element_text(size = 8))
+
+
+## full plot set up
+vis_full_l <- full_l %>%
+  filter(lag %in% c(-10:0))%>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_full_l$season <- factor(vis_full_l$season, levels = c("JFM", "AMJ", "JAS", "OND"))
+
+l_full_moci_plot <- ggplot() +
+  scale_color_manual(values = c(  "#999999" , "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_full_l, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Lingcod Lag Correlation -MOCI", y = "correlation",
+       caption = "Fig 51")+
+  scale_x_continuous(limits=c(-8.5,0.5),breaks=seq(-8,0,1))+
+  scale_y_continuous(limits = c(-0.6, 0.9), breaks = seq(-0.6, 0.9, 0.2), 
+                     labels = c(-0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8) )+
+  theme_bw()+
+  facet_grid(site ~ area)+
+    theme(panel.grid=element_blank(),
+          plot.caption = element_text(size = 8))
+
+```
+
+
+#### MOCI with protection status
+
+```{r fig49, fig.height= 6, fig.width= 10, fig.align= "center", echo=F}
+l_juv_moci_plot
+
+
+```
+
+
+```{r fig50, fig.height= 6, fig.width= 10, fig.align= "center", echo=F}
+l_adult_moci_plot
+
+
+```
+
+
+```{r fig51, fig.height= 6, fig.width= 10, fig.align= "center", echo=F}
+l_full_moci_plot
+
+
+```
+
+```{r lcd ns, include=F}
+
+juv_lns <- headers2
+adult_lns <- headers2
+full_lns <- headers2
+
+## juv no site loop
+for(j in area_list){
+  for(l in season_list){
+    juv_combos_lns <- juv_moci_lcd %>%
+      filter(area == j, season == l)
+    cross_corr <- ccf(juv_combos_lns$central_ca,
+                        juv_combos_lns$cpue_site, plot = F)
+    lag <- cross_corr$lag
+    corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      juv_lns <- bind_rows(juv_lns, c(area = j,  season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+    }
+}
+
+
+## adult no site loop
+for(j in area_list){
+  for(l in season_list){
+    adult_combos_lns <- adult_moci_lcd %>%
+      filter(area == j, season == l)
+    cross_corr <- ccf(adult_combos_lns$central_ca,
+                        adult_combos_lns$cpue_site, plot = F)
+    lag <- cross_corr$lag
+    corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      adult_lns <- bind_rows(adult_lns, c(area = j,  season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+    }
+}
+
+
+## together no site loop
+for(j in area_list){
+  for(l in season_list){
+    full_combos_lns <- full_moci_lcd %>%
+      filter(area == j, season == l)
+    cross_corr <- ccf(full_combos_lns$central_ca,
+                        full_combos_lns$cpue_site, plot = F)
+    lag <- cross_corr$lag
+    corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      full_lns <- bind_rows(full_lns, c(area = j,  season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+    }
+}
+
+## juv no site set up
+vis_juv_lns <- juv_lns %>%
+  filter(lag %in% c(-10:0))%>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_juv_lns$season <- factor(vis_juv_lns$season, levels = c("JFM", "AMJ", "JAS", "OND"))
+
+lns_juv_moci_plot <- ggplot() +
+  scale_color_manual(values = c(  "#999999" , "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_juv_lns, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Juvenile Lingcod Lag Correlation -MOCI", y = "correlation",
+       caption = "Fig 52")+
+  scale_x_continuous(limits=c(-10.5,0.5),breaks=seq(-10,0,1))+
+  #scale_y_continuous(limits = c(-0.1, 0.1), breaks = seq(-0.1, 0.1, 0.1))+
+  theme_bw()+
+  facet_wrap(.~ area)+
+    theme(panel.grid=element_blank())
+
+
+## adult no site set up
+vis_adult_lns <- adult_lns %>%
+  filter(lag %in% c(-10:0))%>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_adult_lns$season <- factor(vis_adult_lns$season, levels = c("JFM", "AMJ", "JAS", "OND"))
+
+lns_adult_moci_plot <- ggplot() +
+  scale_color_manual(values = c(  "#999999" , "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999",  "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_adult_lns, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Adult Lingcod Lag Correlation -MOCI", y = "correlation",
+       caption = "Fig 53")+
+  scale_x_continuous(limits=c(-10.5,0.5),breaks=seq(-10,0,1))+
+  #scale_y_continuous(limits = c(-0.2, 0.4), breaks = seq(-0.2, 0.4, 0.1))+
+  theme_bw()+
+  facet_wrap(.~ area) +
+  theme(panel.grid=element_blank())
+
+
+## full no site set up
+vis_full_lns <- full_lns %>%
+  filter(lag %in% c(-10:0))%>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_full_lns$season <- factor(vis_full_lns$season, levels = c("JFM", "AMJ", "JAS", "OND"))
+
+lns_full_moci_plot <-ggplot() +
+  scale_color_manual(values = c( "#999999" ,  "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_full_lns, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Lingcod Lag Correlation -MOCI", y = "correlation",
+       caption = "Fig 54")+
+  scale_x_continuous(limits=c(-10.5,0.5),breaks=seq(-10,0,1))+
+  #scale_y_continuous(limits = c(-0.2, 0.4), breaks = seq(-0.2, 0.4, 0.1))+
+  theme_bw()+
+  facet_wrap(.~ area)+
+    theme(panel.grid=element_blank())
+
+
+```
+
+#### MOCI without protection status
+
+```{r fig52, fig.height= 6, fig.width= 10, fig.align= "center", echo=F}
+
+lns_juv_moci_plot
+
+```
+
+
+```{r fig53, fig.height= 6, fig.width= 10, fig.align= "center", echo=F}
+
+lns_adult_moci_plot
+
+
+```
+
+
+```{r fig54, fig.height= 6, fig.width= 10, fig.align= "center",echo=F}
+
+lns_full_moci_plot
+
+ggsave("lfm_ns.png", plot = lns_full_moci_plot, path = "C:/Users/erinj/Documents/Thesis/Figures/F20", dpi = 1000, width = 6, height = 4)
+
+```
+
+```{r lcd pdo, include=F}
+
+juv_pdo_lcd <- left_join(juv_lcd, pdo, by = "year")
+adult_pdo_lcd <- left_join(adult_lcd, pdo, by = "year")
+full_pdo_lcd <- left_join(full_lcd, pdo, by = "year")
+
+juv_l_pdo <- headers
+adult_l_pdo <- headers
+full_l_pdo <- headers
+
+## juv loop
+for(j in area_list){
+  for(k in site_list){
+    for(l in season_list){
+      juv_combos_l_pdo <- juv_pdo_lcd %>%
+      filter(area == j, site == k, season == l)
+      cross_corr <- ccf(juv_combos_l_pdo$pdo_val,
+                        juv_combos_l_pdo$cpue_site, plot = F)
+      lag <- cross_corr$lag
+      corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      juv_l_pdo <- bind_rows(juv_l_pdo, c(area = j, site = k, season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+    }
+  }
+}
+
+## adult loop
+for(j in area_list){
+  for(k in site_list){
+    for(l in season_list){
+      adult_combos_l_pdo <- adult_pdo_lcd %>%
+      filter(area == j, site == k, season == l)
+      cross_corr <- ccf(adult_combos_l_pdo$pdo_val,
+                        adult_combos_l_pdo$cpue_site, plot = F)
+      lag <- cross_corr$lag
+      corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      adult_l_pdo <- bind_rows(adult_l_pdo, c(area = j, site = k, season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+    }
+  }
+}
+
+
+## full loop
+for(j in area_list){
+  for(k in site_list){
+    for(l in season_list){
+      full_combos_l_pdo <- full_pdo_lcd %>%
+      filter(area == j, site == k, season == l)
+      cross_corr <- ccf(full_combos_l_pdo$pdo_val,
+                        full_combos_l_pdo$cpue_site, plot = F)
+      lag <- cross_corr$lag
+      corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      full_l_pdo <- bind_rows(full_l_pdo, c(area = j, site = k, season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+    }
+  }
+}
+
+## juv plot set up
+vis_juv_l_pdo <- juv_l_pdo %>%
+  filter(lag %in% c(-10:0))%>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_juv_l_pdo$season <- factor(vis_juv_l_pdo$season, levels = c("JFM", "AMJ", "JAS", "OND"))
+
+l_juv_pdo_plot <- ggplot() +
+  scale_color_manual(values = c(  "#999999" , "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_juv_l_pdo, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Juvenile Lingcod Lag Correlation -PDO", y = "correlation",
+       caption = "Fig 55")+
+  scale_x_continuous(limits=c(-8.5,0.5),breaks=seq(-8,0,1))+
+  scale_y_continuous(limits = c(-0.8, 0.95), breaks = seq(-0.8, 0.9, 0.2), 
+                     labels = c(-0.8, -0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8) )+
+  theme_bw()+
+  facet_grid(site ~ area)+
+    theme(panel.grid=element_blank(),
+          plot.caption = element_text(size = 8))
+
+## adult plot set up
+vis_adult_l_pdo <- adult_l_pdo %>%
+  filter(lag %in% c(-10:0))%>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_adult_l_pdo$season <- factor(vis_adult_l_pdo$season, levels = c("JFM", "AMJ", "JAS", "OND"))
+
+l_adult_pdo_plot <- ggplot() +
+  scale_color_manual(values = c(  "#999999" , "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_adult_l_pdo, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Adult Lingcod Lag Correlation -PDO", y = "correlation",
+       caption = "Fig 56")+
+  scale_x_continuous(limits=c(-8.5,0.5),breaks=seq(-8,0,1))+
+  scale_y_continuous(limits = c(-0.8, 0.9), breaks = seq(-0.8, 0.9, 0.2), 
+                     labels = c(-0.8, -0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8) )+
+  theme_bw()+
+  facet_grid(site ~ area)+
+    theme(panel.grid=element_blank(),
+          plot.caption = element_text(size = 8))
+
+
+## full plot set up
+vis_full_l_pdo <- full_l_pdo %>%
+  filter(lag %in% c(-10:0))%>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_full_l_pdo$season <- factor(vis_full_l_pdo$season, levels = c("JFM", "AMJ", "JAS", "OND"))
+
+l_full_pdo_plot <- ggplot() +
+  scale_color_manual(values = c(  "#999999" , "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_full_l_pdo, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Lingcod Lag Correlation -PDO", y = "correlation",
+       caption = "Fig 57")+
+  scale_x_continuous(limits=c(-8.5,0.5),breaks=seq(-8,0,1))+
+  scale_y_continuous(limits = c(-0.8, 0.9), breaks = seq(-0.8, 0.9, 0.2), 
+                     labels = c(-0.8, -0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8) )+
+  theme_bw()+
+  facet_grid(site ~ area)+
+    theme(panel.grid=element_blank(),
+          plot.caption = element_text(size = 8))
+
+```
+
+#### PDO with protection status
+
+```{r fig55, fig.height= 6, fig.width= 10, fig.align= "center", echo=F}
+
+l_juv_pdo_plot
+
+```
+
+
+```{r fig56, fig.height= 6, fig.width= 10, fig.align= "center", echo=F}
+
+l_adult_pdo_plot
+
+```
+
+
+```{r fig57, fig.height= 6, fig.width= 10, fig.align= "center", echo=F}
+
+l_full_pdo_plot
+
+```
+
+```{r lcd ns pdo, include=F}
+
+juv_lns_pdo <- headers2
+adult_lns_pdo <- headers2
+full_lns_pdo <- headers2
+
+## juv no site loop
+for(j in area_list){
+  for(l in season_list){
+    juv_combos_lns_pdo <- juv_pdo_lcd %>%
+      filter(area == j, season == l)
+    cross_corr <- ccf(juv_combos_lns_pdo$pdo_val,
+                      juv_combos_lns_pdo$cpue_site, plot = F)
+    lag <- cross_corr$lag
+    corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      juv_lns_pdo <- bind_rows(juv_lns_pdo, c(area = j,  season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+    }
+}
+
+
+## adult no site loop
+for(j in area_list){
+  for(l in season_list){
+    adult_combos_lns_pdo <- adult_pdo_lcd %>%
+      filter(area == j, season == l)
+    cross_corr <- ccf(adult_combos_lns_pdo$pdo_val,
+                      adult_combos_lns_pdo$cpue_site, plot = F)
+    lag <- cross_corr$lag
+    corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      adult_lns_pdo <- bind_rows(adult_lns_pdo, c(area = j,  season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+    }
+}
+
+
+## together no site loop
+for(j in area_list){
+  for(l in season_list){
+    full_combos_lns_pdo <- full_pdo_lcd %>%
+      filter(area == j, season == l)
+    cross_corr <- ccf(full_combos_lns_pdo$pdo_val,
+                      full_combos_lns_pdo$cpue_site, plot = F)
+    lag <- cross_corr$lag
+    corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      full_lns_pdo <- bind_rows(full_lns_pdo, c(area = j,  season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+    }
+}
+
+## juv no site set up
+vis_juv_lns_pdo <- juv_lns_pdo %>%
+  filter(lag %in% c(-10:0))%>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_juv_lns_pdo$season <- factor(vis_juv_lns_pdo$season, levels = c("JFM", "AMJ", "JAS", "OND"))
+
+lns_juv_pdo_plot <- ggplot() +
+  scale_color_manual(values = c(  "#999999" , "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_juv_lns_pdo, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Juvenile Lingcod Lag Correlation -PDO", y = "correlation",
+       caption = "Fig 58")+
+  scale_x_continuous(limits=c(-10.5,0.5),breaks=seq(-10,0,1))+
+  #scale_y_continuous(limits = c(-0.1, 0.1), breaks = seq(-0.1, 0.1, 0.1))+
+  theme_bw()+
+  facet_wrap(.~ area)+
+    theme(panel.grid=element_blank())
+
+
+## adult no site set up
+vis_adult_lns_pdo <- adult_lns_pdo %>%
+  filter(lag %in% c(-10:0))%>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_adult_lns_pdo$season <- factor(vis_adult_lns_pdo$season, levels = c("JFM", "AMJ", "JAS", "OND"))
+
+lns_adult_pdo_plot <- ggplot() +
+  scale_color_manual(values = c(  "#999999" , "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999",  "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_adult_lns_pdo, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Adult Lingcod Lag Correlation -PDO", y = "correlation",
+       caption = "Fig 59")+
+  scale_x_continuous(limits=c(-10.5,0.5),breaks=seq(-10,0,1))+
+  #scale_y_continuous(limits = c(-0.2, 0.4), breaks = seq(-0.2, 0.4, 0.1))+
+  theme_bw()+
+  facet_wrap(.~ area) +
+  theme(panel.grid=element_blank())
+
+
+## full no site set up
+vis_full_lns_pdo <- full_lns_pdo %>%
+  filter(lag %in% c(-10:0))%>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_full_lns_pdo$season <- factor(vis_full_lns_pdo$season, levels = c("JFM", "AMJ", "JAS", "OND"))
+
+lns_full_pdo_plot <-ggplot() +
+  scale_color_manual(values = c( "#999999" ,  "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_full_lns_pdo, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Lingcod Lag Correlation -PDO", y = "correlation",
+       caption = "Fig 60")+
+  scale_x_continuous(limits=c(-10.5,0.5),breaks=seq(-10,0,1))+
+  #scale_y_continuous(limits = c(-0.2, 0.4), breaks = seq(-0.2, 0.4, 0.1))+
+  theme_bw()+
+  facet_wrap(.~ area)+
+    theme(panel.grid=element_blank())
+
+
+```
+
+#### PDO without protection status
+
+```{r fig58, fig.height= 6, fig.width= 10, fig.align= "center", echo=F}
+
+lns_juv_pdo_plot
+
+```
+
+
+```{r fig59, fig.height= 6, fig.width= 10, fig.align= "center", echo=F}
+
+lns_adult_pdo_plot
+
+```
+
+
+```{r fig60, fig.height= 6, fig.width= 10, fig.align= "center", echo=F}
+
+lns_full_pdo_plot
+
+```

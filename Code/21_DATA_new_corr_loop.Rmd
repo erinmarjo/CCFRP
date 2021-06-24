@@ -1,0 +1,342 @@
+---
+title: "Correlation Loop Comparison"
+author: "E.M. Johnston"
+date: "3/2/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = F, warning = F)
+
+```
+
+```{r libraries and data}
+
+library(tidyverse)
+library(here)
+library(patchwork)
+
+juv_moci <- read_csv(here("Data", "2021-03-02_juv_moci_na.csv"))
+
+```
+
+`juv_moci` is the dataframe for juvenile Blue rockfish that has area, site, season, year, cpue values, and moci values.
+```{r, echo=F}
+
+juv_moci %>% head(3)
+
+```
+
+
+<div style="margin-bottom:80px;">
+</div>
+
+In this markdown you will find:
+
+1) Correlation loop, visuals, and top correlation using ccf()
+2) Correlation loop, visuals, and top correlation using hand calculation
+3) Correlation loop, visuals, and top correlation using cor()
+4) Side by side visuals from ccf() and cor()/hand calculation
+5) ccf and acf code
+
+## Correlations Calculated using CCF
+
+```{r ccf loop set up}
+
+juv_corr_ccf <- data.frame(area = character(), site = character(), season = character(), lag = character(), corr_values = character())  
+
+area_list <- c("PB", "BL", "AN", "PL")
+site_list <- c("MPA", "REF")
+season_list <- c("JFM", "AMJ", "JAS", "OND")
+
+
+```
+
+```{r ccf loop and plot}
+
+for(j in area_list){
+  for(k in site_list){
+    for(l in season_list){
+      juv_combos <- juv_moci%>%
+      filter(area == j, site == k, season == l)
+      cross_corr <- ccf(juv_combos$central_ca,
+                        juv_combos$cpue_site, plot = F, na.action = na.pass)
+      lag <- cross_corr$lag
+      corr_values <- cross_corr$acf
+      for(m in 1:length(lag)){
+      juv_corr_ccf <- bind_rows(juv_corr_ccf, c(area = j, site = k, season = l, 
+                                     lag = lag[m], corr_values = corr_values[m]))
+      }
+
+    }
+  }
+}
+
+vis_juv_ccf <- juv_corr_ccf %>%
+  filter(lag %in% c(-10:0))%>%
+  mutate(corr_values = as.numeric(corr_values),
+         lag = as.numeric(lag))
+
+vis_juv_ccf$season <- factor(vis_juv_ccf$season, levels = c("JFM", "AMJ", "JAS", "OND"))
+
+juv_ccf_plot <- ggplot() +
+  scale_color_manual(values = c(  "#999999" , "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = vis_juv_ccf, aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Juvenile Blue Rockfish Lag Cross Correlation", y = "correlation",
+       caption = "")+
+  scale_x_continuous(limits=c(-8.5,0.5),breaks=seq(-8,0,1))+
+  scale_y_continuous(limits = c(-0.6, 0.95), breaks = seq(-0.6, 0.9, 0.2), 
+                     labels = c(-0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8) )+
+  theme_bw()+
+  facet_grid(site ~ area)+
+    theme(panel.grid=element_blank(),
+          plot.title = element_text(hjust = 0.5),
+          plot.caption = element_text(size = 8))
+
+
+
+```
+
+```{r fig 1, fig.height=6, fig.width=10, fig.align="center"}
+
+juv_ccf_plot
+
+```
+
+#### top correlations from each area + site
+
+```{r ccf slice}
+
+vis_juv_ccf %>%
+  arrange(desc(corr_values)) %>%
+  group_by(area, site) %>%
+  slice(1)
+
+```
+
+## Correlations Calculated using Equation
+
+The equation being used is:
+
+$r = \frac{\Sigma(x_{i}-\bar{x}) (y_{i} - \bar{y})}{\sqrt{\Sigma(x_{i}-\bar{x})^2\Sigma(y_{i}-\bar{y})^2}}$
+
+```{r hand set up loop and plot}
+
+juv_corr_hand <- data.frame(area = character(), site = character(), season = character(), lag = character(), correlation = character())  
+
+
+#i=0
+
+#new_df <- 
+  
+for(j in area_list){
+  for(k in site_list){
+    for(l in season_list){
+      juvenile <- juv_moci %>%
+        filter(area == j, site == k, season == l)
+      for(i in 0:8){
+        lag_df <- juvenile %>%
+          mutate(central_ca = dplyr::lag(central_ca, n = i)) %>% drop_na()
+        cor <- (sum((lag_df$central_ca - mean(lag_df$central_ca, na.rm = T))* 
+                      (lag_df$cpue_site - mean(lag_df$cpue_site, na.rm = T))))/
+          ((sqrt(sum((lag_df$central_ca - mean(lag_df$central_ca, na.rm = T))^2)))*
+             (sqrt(sum((lag_df$cpue_site - mean(lag_df$cpue_site, na.rm = T))^2))))
+        for(m in 1:length(cor)){
+          juv_corr_hand <- bind_rows(juv_corr_hand, c(area = j, site = k, season = l, 
+                                            lag = -i, correlation = cor[m]))
+        }
+      }
+    }
+  }
+}  
+  
+
+juv_vis_hand <- juv_corr_hand %>%
+  mutate(correlation = as.numeric(correlation),
+         lag = as.numeric(lag))
+  
+juv_vis_hand$season <- factor(juv_vis_hand$season, levels = c("JFM", "AMJ" ,"JAS", "OND"))  
+
+
+
+juv_hand_plot <- ggplot()+
+  scale_color_manual(values = c("#999999", "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c("#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = juv_vis_hand, aes(x = lag, y = correlation, 
+                                                         color = season, fill = season))+
+  labs(title = "Juvenile Blue Rockfish Hand Calculation")+
+  scale_x_continuous(limits=c(-8.5,0.5),breaks=seq(-8,0,1))+
+  theme_bw()+
+  facet_grid(site~area)+
+  theme(panel.grid = element_blank(),
+        plot.title = element_text(hjust = 0.5))
+ 
+
+
+```
+
+```{r fig 2, fig.height=6, fig.width=10, fig.align="center"}
+
+juv_hand_plot
+
+```
+
+#### top correlations from each area + site
+
+```{r hand slice}
+
+juv_vis_hand %>%
+  arrange(desc(correlation)) %>%
+  group_by(area, site) %>%
+  slice(1)
+
+```
+
+## Correlations Calculated using cor() function
+### Just making sure it is the same as calculating by hand (**spoiler, it is the same**)
+
+```{r cor set up loop and plot}
+
+juv_corr_cor <- data.frame(area = character(), site = character(), season = character(), lag = character(), correlation = character())  
+
+  
+for(j in area_list){
+  for(k in site_list){
+    for(l in season_list){
+      juvenile2 <- juv_moci %>%
+        filter(area == j, site == k, season == l)
+      for(i in 0:8){
+        lag_df2 <- juvenile2 %>%
+          mutate(central_ca = dplyr::lag(central_ca, n = i)) %>% drop_na()
+        cor2 <- cor(lag_df2$central_ca, lag_df2$cpue_site)
+        for(m in 1:length(cor)){
+          juv_corr_cor <- bind_rows(juv_corr_cor, c(area = j, site = k, season = l, 
+                                            lag = -i, correlation = cor2[m]))
+        }
+      }
+    }
+  }
+}  
+
+
+juv_vis_cor <- juv_corr_cor %>%
+  mutate(correlation = as.numeric(correlation),
+         lag = as.numeric(lag))
+  
+juv_vis_cor$season <- factor(juv_vis_cor$season, levels = c("JFM", "AMJ" ,"JAS", "OND"))  
+
+juv_cor_plot <- ggplot()+
+  scale_color_manual(values = c("#999999", "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c("#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = juv_vis_cor, aes(x = lag, y = correlation, 
+                                                        color = season, fill = season))+
+  labs(title = "Juvenile Blue Rockfish cor()")+
+  facet_grid(site ~ area)+
+  theme_bw()+
+  theme(panel.grid = element_blank(),
+        plot.title = element_text(hjust = 0.5))
+  
+
+
+
+```
+
+```{r fig 3, fig.height=6, fig.width=10, fig.align="center"}
+
+juv_cor_plot
+
+```
+
+
+#### top correlations from each area + site
+
+```{r cor slice}
+
+juv_vis_cor %>%
+  arrange(desc(correlation)) %>%
+  group_by(area, site) %>%
+  slice(1)
+
+```
+
+<div style="margin-bottom:80px;">
+</div>
+
+
+## Visual Comparison
+
+This is just one example of the Ano Nuevo MPA, but the pattern is the same for all. There are some large lags popping out around 6, 7, and 8 years back. 
+
+```{r comparison plot set up, echo=F}
+
+ccf_plot <- vis_juv_ccf %>%
+  filter(area == "AN", site == "MPA") %>%
+  ggplot() +
+  scale_color_manual(values = c(  "#999999" , "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", aes(lag, y = corr_values,  color = season,
+                                               fill = season))+
+  labs(title = "Juvenile Blue Rockfish Lag ccf()", y = "correlation",
+       caption = "")+
+  scale_x_continuous(limits=c(-8.5,0.5),breaks=seq(-8,0,1))+
+  scale_y_continuous(limits = c(-0.6, 0.95), breaks = seq(-0.6, 0.9, 0.2), 
+                     labels = c(-0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8) )+
+  theme_bw()+
+  #facet_grid(site ~ area)+
+    theme(panel.grid=element_blank(),
+          plot.title = element_text(hjust = 0.5),
+          plot.caption = element_text(size = 8))
+
+cor_plot <- juv_vis_cor %>%
+  filter(area == "AN", site == "MPA") %>%
+  ggplot() +
+  scale_color_manual(values = c(  "#999999" , "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c( "#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", aes(lag, y = correlation,  color = season,
+                                               fill = season))+
+  labs(title = "Juvenile Blue Rockfish Lag cor()", y = "correlation",
+       caption = "")+
+  scale_x_continuous(limits=c(-8.5,0.5),breaks=seq(-8,0,1))+
+  scale_y_continuous(limits = c(-0.6, 0.95), breaks = seq(-0.6, 0.9, 0.2), 
+                     labels = c(-0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8) )+
+  theme_bw()+
+  #facet_grid(site ~ area)+
+    theme(panel.grid=element_blank(),
+          plot.title = element_text(hjust = 0.5),
+          plot.caption = element_text(size = 8))
+
+```
+
+
+```{r plot compare, fig.height=6, fig.width=10, fig.align="center"}
+
+ccf_plot + cor_plot
+
+```
+
+<div style="margin-bottom:80px;">
+</div>
+
+## ccf() and acf() code
+
+```{r ccf source code}
+
+stats:::ccf
+
+```
+
+```{r acf source code}
+
+stats:::acf
+
+```
+
+
+
+
+Meeting- CCF/Correlation? 2021-03-09 HG GW BR
+
+

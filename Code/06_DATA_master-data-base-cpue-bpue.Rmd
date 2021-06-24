@@ -1,0 +1,255 @@
+---
+title: "Master Dataset"
+author: "Erin Johnston"
+date: "11/2/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+So far I have worked on two separate datasets for CPUE and BPUE. Adding 0's into the drift in which we didn't catch something of a particular species. I am now going to work on making a master dataset with 0's that I can use as the base for both CPUE and BPUE going forward. I will also consider adding MOCI data to this master dataset
+
+```{r libraries, warning=F, message=F }
+
+library(tidyverse)
+library(here)
+
+```
+
+It will start off with the same raw data as I used in 01_DATA_cpue-add-zeros.Rmd
+
+```{r raw data and initial clean}
+
+CP_MLML_to_2019 <- read_csv(here("Data", "CP_MLML_to_2019.csv"))
+
+## figure out which data are not there
+CP_MLML_to_2019 %>%
+  select(everything())%>%
+  summarise_all(funs(sum(is.na(.))))
+
+## drop the lines with no length or angler hours
+CP_MLML_to_2019 <- CP_MLML_to_2019 %>%
+  drop_na() ##124013
+
+## arranging by catch frequency
+numbers_caught <- plyr::count(CP_MLML_to_2019$species)%>%
+  arrange(desc(freq))
+
+## run to filter for 21 most common species
+## justify this with % of data these spp make up
+CP_MLML_to_2019 <- CP_MLML_to_2019 %>%
+  filter(species %in% c("BLU", "GPR", "BLA", "OLV", "LCD", "VER", "DEA", "YTL",
+                        "KLP", "CPR", "CNY", "CHN", "RSY", "BWN", "KGL", "QBK", 
+                        "CBZ", "BAY", "PSD", "TRE", "SRY")) #123500
+
+```
+
+
+```{r}
+## combining drift ID and size separated by underscore
+CP_MLML_to_2019$drift_size <- paste(CP_MLML_to_2019$drift, CP_MLML_to_2019$length, sep = "_")
+
+## nearly the same code as before, but with drift_size and species counted instead of drift and species counted. This will allow us to keep length inside the dataset.
+## this is the code that will also add in 0's to drifts where there are no fishes caught of a particular species
+## takes a while to run because it is making this wide and then long
+CP_ML_count_drift_size_species <- CP_MLML_to_2019 %>%
+  count(drift_size, species)%>%
+  rename(numbercaught = n)%>%
+  pivot_wider(names_from = drift_size,
+              values_from = numbercaught)%>%
+  pivot_longer(-species,
+               names_to = "drift_size",
+               values_to = "numbercaught") %>%
+   mutate(numbercaught=case_when(
+    is.na(numbercaught)~0,
+    TRUE~ as.numeric(numbercaught)
+  ))
+
+
+metadata_CP_ML <- CP_MLML_to_2019 %>% 
+  select(group, trip, area, site, month, day, year, gridcell, anglerhours, drift,
+         drift_size)%>%
+  distinct()
+
+cpue_cp_ml <- left_join(CP_ML_count_drift_size_species, metadata_CP_ML, 
+                        by = "drift_size") %>%
+  mutate(cpue = numbercaught/anglerhours)%>%
+  separate(drift_size, into = c("drift", "length"), sep = "_") %>%
+  rename(site_1 = site)%>%
+  transform(site_2 = substr(drift, 3, 3))%>%
+  mutate(
+    site = case_when(
+      site_2 == "M" ~ "MPA",
+      site_2 == "R" ~ "REF"))%>%
+  select(-site_1, - site_2)
+
+##qaqc ben 11-4-2020
+## unique lengths
+
+length(unique(cpue_cp_ml$length))*
+#length(unique(cpue_cp_ml$species))*
+length(unique(cpue_cp_ml$drift))
+
+
+98*61*5259
+
+
+length(unique(CP_ML_count_drift_size_species$drift_size))*
+length(unique(CP_ML_count_drift_size_species$species))
+
+
+```
+
+# CPUE
+Using the master data, how to calculate and subset out different parts of the data. CPUE for individual drift, with the metadata, CPUE by gridcell in each year is here also.
+
+```{r various cpue code}
+
+## this is how to get CPUE for each drift
+atmp <- cpue_cp_ml %>%
+  group_by(species, drift) %>%
+  summarise(cpue_sum = sum(cpue))%>%
+  filter(species == "BLU")
+
+## what to include to get CPUE by drift with all other metadata included
+atmp_2 <- cpue_cp_ml %>%
+  group_by(species, drift, group, trip, area, site, month, day, year, gridcell, anglerhours) %>%
+  summarise(cpue_sum = sum(cpue))%>%
+  filter(species == "BLU")
+
+## unique(atmp_2$gridcell) 139 unique grid cell
+
+atmp_3 <- cpue_cp_ml %>%
+  group_by(species, gridcell) %>%
+  summarise(cpue_sum = sum(cpue))%>%
+  filter(species == "BLU")
+
+## what to include to get CPUE by gridcell by year
+atmp_4 <- cpue_cp_ml %>%
+  group_by(species, group, area, site, year, gridcell) %>%
+  summarise(cpue_sum = sum(cpue))%>%
+  filter(species == "BLU")
+
+```
+
+
+Need unique combinations of all drifts and all sizes
+
+```{r}
+
+drifts_unique <- unique(CP_MLML_to_2019$drift)
+lengths_unique <- unique(CP_MLML_to_2019$length)
+species_unique <- unique(CP_MLML_to_2019$species)
+#nope
+#drifts_lengths_unique <- paste(drifts_unique, lengths_unique, sep = "_")
+
+## made new dataframe with unique drift + lengths + species
+drift_len_spec_df<- crossing(drifts_unique, lengths_unique, species_unique)
+
+
+## make new column with drift_length_species
+drift_len_spec_df$drift_len_spec <- paste(drift_len_spec_df$drifts_unique, drift_len_spec_df$lengths_unique, drift_len_spec_df$species_unique, sep = "_")
+
+
+## makes new column with species and sizes in df appended  
+CP_MLML_to_2019$species_size <- paste(CP_MLML_to_2019$species, CP_MLML_to_2019$length, sep = "_")
+
+## makes new column with drift specie and lengths appended
+CP_MLML_to_2019$drift_len_spec <- paste(CP_MLML_to_2019$drift, CP_MLML_to_2019$species_size, sep = "_")
+
+## how many unique combos of species and size there are
+cp_ml_species_size <- unique(CP_MLML_to_2019$species_size)
+ 
+## new df with unique drifts and species_sizes 
+drifts_species_lengths_unique <- crossing(drifts_unique, cp_ml_species_size)
+
+## new column with drift speies and size
+drifts_species_lengths_unique$drift_len_spec <- paste(drifts_species_lengths_unique$drifts_unique, drifts_species_lengths_unique$cp_ml_species_size, sep = "_")
+
+CP_MLML_to_2019_comb <- left_join(drifts_species_lengths_unique, CP_MLML_to_2019 , by = "drift_species_lengths")
+
+test_qc <- anti_join(CP_MLML_to_2019_comb, drifts_species_lengths_unique, by = "drift_species_lengths")
+```
+
+
+```{r}
+
+## df with min and max length for 21 common species
+possible_sizes <- CP_MLML_to_2019 %>%
+  group_by(species) %>%
+  summarise(min_len = min(length),
+            max_len = max(length)) 
+
+#ok this works, putting in body of loop
+#blacks <- seq(13, 50, by = 1)
+#try <- seq(possible_sizes$min_len, possible_sizes$max_len, by = 1)
+
+
+## for loop set-up
+## vector with all species
+spec_vec <- unique(possible_sizes$species)
+
+
+## blank dataframe
+possible_spec_size <- data.frame(species = character(),
+                      len = character())
+
+## for loop to get all sizes between min and max length
+for(i in spec_vec){
+  pos_len <- possible_sizes %>%
+    filter(species == i)
+  all_len <- seq(pos_len$min_len, pos_len$max_len, by = 1)
+  for(j in 1:length(all_len)){
+    possible_spec_size <- bind_rows(possible_spec_size, c(species = i, 
+                                                          len = all_len[j]))
+  }
+}
+
+possible_spec_size$spec_size <- paste(possible_spec_size$species,
+                                      possible_spec_size$len, sep = "_")
+
+##copied from prev chunk
+##5252 unique drifts
+drifts_unique <- unique(CP_MLML_to_2019$drift)
+
+spp_size_unique <- unique(CP_MLML_to_2019$species_size)
+
+
+drift_spec_size_join <- crossing(drifts_unique, possible_spec_size)
+
+
+
+drift_spec_size_join$drift_len_spec <- paste(drift_spec_size_join$drifts_unique,
+                                      drift_spec_size_join$species,
+                                      drift_spec_size_join$len, sep = "_")
+
+drift_spec_size_join<- drift_spec_size_join %>%
+  select(drift_len_spec)
+
+## Ben 2020-11-11
+## this has NA when there is no record from the original df
+## we want all metadata to appear regardless of if there was a record there
+## pivot wider starting with CP_MLML_to_2019 with columns to be species + length
+## want drifts to be rows in piv-wider
+## pivot longer which will have rows as drifts in one col and species + length. If not there will be NA
+## left join metadata by drift
+## qaqc df len should be 659*5252
+
+cp_mlml_by_spec_len <- left_join(drift_spec_size_join, CP_MLML_to_2019,  by = "drift_len_spec")
+
+
+eh <- drift_spec_size_join%>%
+  rename(drift = drifts_unique)%>%
+  select(drift, drift_spec_size)
+
+eh_2 <- CP_MLML_to_2019 %>%
+  unite(col = drift_spec_size, c(drift, species, length), sep = "_",
+        remove = FALSE)
+
+##DO NOT JOIN BY DRIFT
+try_join <- left_join(eh, eh_2, by = "drift_spec_size")
+
+```
+

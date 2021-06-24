@@ -1,0 +1,71 @@
+---
+title: "PISCO Data"
+author: "Erin Johnston"
+date: "3/11/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = F, warning = F)
+```
+
+```{r}
+
+library(tidyverse)
+library(here)
+
+```
+
+```{r}
+
+fish_dat_pisco_sb <- read_csv(here("Data", "PISCO_UCSB_subtidal_recruitment_fish_data.1.2.csv"))
+
+site_pisco_sb <- read_csv(here("Data", "PISCO_UCSB_subtidal_recruitment_site_list.1.3.csv"))
+
+spp_pisco_sb <- read_csv(here("Data", "PISCO_UCSB_subtidal_recruitment_fish_spp_list.1.2.csv"))
+
+blue_pisco_sb <- fish_dat_pisco_sb %>%
+  filter(classcode == "SMYS")
+```
+
+```{r}
+
+fish_pisco_kelp <- read_csv(here("Data", "PISCO_kelpforest_fish.1.3.csv"))
+
+site_pisco_kelp <- read_csv(here("Data", "PISCO_kelpforest_site_table.1.2.csv"))
+
+spp_pisco_kelp <- read_csv(here("Data", "PISCO_kelpforest_taxon_table.1.2.csv"))
+
+swath_pisco_kelp <- read_csv(here("Data", "PISCO_kelpforest_swath.1.2.csv"))
+
+sizefreq_pisco_kelp <- read_csv(here("Data", "PISCO_kelpforest_sizefreq.1.2.csv"))
+
+upc_pisco_kelp <- read_csv(here("Data", "PISCO_kelpforest_upc.1.2.csv"))
+
+quad_pisco_kelp <- read_csv(here("Data", "PISCO_kelpforest_quad.1.2.csv"))
+
+blue_pisco_pb_bl <- fish_pisco_kelp %>%
+  filter(classcode == "SMYS", site %in% c("BUCHON", "CROWBAR", "DUCK_POND_DC", "DUCK_POND_UC", "GREEN_PEAK", "LA_CRUZ_DC", "LA_CRUZ_UC", "LITTLE_IRISH_CEN", "LITTLE_IRISH_DC", "LITTLE_IRISH_UC", "MILL_CREEK_DC", "MILL_CREEK_UC", "MONTANA_DE_ORO", "NORTH_SAN_SIMEON", "PISMO_W", "PLASKETT_DC", "PLASKETT_UC", "SALMON_CREEK_DC", "SALMON_CREEK_UC", "TENERA", "WHALEBOAT_DC", "WHALEBOAT_UC"), fish_tl <13)
+
+pbbl <- site_pisco_kelp %>%
+  filter(MPA_Name %in% c("Point Buchon SMR", "Piedras Blancas SMR"))
+pl<- site_pisco_kelp %>%
+  filter(MPA_Name %in% c("Point Lobos SMR"))
+
+lobos <- fish_pisco_kelp %>%
+  filter(classcode == "SMYS", site %in% c("BIXBY", "BLUEFISH_DC", "BLUEFISH_UC", "MALPASO", "MONASTERY_DC", "MONASTERY_UC", "PALO_COLORADO", "SOBERANES", "WESTON_DC", "WESTON_UC"), fish_tl < 11)
+## lmao gotta toss these - don't trust the observer
+#gw <- fish_pisco_kelp %>%
+#  filter(observer == "GRANT WALTZ", classcode == "SMYS")
+
+lobos$date <- paste(lobos$year, lobos$month, lobos$day, lobos$site, sep = "_")
+
+lobos2 <- lobos %>%
+  count(year, month, day, site, date)
+  
+
+ggplot(data = lobos) +
+  geom_bar(aes(x = year))
+
+```
+
