@@ -29,7 +29,7 @@ library(here)
 
 Fishing trips happened at one of four [sampling locations](https://erinmarjo.github.io/CCFRP/20_VIS_interactive-widget-maps.html)
 
-Something new
+NEW LINE NEW LINE NEW LINE
 
 # Data Cleaning
 
@@ -62,4 +62,5 @@ Multiple sets of years were excluded. For full representation, click [here](http
 # Importance of Component Parts of MOCI
 
 # Impacts of MHW on Adult Blue Rockfish Growth
+
 
