@@ -64,3 +64,8 @@ Multiple sets of years were excluded. For full representation, click [here](http
 # Impacts of MHW on Adult Blue Rockfish Growth
 
 
+```{r, eval = F, echo=F}
+# Run this in console: rmarkdown::render(input = here("Code", "27_thesis_progress_report.Rmd"), output_dir = here("docs"))
+
+```
+
