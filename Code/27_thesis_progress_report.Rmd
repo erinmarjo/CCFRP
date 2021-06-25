@@ -29,7 +29,7 @@ library(here)
 
 Fishing trips happened at one of four [sampling locations](https://erinmarjo.github.io/CCFRP/20_VIS_interactive-widget-maps.html)
 
-NEW LINE NEW LINE NEW LINE
+WHAT UP GRAINT
 
 # Data Cleaning
 
@@ -60,6 +60,8 @@ To ensure that these correlations were not lower simply because data were missin
 Multiple sets of years were excluded. For full representation, click [here](https://erinmarjo.github.io/CCFRP/28_DATA_year_exclusion.html)
 
 # Importance of Component Parts of MOCI
+
+The Multivariate Ocean Climate
 
 # Impacts of MHW on Adult Blue Rockfish Growth
 
