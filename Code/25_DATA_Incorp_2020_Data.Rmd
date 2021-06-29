@@ -75,13 +75,55 @@ cp_ml_20_sp <- cp_ml_20 %>%
        site_2 == "R" ~ "REF"))%>%
    select(-site_1, - site_2)%>%
    mutate(size = as.numeric(size))
+ 
 
 ```
 
 ## Incorporate Missing Drifts & MOCI
 
-```{r blue and moci data}
+```{r}
 
+data_drifts <- full_cp_ml %>%
+  select(drift) %>%
+  distinct()
+
+missing_drift <- anti_join(life_drifts, data_drifts, by = "drift")
+
+rf_list <- c("BLU", "GPR", "BLA", "OLV", "LCD", "VER", "DEA", "YTL", "KLP",
+             "CPR", "CNY", "CHN", "RSY", "BWN", "KGL", "QBK", "CBZ", "BAY", 
+             "PSD", "TRE", "SRY")
+
+add_drift_df <- data.frame(group = character(), trip = character(), drift = character(),
+                           area = character(), site = character(), month = character(), 
+                           day = character(), year = double(), gridcell = character(),
+                           anglerhours = double())
+
+for(i in rf_list){
+  add_drifts <- missing_drift %>%
+    mutate(species = i,
+            num_caught = 0,
+            cpue = num_caught/anglerhour) %>%
+    rename(anglerhours = anglerhour,
+           site_1 = site)%>%
+    transform(site_2 = substr(drift, 3, 3))%>%
+    mutate(site = case_when(
+       site_2 == "M" ~ "MPA",
+       site_2 == "R" ~ "REF"))%>%
+    select(-site_1, - site_2)
+  add_drift_df <- bind_rows(add_drift_df, add_drifts)
+}
+
+
+full_master <- full_cp_ml %>%
+  bind_rows(add_drift_df)
+
+#write_csv(full_master, here("Data", "2021-06-28_full_master_2020.csv"))
+
+
+```
+
+
+```{r blue and moci data, echo = F, eval = F}
 blue_full <- full_cp_ml %>%
   filter(species == "BLU")
 
@@ -112,23 +154,14 @@ add_drifts <- missing_drift %>%
 ## can you force 'filter' to include NAs from a column. Read about this.
 
 ## describe the summarizing using a figure/map show all of the variables for each grouping
+```
 
-juv <- blue_full %>%
-  filter(size <= 21) %>%
-  select(-size) %>%
-  bind_rows(add_drifts)%>%
-  group_by(drift, trip, area, site, month, day, year, gridcell) %>%
-  summarise(cpue_sum = sum(cpue))%>%
-  group_by(trip, area, site, month, day, year, gridcell) %>%
-  summarise(cpue_date = mean(cpue_sum))%>%
-  group_by( area, site, year, gridcell) %>%
-  summarise(cpue_cell = mean(cpue_date))%>%
-  group_by( area, site, year) %>%
-  summarise(cpue_site = mean(cpue_cell))
 
-## below is the juveniles without adding the 210 drifts. Check to see how much CPUE changes. Look at each of the 0 drifts
+```{r blue and moci data}
+blue_master <- full_master %>%
+  filter(species == "BLU")
 
-juv2 <- blue_full %>%
+juv <- blue_master %>%
   filter(size <= 21) %>%
   select(-size) %>%
   #bind_rows(add_drifts)%>%
@@ -141,16 +174,33 @@ juv2 <- blue_full %>%
   group_by( area, site, year) %>%
   summarise(cpue_site = mean(cpue_cell))
 
+## below is the juveniles without adding the 210 drifts. Check to see how much CPUE changes. Look at each of the 0 drifts
+
+# juv2 <- blue_full %>%
+#   filter(size <= 21) %>%
+#   select(-size) %>%
+#   #bind_rows(add_drifts)%>%
+#   group_by(drift, trip, area, site, month, day, year, gridcell) %>%
+#   summarise(cpue_sum = sum(cpue))%>%
+#   group_by(trip, area, site, month, day, year, gridcell) %>%
+#   summarise(cpue_date = mean(cpue_sum))%>%
+#   group_by( area, site, year, gridcell) %>%
+#   summarise(cpue_cell = mean(cpue_date))%>%
+#   group_by( area, site, year) %>%
+#   summarise(cpue_site = mean(cpue_cell))
+# 
+# juvcopy <- juv
+
 
 ## going to write out and add in apppropriate 2007/2015 NA data for BL
 
 #write_csv(juv, here("Data/output", "2021-04-13_juv_blue_site_cpue.csv"))
 
 
-adult <- blue_full %>%
+adult <- blue_master %>%
   filter(size >= 32) %>%
   select(-size)%>%
-  bind_rows(add_drifts)%>%
+  #bind_rows(add_drifts)%>%
   group_by(drift, trip, area, site, month, day, year, gridcell) %>%
   summarise(cpue_sum = sum(cpue))%>%
   group_by(trip, area, site, month, year, gridcell) %>%
