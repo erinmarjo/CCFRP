@@ -1,0 +1,122 @@
+---
+title: "Cross Correlations"
+author: "Erin Johnston"
+date: "6/28/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = F, warning = F)
+```
+
+```{r}
+
+library(tidyverse)
+library(here)
+
+
+```
+
+```{r}
+
+master <- read_csv(here("Data", "2021-06-28_full_master_2020.csv"))
+
+
+govl <- c("GPR", "OLV", "VER", "LCD")
+
+for(i in govl){
+  sp_df <- master %>%
+    filter(species == i)
+  assign(paste0(i, "_full"), sp_df)
+
+}
+
+
+```
+
+```{r}
+
+juv_gpr <- GPR_full %>%
+  filter(size <= 21) %>%
+  select(-size) %>%
+  group_by(drift, trip, area, site, month, day, year, gridcell) %>%
+  summarise(cpue_sum = sum(cpue))%>%
+  group_by(trip, area, site, month, day, year, gridcell) %>%
+  summarise(cpue_date = mean(cpue_sum))%>%
+  group_by( area, site, year, gridcell) %>%
+  summarise(cpue_cell = mean(cpue_date))%>%
+  group_by( area, site, year) %>%
+  summarise(cpue_site = mean(cpue_cell))
+
+df <- data.frame(area = c("BL", "BL", "BL", "BL"), site = c("REF", "MPA", "REF", "MPA"), year = c(2007, 2007, 2015, 2015), cpue_site = c(0,0,0,0))
+
+juv_gpr2 <- bind_rows(juv_gpr, df)
+
+MOCI <- read_csv(here("Data", "Central_California_MOCI_2020.csv"))
+
+juv_gprmoci <- left_join(juv_gpr2, MOCI, by = "year") 
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r nifty code add missing drift, echo = F}
+
+
+# 
+# rf_list <- c("BLU", "GPR", "BLA", "OLV", "LCD", "VER", "DEA", "YTL", "KLP",
+#              "CPR", "CNY", "CHN", "RSY", "BWN", "KGL", "QBK", "CBZ", "BAY", 
+#              "PSD", "TRE", "SRY")
+# 
+# add_drift_df <- data.frame(group = character(), trip = character(), drift = character(),
+#                            area = character(), site = character(), month = character(), 
+#                            day = character(), year = double(), gridcell = character(),
+#                            anglerhours = double())
+# 
+# for(i in rf_list){
+#   add_drifts <- missing_drift %>%
+#     mutate(species = i,
+#             num_caught = 0,
+#             cpue = num_caught/anglerhour) %>%
+#     rename(anglerhours = anglerhour,
+#            site_1 = site)%>%
+#     transform(site_2 = substr(drift, 3, 3))%>%
+#     mutate(site = case_when(
+#        site_2 == "M" ~ "MPA",
+#        site_2 == "R" ~ "REF"))%>%
+#     select(-site_1, - site_2)
+#   add_drift_df <- bind_rows(add_drift_df, add_drifts)
+# }
+
+
+
+```
+
+
