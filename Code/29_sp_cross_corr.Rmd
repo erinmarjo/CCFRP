@@ -9,7 +9,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE, message = F, warning = F)
 ```
 
-```{r}
+```{r libraries}
 
 library(tidyverse)
 library(here)
@@ -17,13 +17,14 @@ library(here)
 
 ```
 
-```{r}
+```{r master data by species}
 
 master <- read_csv(here("Data", "2021-06-28_full_master_2020.csv"))
 
 
 govl <- c("GPR", "OLV", "VER", "LCD")
 
+## automates the creation of multiple datasets by species filter
 for(i in govl){
   sp_df <- master %>%
     filter(species == i)
@@ -31,11 +32,412 @@ for(i in govl){
 
 }
 
+```
+
+
+## Juvenile Rockfish Correlations
+
+```{r juvenile dataset all spp}
+
+sp_juv <- master %>%
+  filter(case_when(species == "GPR" ~ size <= 21,
+                   species == "OLV" ~ size <= 28,
+                   species == "VER" ~ size <= 31,
+                   species == "LCD" ~ size <= 35))
+
+sp_juv2 <- sp_juv %>%
+  select(-size) %>%
+  group_by(species, drift, trip, area, site, month, day, year, gridcell) %>%
+  summarise(cpue_sum = sum(cpue))%>%
+  group_by(species, trip, area, site, month, day, year, gridcell) %>%
+  summarise(cpue_date = mean(cpue_sum))%>%
+  group_by(species, area, site, year, gridcell) %>%
+  summarise(cpue_cell = mean(cpue_date))%>%
+  group_by(species, area, site, year) %>%
+  summarise(cpue_site = mean(cpue_cell))
+
+missing_bl <- data.frame(species = c("GPR", "GPR", "GPR", "GPR", 
+                                     "OLV", "OLV", "OLV", "OLV", 
+                                     "VER", "VER", "VER", "VER", 
+                                     "LCD", "LCD", "LCD", "LCD"),
+                         area = c("BL", "BL", "BL", "BL",
+                                  "BL", "BL", "BL", "BL", 
+                                  "BL", "BL", "BL", "BL", 
+                                  "BL", "BL", "BL", "BL"), 
+                         site = c("REF", "MPA", "REF", "MPA",
+                                  "REF", "MPA", "REF", "MPA",
+                                  "REF", "MPA", "REF", "MPA",
+                                  "REF", "MPA", "REF", "MPA"), 
+                         year = c(2007, 2007, 2015, 2015,
+                                  2007, 2007, 2015, 2015,
+                                  2007, 2007, 2015, 2015,
+                                  2007, 2007, 2015, 2015), 
+                         cpue_site = c(0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0))
+
+sp_juv3 <- bind_rows(sp_juv2, missing_bl)
 
 ```
 
+```{r MOCI}
+
+
+MOCI <- read_csv(here("Data", "Central_California_MOCI_2020.csv"))
+
+sp_juv_moci <- left_join(sp_juv3, MOCI, by = "year") 
+
+```
+
+```{r custom function}
+
+erin_ccf <- function(full_x, full_y, lag_x_rm, lag_y_rm) {
+  mean_x <- mean(full_x, na.rm = T)
+  mean_y <- mean(full_y, na.rm = T)
+  corval <- (sum((lag_x_rm - mean_x)*
+                   (lag_y_rm - mean_y)))/
+    ((sqrt(sum((full_x - mean_x)^2, na.rm = T)))*
+       (sqrt(sum((full_y - mean_y)^2, na.rm = T))))
+  return(corval)
+  
+}
+
+```
+
+```{r juvenile correlation loop}
+
+sp_juv_corr <- data.frame(species = character(), area = character(), site = character(), season = character(), lag = character(), correlation = character())
+
+sp_list <- c("GPR", "OLV", "VER", "LCD")
+area_list <- c("PB", "BL", "AN", "PL")
+site_list <- c("MPA", "REF")
+season_list <- c("JFM", "AMJ", "JAS", "OND")
+
+
+for(s in sp_list){
+  for(j in area_list){
+    for(k in site_list){
+      for(l in season_list){
+        juvenile <- sp_juv_moci %>%
+          filter(species == s, area == j, site == k, season == l)
+        for(i in 0:8){
+          lag_df <- juvenile %>%
+            mutate(central_ca = dplyr::lag(central_ca, n = i)) %>% drop_na()
+          cor <- erin_ccf(juvenile$central_ca, juvenile$cpue_site,
+                          lag_df$central_ca, lag_df$cpue_site)
+          for(m in 1:length(cor)){
+            sp_juv_corr <- bind_rows(sp_juv_corr, c(species = s, area = j, site = k,
+                                                    season = l, lag = -i, 
+                                                    correlation = cor[m]))
+          }
+        }
+      }
+      
+    }
+  }
+}
+
+```
+
+
+```{r data set up for visuals}
+
+sp_juv_vis <- sp_juv_corr %>%
+  mutate(correlation = as.numeric(correlation),
+         lag = as.numeric(lag))
+  
+sp_juv_vis$season <- factor(sp_juv_vis$season, levels = c("JFM", "AMJ" ,"JAS", "OND"))
+
+```
+
+
+
+
+```{r juvenile correlation plots}
+
+## this for loop automates the creation of plots
+for(s in sp_list) {
+  sp_juv_plots <- sp_juv_vis %>%
+  filter(species == s) %>%
+  ggplot()+
+  scale_color_manual(values = c("#999999", "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c("#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2",aes(x = lag, y = correlation, 
+                                                    color = season, fill = season))+
+  labs(title = paste0("Juvenile Rockfish Lag Correlation: ", s))+
+  theme_bw()+
+  theme(panel.grid = element_blank(),
+        plot.title = element_text(hjust = 0.5))+
+  facet_grid(site~area)
+  assign(paste0(s, "_plot"), sp_juv_plots)
+}
+
+GPR_plot
+OLV_plot
+VER_plot
+LCD_plot
+
+
+```
+
+
+```{r top juvenile plots}
+
+sp_top_juv <- sp_juv_vis %>% 
+  arrange(desc(correlation)) %>% 
+  group_by(species, area, site) %>% slice(1)%>%
+  mutate(lag = as.factor(lag))
+
+sp_top_juv$area <- factor(sp_top_juv$area, levels = c("AN", "PL", "BL", "PB"))
+
+
+## automates creation of top juveniles plots
+for(s in sp_list){
+  sp_top_juv_plots <- sp_top_juv %>%
+    filter(species == s) %>%
+    ggplot() +
+    geom_point(size = 4, aes(x = area, y = correlation, color = season,
+                             fill = season, shape = lag))+
+    scale_color_manual(values = c("#999999", "#009999", "#666666", "#000000"))+
+    scale_fill_manual(values = c("#999999", "#009999", "#666666", "#000000"))+
+    labs(title = paste0("Juvenile Rockfish Top Correlation: ", s), y = "Correlation\n",
+         x = "\nArea")+
+    facet_wrap(.~site)+
+    theme_bw()+
+    theme(panel.grid = element_blank(),
+          plot.title = element_text(hjust = 0.5))
+  assign(paste0(s, "_juv_topplot"), sp_top_juv_plots)
+}
+
+GPR_juv_topplot
+OLV_juv_topplot
+VER_juv_topplot
+LCD_juv_topplot
+
+
+
+```
+
+
+## Adult Rockfish Correlations
+
+```{r adult dataset all spp}
+
+sp_adult <- master %>%
+  filter(case_when(species == "GPR" ~ size >= 25,
+                   species == "OLV" ~ size >= 39,
+                   species == "VER" ~ size >= 47,
+                   species == "LCD" ~ size >= 75))
+
+sp_adult2 <- sp_adult %>%
+  select(-size) %>%
+  group_by(species, drift, trip, area, site, month, day, year, gridcell) %>%
+  summarise(cpue_sum = sum(cpue))%>%
+  group_by(species, trip, area, site, month, day, year, gridcell) %>%
+  summarise(cpue_date = mean(cpue_sum))%>%
+  group_by(species, area, site, year, gridcell) %>%
+  summarise(cpue_cell = mean(cpue_date))%>%
+  group_by(species, area, site, year) %>%
+  summarise(cpue_site = mean(cpue_cell))
+
+sp_adult3 <- bind_rows(sp_adult2, missing_bl)
+
+sp_adult_moci <- left_join(sp_adult3, MOCI, by = "year") 
+
+```
+
+```{r adult correlation loop}
+
+sp_adult_corr <- data.frame(species = character(), area = character(), site = character(), season = character(), lag = character(), correlation = character())
+
+for(s in sp_list){
+  for(j in area_list){
+    for(k in site_list){
+      for(l in season_list){
+        adult <- sp_adult_moci %>%
+          filter(species == s, area == j, site == k, season == l)
+        for(i in 0:8){
+          lag_df <- adult %>%
+            mutate(central_ca = dplyr::lag(central_ca, n = i)) %>% drop_na()
+          cor <- erin_ccf(adult$central_ca, adult$cpue_site,
+                          lag_df$central_ca, lag_df$cpue_site)
+          for(m in 1:length(cor)){
+            sp_adult_corr <- bind_rows(sp_adult_corr, c(species = s, area = j, site = k,
+                                                    season = l, lag = -i, 
+                                                    correlation = cor[m]))
+          }
+        }
+      }
+      
+    }
+  }
+}
+
+```
+
+```{r visual set up adult}
+
+sp_adult_vis <- sp_adult_corr %>%
+  mutate(correlation = as.numeric(correlation),
+         lag = as.numeric(lag))
+  
+sp_adult_vis$season <- factor(sp_adult_vis$season, levels = c("JFM", "AMJ" ,"JAS", "OND"))
+
+```
+
+
+```{r adult correlation plots}
+
+## for loop to automate the creation of correlation plots
+for(s in sp_list) {
+  sp_adult_plots <- sp_adult_vis %>%
+  filter(species == s) %>%
+  ggplot()+
+  scale_color_manual(values = c("#999999", "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c("#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2",aes(x = lag, y = correlation, 
+                                                    color = season, fill = season))+
+  labs(title = paste0("Adult Rockfish Lag Correlation: ", s))+
+  theme_bw()+
+  theme(panel.grid = element_blank(),
+        plot.title = element_text(hjust = 0.5))+
+  facet_grid(site~area)
+  assign(paste0(s, "_adult_plot"), sp_adult_plots)
+}
+
+GPR_adult_plot
+OLV_adult_plot
+VER_adult_plot
+LCD_adult_plot
+
+```
+
+```{r top adult plots}
+
+sp_top_adult <- sp_adult_vis %>% 
+  arrange(desc(correlation)) %>% 
+  group_by(species, area, site) %>% slice(1)%>%
+  mutate(lag = as.factor(lag))
+
+sp_top_adult$area <- factor(sp_top_adult$area, levels = c("AN", "PL", "BL", "PB"))
+
+for(s in sp_list){
+  sp_top_adult_plots <- sp_top_adult %>%
+    filter(species == s) %>%
+    ggplot() +
+    geom_point(size = 4, aes(x = area, y = correlation, color = season,
+                             fill = season, shape = lag))+
+    scale_color_manual(values = c("#999999", "#009999", "#666666", "#000000"))+
+    scale_fill_manual(values = c("#999999", "#009999", "#666666", "#000000"))+
+    labs(title = paste0("Adult Rockfish Top Correlation: ", s), y = "Correlation\n",
+         x = "\nArea")+
+    facet_wrap(.~site)+
+    theme_bw()+
+    theme(panel.grid = element_blank(),
+          plot.title = element_text(hjust = 0.5))
+  assign(paste0(s, "_adult_topplot"), sp_top_adult_plots)
+}
+
+GPR_adult_topplot
+OLV_adult_topplot
+VER_adult_topplot
+LCD_adult_topplot
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ```{r}
 
+gprtry <- master %>% filter(species == "GPR", size < 20)
+gprtry2 <- GPR_full %>% filter(size < 20)
+lcdtry <- master %>% filter(species == "LCD", size < 54)
+lcdtry2 <- LCD_full %>% filter(size < 54)
+
+
+## okay this code makes the loop above kind of superfluous
+try <- master %>%
+  filter(case_when(species == "GPR" ~ size < 20,
+                   species == "LCD" ~ size < 54))
+
+gpr_sum <- gprtry %>%
+  select(-size) %>%
+  group_by(drift, trip, area, site, month, day, year, gridcell) %>%
+  summarise(cpue_sum = sum(cpue))
+
+lcd_sum <- lcdtry %>%
+  select(-size) %>%
+  group_by(drift, trip, area, site, month, day, year, gridcell) %>%
+  summarise(cpue_sum = sum(cpue))
+
+together <- bind_rows(gpr_sum, lcd_sum)
+ 
+try2 <- try %>%
+  select(-size) %>%
+  group_by(species, drift, trip, area, site, month, day, year, gridcell) %>%
+  summarise(cpue_sum = sum(cpue))
+
+try3 <- try %>%
+  select(-species)
+
+difference <- anti_join(together, try3)
+
+
+try3 <- try %>%
+  select(-size) %>%
+  group_by(species, drift, trip, area, site, month, day, year, gridcell) %>%
+  summarise(cpue_sum = sum(cpue))%>%
+  group_by(trip, area, site, month, day, year, gridcell) %>%
+  summarise(cpue_date = mean(cpue_sum))%>%
+  group_by( area, site, year, gridcell) %>%
+  summarise(cpue_cell = mean(cpue_date))%>%
+  group_by( area, site, year) %>%
+  summarise(cpue_site = mean(cpue_cell))
+
+
+```
+
+
+```{r, eval = F, echo = F}
+
+
+ ## checking to make sure what I did above works. It does. Wow, the Gopher plot is fucked.
 juv_gpr <- GPR_full %>%
   filter(size <= 21) %>%
   select(-size) %>%
@@ -52,37 +454,51 @@ df <- data.frame(area = c("BL", "BL", "BL", "BL"), site = c("REF", "MPA", "REF",
 
 juv_gpr2 <- bind_rows(juv_gpr, df)
 
-MOCI <- read_csv(here("Data", "Central_California_MOCI_2020.csv"))
+#MOCI <- read_csv(here("Data", "Central_California_MOCI_2020.csv"))
 
 juv_gprmoci <- left_join(juv_gpr2, MOCI, by = "year") 
 
 
+juv_gprcorr <- data.frame(area = character(), site = character(), season = character(), lag = character(), correlation = character())
+
+
+for(j in area_list){
+  for(k in site_list){
+    for(l in season_list){
+      juvenile2 <- juv_gprmoci %>%
+        filter(area == j, site == k, season == l)
+      for(i in 0:8){
+        lag_df2 <- juvenile2 %>%
+          mutate(central_ca = dplyr::lag(central_ca, n = i)) %>% drop_na()
+        cor2 <- erin_ccf(juvenile2$central_ca, juvenile2$cpue_site,
+                        lag_df2$central_ca, lag_df2$cpue_site)
+        for(m in 1:length(cor2)){
+          juv_gprcorr <- bind_rows(juv_gprcorr, c(area = j, site = k, season = l, 
+                                            lag = -i, correlation = cor2[m]))
+        }
+      }
+    }
+  }
+} 
+
+juv_gprvis <- juv_gprcorr %>%
+  mutate(correlation = as.numeric(correlation),
+         lag = as.numeric(lag))
+  
+juv_gprvis$season <- factor(juv_gprvis$season, levels = c("JFM", "AMJ" ,"JAS", "OND"))  
+
+gprcheckplot <- ggplot()+
+  scale_color_manual(values = c("#999999", "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c("#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = juv_gprvis, aes(x = lag, y = correlation, 
+                                                    color = season, fill = season))+
+  labs(title = "Checking GPR Lag Correlation")+
+  theme_bw()+
+  theme(panel.grid = element_blank(),
+        plot.title = element_text(hjust = 0.5))+
+  facet_grid(site~area)
+
 ```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -114,6 +530,23 @@ juv_gprmoci <- left_join(juv_gpr2, MOCI, by = "year")
 #     select(-site_1, - site_2)
 #   add_drift_df <- bind_rows(add_drift_df, add_drifts)
 # }
+
+
+
+#gpr juv
+
+# gpr_juv_plot <- sp_juv_vis %>%
+#   filter(species == "GPR") %>%
+#   ggplot()+
+#   scale_color_manual(values = c("#999999", "#009999", "#666666", "#000000"))+
+#   scale_fill_manual(values = c("#999999", "#009999", "#666666", "#000000"))+
+#   geom_col(position = "dodge2",aes(x = lag, y = correlation, 
+#                                                     color = season, fill = season))+
+#   labs(title = "Juvenile Gopher Rockfish Lag Correlation")+
+#   theme_bw()+
+#   theme(panel.grid = element_blank(),
+#         plot.title = element_text(hjust = 0.5))+
+#   facet_grid(site~area)
 
 
 
