@@ -32,7 +32,7 @@ Fishing trips happened at one of four [sampling locations](https://erinmarjo.git
 
 # Data Cleaning
 
-For full details of cleaning the dataset including the 2020 data, see [this page](https://erinmarjo.github.io/CCFRP/30_full_master_df_creation.html), and for building cross correlation figures, see [this page](https://erinmarjo.github.io/CCFRP/25b_DATA_incorporate_2020.html)
+For full details of cleaning the dataset including the 2020 data, see [this page](https://erinmarjo.github.io/CCFRP/30_full_master_df_creation.html), and for building cross correlation figures, see [this page](https://erinmarjo.github.io/CCFRP/31_blue_cross_corr_2020.html)
 
 # Juvenile Blue Rockfish and MHWs
 

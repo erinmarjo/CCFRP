@@ -443,3 +443,12 @@ no18_20
 
 ```
 
+
+[back](https://erinmarjo.github.io/CCFRP/27_thesis_progress_report.html)
+
+
+```{r, eval = F, echo=F}
+
+# Run this in console: rmarkdown::render(input = here("Code", "28_DATA_year_exclusion.Rmd"), output_dir = here("docs"))
+
+```

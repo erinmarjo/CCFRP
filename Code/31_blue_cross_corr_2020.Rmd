@@ -361,3 +361,12 @@ top_adult_2020_dat <-  top_adult_meeting %>%
 top_adult_2020_dat
 
 ```
+
+
+[back](https://erinmarjo.github.io/CCFRP/27_thesis_progress_report.html)
+
+```{r, eval = F, echo=F}
+
+# Run this in console: rmarkdown::render(input = here("Code", "31_blue_cross_corr_2020.Rmd"), output_dir = here("docs"))
+
+```
