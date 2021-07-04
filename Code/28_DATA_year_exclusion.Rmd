@@ -26,7 +26,21 @@ library(here)
 Taking out all CPUE & MOCI data from 2014, 2015, 2016. Doing this shoud wipe out the 2 year lag correlation if the juvenile abundance is in response to things happening during MHW. Basically, if the MHW is driving this relationship, we shoul see less of a relationship.
 
 ```{r, echo = F}
-juv_no_mhw <- read_csv(here("Data", "2021-04-13_juv_moci_na_no_mhw.csv"))
+
+juv_blue <- read_csv(here("Data", "2021-07-04_juv_blue_moci_site_cpue.csv"))
+
+juv_no_mhw <- juv_blue %>%
+  rename(central_ca2 = central_ca,
+         cpue_site2 = cpue_site) %>%
+  mutate(cpue_site = case_when(
+    year %in% c(2013, 2014, 2015) ~ NA_real_, ## NA_real_ instead of NA so that R doesn't complain about input needing to be a logical vector instead of a double vector
+    year %in% c(2007:2012, 2016:2020) ~ as.numeric(cpue_site2)
+    ), central_ca = case_when(
+      year %in% c(2013, 2014, 2015) ~ NA_real_,
+      year %in% c(2007:2012, 2016:2020) ~ as.numeric(central_ca2)
+    ))
+
+#juv_no_mhw <- read_csv(here("Data", "2021-04-13_juv_moci_na_no_mhw.csv"))
 
 juv_corr_no_mhw <- data.frame(area = character(), site = character(), season = character(), lag = character(), correlation = character())
 
@@ -96,8 +110,19 @@ Taking out all CPUE & MOCI data from 2009-2011. Taking out a random subset of th
 
 ```{r , echo = F}
 
+juv_no_9_11 <- juv_blue %>%
+  rename(central_ca2 = central_ca,
+         cpue_site2 = cpue_site) %>%
+  mutate(cpue_site = case_when(
+    year %in% c(2009, 2010, 2011) ~ NA_real_, 
+    year %in% c(2007, 2008, 2012:2020) ~ as.numeric(cpue_site2)
+    ), central_ca = case_when(
+      year %in% c(2009, 2010, 2011) ~ NA_real_,
+      year %in% c(2007, 2008, 2012:2020) ~ as.numeric(central_ca2)
+    ))
 
-juv_no_9_11 <- read_csv(here("Data", "2021-04-13_juv_moci_na_no_09-11.csv"))
+
+#juv_no_9_11 <- read_csv(here("Data", "2021-04-13_juv_moci_na_no_09-11.csv"))
 
 juv_corr_no_9_11 <- data.frame(area = character(), site = character(), season = character(), lag = character(), correlation = character())
 
@@ -137,10 +162,10 @@ no9_11<- ggplot()+
         plot.title = element_text(hjust = 0.5))+
   facet_grid(site~area)
 
-# juv_vis_no_9_11 %>%
-#   arrange(desc(correlation)) %>%
-#   group_by(area, site) %>%
-#   slice(1)
+juv_vis_no_9_11 %>%
+  arrange(desc(correlation)) %>%
+  group_by(area, site) %>%
+  slice(1)
 
 ```
 
@@ -148,7 +173,18 @@ no9_11<- ggplot()+
 
 ```{r, echo = F}
 
-juv_no_7_9 <- read_csv(here("Data", "2021-04-13_juv_moci_na_no_07-09.csv"))
+juv_no_7_9 <- juv_blue %>%
+  rename(central_ca2 = central_ca,
+         cpue_site2 = cpue_site) %>%
+  mutate(cpue_site = case_when(
+    year %in% c(2007:2009) ~ NA_real_, 
+    year %in% c(2010:2020) ~ as.numeric(cpue_site2)
+    ), central_ca = case_when(
+      year %in% c(2007:2009) ~ NA_real_,
+      year %in% c(2010:2020) ~ as.numeric(central_ca2)
+    ))
+
+#juv_no_7_9 <- read_csv(here("Data", "2021-04-13_juv_moci_na_no_07-09.csv"))
 
 juv_corr_no_7_9 <- data.frame(area = character(), site = character(), season = character(), lag = character(), correlation = character())
 
@@ -196,7 +232,18 @@ no7_9
 
 ```{r, echo = F}
 
-juv_no_8_10 <- read_csv(here("Data", "2021-04-13_juv_moci_na_no_08-10.csv"))
+juv_no_8_10 <- juv_blue %>%
+  rename(central_ca2 = central_ca,
+         cpue_site2 = cpue_site) %>%
+  mutate(cpue_site = case_when(
+    year %in% c(2008:2010) ~ NA_real_, 
+    year %in% c(2007, 2011:2020) ~ as.numeric(cpue_site2)
+    ), central_ca = case_when(
+      year %in% c(2008:2010) ~ NA_real_,
+      year %in% c(2007, 2011:2020) ~ as.numeric(central_ca2)
+    ))
+
+# juv_no_8_10 <- read_csv(here("Data", "2021-04-13_juv_moci_na_no_08-10.csv"))
 
 juv_corr_no_8_10 <- data.frame(area = character(), site = character(), season = character(), lag = character(), correlation = character())
 
