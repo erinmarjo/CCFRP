@@ -13,6 +13,8 @@ knitr::opts_chunk$set(echo = TRUE,
                       message = FALSE)
 ```
 
+[back](https://erinmarjo.github.io/CCFRP/27_thesis_progress_report.html)
+
 ```{r libraries, warning=F, message=F}
 
 library(tidyverse)
@@ -146,3 +148,8 @@ full_master <- full_cp_ml %>%
 
 ```
 
+
+```{r, eval = F, echo=F}
+# Run this in console: rmarkdown::render(input = here("Code", "30_full_master_df_creation.Rmd"), output_dir = here("docs"))
+
+```
