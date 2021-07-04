@@ -14,14 +14,15 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE,
+                      message = F)
 ```
 
 ```{r, warning=F, message=F}
 
 library(tidyverse)
 library(here)
-
+library(knitr)
 
 ```
 
@@ -40,11 +41,29 @@ For full details of cleaning the dataset including the 2020 data, see [this page
 
 ![](/Users/erinj/Documents/Thesis/Figures/Lag/2021/2021-07-04_juv_blue_top_corr.png){width=80%}
 
+```{r, echo = F}
+
+topjuv <- read_csv(here("Data", "2021-07-04_top_juv_dataframe.csv"))
+
+kable(topjuv, caption = "Top Correlations: Juvenile Blue Rockfish")
+
+
+```
+
 # Adult Blue Rockfish and MHWs
 
 ![](/Users/erinj/Documents/Thesis/Figures/Lag/2021/2021-07-04_adult_blue_cross_corr.png){width=80%}
 
 ![](/Users/erinj/Documents/Thesis/Figures/Lag/2021/2021-07-04_adult_blue_top_corr.png){width=80%}
+
+```{r, echo = F}
+
+topadult <- read_csv(here("Data", "2021-07-04_top_adult_dataframe.csv"))
+kable(topadult, caption = "Top Correlations: Adult Blue Rockfish")
+
+
+```
+
 
 # Importance of MHW Years
 
