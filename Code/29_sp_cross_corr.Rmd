@@ -163,6 +163,8 @@ for(s in sp_list) {
   geom_col(position = "dodge2",aes(x = lag, y = correlation, 
                                                     color = season, fill = season))+
   labs(title = paste0("Juvenile Rockfish Lag Correlation: ", s))+
+  scale_y_continuous(limits = c(-1.0, 1.0)) +
+                     #breaks = c(0.0, 0.2, 0.4, 0.6, 0.8, 1.0))
   theme_bw()+
   theme(panel.grid = element_blank(),
         plot.title = element_text(hjust = 0.5))+
@@ -180,9 +182,14 @@ LCD_plot
 
 
 ```{r top juvenile plots}
+# 
+# sp_top_juv <- sp_juv_vis %>% 
+#   arrange(desc(correlation)) %>% 
+#   group_by(species, area, site) %>% slice(1)%>%
+#   mutate(lag = as.factor(lag))
 
 sp_top_juv <- sp_juv_vis %>% 
-  arrange(desc(correlation)) %>% 
+  arrange(desc(abs(correlation))) %>% 
   group_by(species, area, site) %>% slice(1)%>%
   mutate(lag = as.factor(lag))
 
@@ -225,7 +232,8 @@ sp_adult <- master %>%
   filter(case_when(species == "GPR" ~ size >= 25,
                    species == "OLV" ~ size >= 39,
                    species == "VER" ~ size >= 47,
-                   species == "LCD" ~ size >= 75))
+                   species == "LCD" ~ size >= 75)) ## Grant: Female/Male size differences 
+## ask Ben if we should split this up by sex.
 
 sp_adult2 <- sp_adult %>%
   select(-size) %>%
@@ -296,6 +304,7 @@ for(s in sp_list) {
   geom_col(position = "dodge2",aes(x = lag, y = correlation, 
                                                     color = season, fill = season))+
   labs(title = paste0("Adult Rockfish Lag Correlation: ", s))+
+  scale_y_continuous(limits = c(-1.0, 1.0)) +
   theme_bw()+
   theme(panel.grid = element_blank(),
         plot.title = element_text(hjust = 0.5))+
@@ -313,7 +322,7 @@ LCD_adult_plot
 ```{r top adult plots}
 
 sp_top_adult <- sp_adult_vis %>% 
-  arrange(desc(correlation)) %>% 
+  arrange(desc(abs(correlation))) %>% 
   group_by(species, area, site) %>% slice(1)%>%
   mutate(lag = as.factor(lag))
 
@@ -383,7 +392,7 @@ LCD_adult_topplot
 
 
 
-```{r}
+```{r checking work, eval = F, echo = F}
 
 gprtry <- master %>% filter(species == "GPR", size < 20)
 gprtry2 <- GPR_full %>% filter(size < 20)
@@ -434,7 +443,7 @@ try3 <- try %>%
 ```
 
 
-```{r, eval = F, echo = F}
+```{r checking work 2, eval = F, echo = F}
 
 
  ## checking to make sure what I did above works. It does. Wow, the Gopher plot is fucked.
