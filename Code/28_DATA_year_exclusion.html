@@ -42,6 +42,230 @@ return new Za.prototype.init(a,b,c,d,e)}m.Tween=Za,Za.prototype={constructor:Za,
 });
 
 </script>
+<script>$(document).ready(function(){
+    if (typeof $('[data-toggle="tooltip"]').tooltip === 'function') {
+        $('[data-toggle="tooltip"]').tooltip();
+    }
+    if ($('[data-toggle="popover"]').popover === 'function') {
+        $('[data-toggle="popover"]').popover();
+    }
+});
+</script>
+<style type="text/css">
+.lightable-minimal {
+border-collapse: separate;
+border-spacing: 16px 1px;
+width: 100%;
+margin-bottom: 10px;
+}
+.lightable-minimal td {
+margin-left: 5px;
+margin-right: 5px;
+}
+.lightable-minimal th {
+margin-left: 5px;
+margin-right: 5px;
+}
+.lightable-minimal thead tr:last-child th {
+border-bottom: 2px solid #00000050;
+empty-cells: hide;
+}
+.lightable-minimal tbody tr:first-child td {
+padding-top: 0.5em;
+}
+.lightable-minimal.lightable-hover tbody tr:hover {
+background-color: #f5f5f5;
+}
+.lightable-minimal.lightable-striped tbody tr:nth-child(even) {
+background-color: #f5f5f5;
+}
+.lightable-classic {
+border-top: 0.16em solid #111111;
+border-bottom: 0.16em solid #111111;
+width: 100%;
+margin-bottom: 10px;
+margin: 10px 5px;
+}
+.lightable-classic tfoot tr td {
+border: 0;
+}
+.lightable-classic tfoot tr:first-child td {
+border-top: 0.14em solid #111111;
+}
+.lightable-classic caption {
+color: #222222;
+}
+.lightable-classic td {
+padding-left: 5px;
+padding-right: 5px;
+color: #222222;
+}
+.lightable-classic th {
+padding-left: 5px;
+padding-right: 5px;
+font-weight: normal;
+color: #222222;
+}
+.lightable-classic thead tr:last-child th {
+border-bottom: 0.10em solid #111111;
+}
+.lightable-classic.lightable-hover tbody tr:hover {
+background-color: #F9EEC1;
+}
+.lightable-classic.lightable-striped tbody tr:nth-child(even) {
+background-color: #f5f5f5;
+}
+.lightable-classic-2 {
+border-top: 3px double #111111;
+border-bottom: 3px double #111111;
+width: 100%;
+margin-bottom: 10px;
+}
+.lightable-classic-2 tfoot tr td {
+border: 0;
+}
+.lightable-classic-2 tfoot tr:first-child td {
+border-top: 3px double #111111;
+}
+.lightable-classic-2 caption {
+color: #222222;
+}
+.lightable-classic-2 td {
+padding-left: 5px;
+padding-right: 5px;
+color: #222222;
+}
+.lightable-classic-2 th {
+padding-left: 5px;
+padding-right: 5px;
+font-weight: normal;
+color: #222222;
+}
+.lightable-classic-2 tbody tr:last-child td {
+border-bottom: 3px double #111111;
+}
+.lightable-classic-2 thead tr:last-child th {
+border-bottom: 1px solid #111111;
+}
+.lightable-classic-2.lightable-hover tbody tr:hover {
+background-color: #F9EEC1;
+}
+.lightable-classic-2.lightable-striped tbody tr:nth-child(even) {
+background-color: #f5f5f5;
+}
+.lightable-material {
+min-width: 100%;
+white-space: nowrap;
+table-layout: fixed;
+font-family: Roboto, sans-serif;
+border: 1px solid #EEE;
+border-collapse: collapse;
+margin-bottom: 10px;
+}
+.lightable-material tfoot tr td {
+border: 0;
+}
+.lightable-material tfoot tr:first-child td {
+border-top: 1px solid #EEE;
+}
+.lightable-material th {
+height: 56px;
+padding-left: 16px;
+padding-right: 16px;
+}
+.lightable-material td {
+height: 52px;
+padding-left: 16px;
+padding-right: 16px;
+border-top: 1px solid #eeeeee;
+}
+.lightable-material.lightable-hover tbody tr:hover {
+background-color: #f5f5f5;
+}
+.lightable-material.lightable-striped tbody tr:nth-child(even) {
+background-color: #f5f5f5;
+}
+.lightable-material.lightable-striped tbody td {
+border: 0;
+}
+.lightable-material.lightable-striped thead tr:last-child th {
+border-bottom: 1px solid #ddd;
+}
+.lightable-material-dark {
+min-width: 100%;
+white-space: nowrap;
+table-layout: fixed;
+font-family: Roboto, sans-serif;
+border: 1px solid #FFFFFF12;
+border-collapse: collapse;
+margin-bottom: 10px;
+background-color: #363640;
+}
+.lightable-material-dark tfoot tr td {
+border: 0;
+}
+.lightable-material-dark tfoot tr:first-child td {
+border-top: 1px solid #FFFFFF12;
+}
+.lightable-material-dark th {
+height: 56px;
+padding-left: 16px;
+padding-right: 16px;
+color: #FFFFFF60;
+}
+.lightable-material-dark td {
+height: 52px;
+padding-left: 16px;
+padding-right: 16px;
+color: #FFFFFF;
+border-top: 1px solid #FFFFFF12;
+}
+.lightable-material-dark.lightable-hover tbody tr:hover {
+background-color: #FFFFFF12;
+}
+.lightable-material-dark.lightable-striped tbody tr:nth-child(even) {
+background-color: #FFFFFF12;
+}
+.lightable-material-dark.lightable-striped tbody td {
+border: 0;
+}
+.lightable-material-dark.lightable-striped thead tr:last-child th {
+border-bottom: 1px solid #FFFFFF12;
+}
+.lightable-paper {
+width: 100%;
+margin-bottom: 10px;
+color: #444;
+}
+.lightable-paper tfoot tr td {
+border: 0;
+}
+.lightable-paper tfoot tr:first-child td {
+border-top: 1px solid #00000020;
+}
+.lightable-paper thead tr:last-child th {
+color: #666;
+vertical-align: bottom;
+border-bottom: 1px solid #00000020;
+line-height: 1.15em;
+padding: 10px 5px;
+}
+.lightable-paper td {
+vertical-align: middle;
+border-bottom: 1px solid #00000010;
+line-height: 1.15em;
+padding: 7px 5px;
+}
+.lightable-paper.lightable-hover tbody tr:hover {
+background-color: #F9EEC1;
+}
+.lightable-paper.lightable-striped tbody tr:nth-child(even) {
+background-color: #00000008;
+}
+.lightable-paper.lightable-striped tbody td {
+border: 0;
+}
+</style>
 
 
 <style type="text/css">code{white-space: pre;}</style>
@@ -164,7 +388,8 @@ a.sourceLine {
 <p><a href="https://erinmarjo.github.io/CCFRP/27_thesis_progress_report.html">back</a></p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1"></a><span class="kw">library</span>(tidyverse)</span>
 <span id="cb1-2"><a href="#cb1-2"></a><span class="kw">library</span>(here)</span>
-<span id="cb1-3"><a href="#cb1-3"></a><span class="kw">library</span>(knitr)</span></code></pre></div>
+<span id="cb1-3"><a href="#cb1-3"></a><span class="kw">library</span>(knitr)</span>
+<span id="cb1-4"><a href="#cb1-4"></a><span class="kw">library</span>(kableExtra) <span class="co">## for different table output options</span></span></code></pre></div>
 <div id="missing-heatwave-years" class="section level2">
 <h2>Missing Heatwave Years</h2>
 <p>Taking out all CPUE &amp; MOCI data from 2014, 2015, 2016. Doing this shoud wipe out the 2 year lag correlation if the juvenile abundance is in response to things happening during MHW. Basically, if the MHW is driving this relationship, we should see less of a relationship - either by a much lower correlation magnitude, or a completely different lag having the highest correlation.</p>
@@ -172,7 +397,7 @@ a.sourceLine {
 </div>
 <div id="missing-three-random-years" class="section level2">
 <h2>Missing Three Random Years</h2>
-<p>Taking out all CPUE &amp; MOCI data from 2007-2009. Taking out a random subset of three consecutive years that are <em>not</em> marine heatwave years, should mean that the correlation is not completely gone. I would expect to still see a two-ish year lag for many of the area+ site combinations for juv blue rockfish if the MHW are driving the relationship, since those years are still included.</p>
+<p>Taking out all CPUE &amp; MOCI data from different subsets of three years. Taking out a random subset of three consecutive years that are <em>not</em> marine heatwave years, should mean that the correlation is not completely gone. I would expect to still see a two-ish year lag for many of the area+ site combinations for juv blue rockfish if the MHW are driving the relationship, since those years are still included.</p>
 </div>
 <div id="excluding-2007-2009" class="section level2">
 <h2>Excluding 2007-2009</h2>
@@ -201,595 +426,1299 @@ a.sourceLine {
 <div id="excluding-2018-2020" class="section level2">
 <h2>Excluding 2018-2020</h2>
 <p><img src="data:image/png;base64,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" /><!-- --></p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1"></a>no_mhw_table &lt;-<span class="st"> </span>juv_vis_no_mhw<span class="op">%&gt;%</span></span>
-<span id="cb2-2"><a href="#cb2-2"></a><span class="st">  </span><span class="kw">arrange</span>(<span class="kw">desc</span>(<span class="kw">abs</span>(correlation))) <span class="op">%&gt;%</span></span>
-<span id="cb2-3"><a href="#cb2-3"></a><span class="st">  </span><span class="kw">group_by</span>(area, site) <span class="op">%&gt;%</span></span>
-<span id="cb2-4"><a href="#cb2-4"></a><span class="st">  </span><span class="kw">slice</span>(<span class="dv">1</span>)</span>
-<span id="cb2-5"><a href="#cb2-5"></a>no_<span class="dv">7</span>_<span class="dv">9</span>_table &lt;-<span class="st"> </span>juv_vis_no_<span class="dv">7</span>_<span class="dv">9</span><span class="op">%&gt;%</span></span>
-<span id="cb2-6"><a href="#cb2-6"></a><span class="st">  </span><span class="kw">arrange</span>(<span class="kw">desc</span>(<span class="kw">abs</span>(correlation))) <span class="op">%&gt;%</span></span>
-<span id="cb2-7"><a href="#cb2-7"></a><span class="st">  </span><span class="kw">group_by</span>(area, site) <span class="op">%&gt;%</span></span>
-<span id="cb2-8"><a href="#cb2-8"></a><span class="st">  </span><span class="kw">slice</span>(<span class="dv">1</span>)</span>
-<span id="cb2-9"><a href="#cb2-9"></a>no_<span class="dv">8</span>_<span class="dv">10</span>_table &lt;-<span class="st"> </span>juv_vis_no_<span class="dv">8</span>_<span class="dv">10</span><span class="op">%&gt;%</span></span>
-<span id="cb2-10"><a href="#cb2-10"></a><span class="st">  </span><span class="kw">arrange</span>(<span class="kw">desc</span>(<span class="kw">abs</span>(correlation))) <span class="op">%&gt;%</span></span>
-<span id="cb2-11"><a href="#cb2-11"></a><span class="st">  </span><span class="kw">group_by</span>(area, site) <span class="op">%&gt;%</span></span>
-<span id="cb2-12"><a href="#cb2-12"></a><span class="st">  </span><span class="kw">slice</span>(<span class="dv">1</span>)</span>
-<span id="cb2-13"><a href="#cb2-13"></a>no_<span class="dv">9</span>_<span class="dv">11</span>_table &lt;-<span class="st"> </span>juv_vis_no_<span class="dv">9</span>_<span class="dv">11</span><span class="op">%&gt;%</span></span>
-<span id="cb2-14"><a href="#cb2-14"></a><span class="st">  </span><span class="kw">arrange</span>(<span class="kw">desc</span>(<span class="kw">abs</span>(correlation))) <span class="op">%&gt;%</span></span>
-<span id="cb2-15"><a href="#cb2-15"></a><span class="st">  </span><span class="kw">group_by</span>(area, site) <span class="op">%&gt;%</span></span>
-<span id="cb2-16"><a href="#cb2-16"></a><span class="st">  </span><span class="kw">slice</span>(<span class="dv">1</span>)</span>
-<span id="cb2-17"><a href="#cb2-17"></a>no_<span class="dv">10</span>_<span class="dv">12</span>_table &lt;-<span class="st"> </span>juv_vis_no_<span class="dv">10</span>_<span class="dv">12</span><span class="op">%&gt;%</span></span>
-<span id="cb2-18"><a href="#cb2-18"></a><span class="st">  </span><span class="kw">arrange</span>(<span class="kw">desc</span>(<span class="kw">abs</span>(correlation))) <span class="op">%&gt;%</span></span>
-<span id="cb2-19"><a href="#cb2-19"></a><span class="st">  </span><span class="kw">group_by</span>(area, site) <span class="op">%&gt;%</span></span>
-<span id="cb2-20"><a href="#cb2-20"></a><span class="st">  </span><span class="kw">slice</span>(<span class="dv">1</span>)</span>
-<span id="cb2-21"><a href="#cb2-21"></a>no_<span class="dv">11</span>_<span class="dv">13</span>_table &lt;-<span class="st"> </span>juv_vis_no_<span class="dv">11</span>_<span class="dv">13</span><span class="op">%&gt;%</span></span>
-<span id="cb2-22"><a href="#cb2-22"></a><span class="st">  </span><span class="kw">arrange</span>(<span class="kw">desc</span>(<span class="kw">abs</span>(correlation))) <span class="op">%&gt;%</span></span>
-<span id="cb2-23"><a href="#cb2-23"></a><span class="st">  </span><span class="kw">group_by</span>(area, site) <span class="op">%&gt;%</span></span>
-<span id="cb2-24"><a href="#cb2-24"></a><span class="st">  </span><span class="kw">slice</span>(<span class="dv">1</span>)</span>
-<span id="cb2-25"><a href="#cb2-25"></a>no_<span class="dv">17</span>_<span class="dv">19</span>_table &lt;-<span class="st"> </span>juv_vis_no_<span class="dv">17</span>_<span class="dv">19</span><span class="op">%&gt;%</span></span>
-<span id="cb2-26"><a href="#cb2-26"></a><span class="st">  </span><span class="kw">arrange</span>(<span class="kw">desc</span>(<span class="kw">abs</span>(correlation))) <span class="op">%&gt;%</span></span>
-<span id="cb2-27"><a href="#cb2-27"></a><span class="st">  </span><span class="kw">group_by</span>(area, site) <span class="op">%&gt;%</span></span>
-<span id="cb2-28"><a href="#cb2-28"></a><span class="st">  </span><span class="kw">slice</span>(<span class="dv">1</span>)</span>
-<span id="cb2-29"><a href="#cb2-29"></a>no_<span class="dv">18</span>_<span class="dv">20</span>_table &lt;-<span class="st"> </span>juv_vis_no_<span class="dv">18</span>_<span class="dv">20</span><span class="op">%&gt;%</span></span>
-<span id="cb2-30"><a href="#cb2-30"></a><span class="st">  </span><span class="kw">arrange</span>(<span class="kw">desc</span>(<span class="kw">abs</span>(correlation))) <span class="op">%&gt;%</span></span>
-<span id="cb2-31"><a href="#cb2-31"></a><span class="st">  </span><span class="kw">group_by</span>(area, site) <span class="op">%&gt;%</span></span>
-<span id="cb2-32"><a href="#cb2-32"></a><span class="st">  </span><span class="kw">slice</span>(<span class="dv">1</span>)</span></code></pre></div>
 <table>
-<caption>Top Correlations After Excluding Years 2014-2016 (MHW Years)</caption>
+<caption>
+Top Correlations After Excluding Years 2014-2016 (MHW Years)
+</caption>
 <thead>
-<tr class="header">
-<th align="left">area</th>
-<th align="left">site</th>
-<th align="left">season</th>
-<th align="right">lag</th>
-<th align="right">correlation</th>
+<tr>
+<th style="text-align:left;">
+area
+</th>
+<th style="text-align:left;">
+site
+</th>
+<th style="text-align:left;">
+season
+</th>
+<th style="text-align:right;">
+lag
+</th>
+<th style="text-align:right;">
+correlation
+</th>
 </tr>
 </thead>
 <tbody>
-<tr class="odd">
-<td align="left">AN</td>
-<td align="left">MPA</td>
-<td align="left">JFM</td>
-<td align="right">-7</td>
-<td align="right">0.7798366</td>
+<tr>
+<td style="text-align:left;">
+AN
+</td>
+<td style="text-align:left;">
+MPA
+</td>
+<td style="text-align:left;">
+JFM
+</td>
+<td style="text-align:right;">
+-7
+</td>
+<td style="text-align:right;">
+0.7798366
+</td>
 </tr>
-<tr class="even">
-<td align="left">AN</td>
-<td align="left">REF</td>
-<td align="left">JFM</td>
-<td align="right">-7</td>
-<td align="right">0.6777902</td>
+<tr>
+<td style="text-align:left;">
+AN
+</td>
+<td style="text-align:left;">
+REF
+</td>
+<td style="text-align:left;">
+JFM
+</td>
+<td style="text-align:right;">
+-7
+</td>
+<td style="text-align:right;">
+0.6777902
+</td>
 </tr>
-<tr class="odd">
-<td align="left">BL</td>
-<td align="left">MPA</td>
-<td align="left">JFM</td>
-<td align="right">-6</td>
-<td align="right">0.7462912</td>
+<tr>
+<td style="text-align:left;">
+BL
+</td>
+<td style="text-align:left;">
+MPA
+</td>
+<td style="text-align:left;">
+JFM
+</td>
+<td style="text-align:right;">
+-6
+</td>
+<td style="text-align:right;">
+0.7462912
+</td>
 </tr>
-<tr class="even">
-<td align="left">BL</td>
-<td align="left">REF</td>
-<td align="left">OND</td>
-<td align="right">-7</td>
-<td align="right">0.5009712</td>
+<tr>
+<td style="text-align:left;">
+BL
+</td>
+<td style="text-align:left;">
+REF
+</td>
+<td style="text-align:left;">
+OND
+</td>
+<td style="text-align:right;">
+-7
+</td>
+<td style="text-align:right;">
+0.5009712
+</td>
 </tr>
-<tr class="odd">
-<td align="left">PB</td>
-<td align="left">MPA</td>
-<td align="left">JFM</td>
-<td align="right">-7</td>
-<td align="right">0.8382628</td>
+<tr>
+<td style="text-align:left;">
+PB
+</td>
+<td style="text-align:left;">
+MPA
+</td>
+<td style="text-align:left;">
+JFM
+</td>
+<td style="text-align:right;">
+-7
+</td>
+<td style="text-align:right;">
+0.8382628
+</td>
 </tr>
-<tr class="even">
-<td align="left">PB</td>
-<td align="left">REF</td>
-<td align="left">JFM</td>
-<td align="right">-7</td>
-<td align="right">0.8450622</td>
+<tr>
+<td style="text-align:left;">
+PB
+</td>
+<td style="text-align:left;">
+REF
+</td>
+<td style="text-align:left;">
+JFM
+</td>
+<td style="text-align:right;">
+-7
+</td>
+<td style="text-align:right;">
+0.8450622
+</td>
 </tr>
-<tr class="odd">
-<td align="left">PL</td>
-<td align="left">MPA</td>
-<td align="left">OND</td>
-<td align="right">-5</td>
-<td align="right">0.6287007</td>
+<tr>
+<td style="text-align:left;">
+PL
+</td>
+<td style="text-align:left;">
+MPA
+</td>
+<td style="text-align:left;">
+OND
+</td>
+<td style="text-align:right;">
+-5
+</td>
+<td style="text-align:right;">
+0.6287007
+</td>
 </tr>
-<tr class="even">
-<td align="left">PL</td>
-<td align="left">REF</td>
-<td align="left">OND</td>
-<td align="right">0</td>
-<td align="right">-0.5900448</td>
+<tr>
+<td style="text-align:left;">
+PL
+</td>
+<td style="text-align:left;">
+REF
+</td>
+<td style="text-align:left;">
+OND
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+-0.5900448
+</td>
 </tr>
 </tbody>
 </table>
 <table>
-<caption>Top Correlations After Excluding Years 2007-2009 (Pre-MHW)</caption>
+<caption>
+Top Correlations After Excluding Years 2007-2009 (Pre-MHW)
+</caption>
 <thead>
-<tr class="header">
-<th align="left">area</th>
-<th align="left">site</th>
-<th align="left">season</th>
-<th align="right">lag</th>
-<th align="right">correlation</th>
+<tr>
+<th style="text-align:left;">
+area
+</th>
+<th style="text-align:left;">
+site
+</th>
+<th style="text-align:left;">
+season
+</th>
+<th style="text-align:right;">
+lag
+</th>
+<th style="text-align:right;">
+correlation
+</th>
 </tr>
 </thead>
 <tbody>
-<tr class="odd">
-<td align="left">AN</td>
-<td align="left">MPA</td>
-<td align="left">JAS</td>
-<td align="right">-2</td>
-<td align="right">0.8735977</td>
+<tr>
+<td style="text-align:left;">
+AN
+</td>
+<td style="text-align:left;">
+MPA
+</td>
+<td style="text-align:left;">
+JAS
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:right;">
+0.8735977
+</td>
 </tr>
-<tr class="even">
-<td align="left">AN</td>
-<td align="left">REF</td>
-<td align="left">JAS</td>
-<td align="right">-2</td>
-<td align="right">0.8451023</td>
+<tr>
+<td style="text-align:left;">
+AN
+</td>
+<td style="text-align:left;">
+REF
+</td>
+<td style="text-align:left;">
+JAS
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:right;">
+0.8451023
+</td>
 </tr>
-<tr class="odd">
-<td align="left">BL</td>
-<td align="left">MPA</td>
-<td align="left">JFM</td>
-<td align="right">-3</td>
-<td align="right">-0.6662498</td>
+<tr>
+<td style="text-align:left;">
+BL
+</td>
+<td style="text-align:left;">
+MPA
+</td>
+<td style="text-align:left;">
+JFM
+</td>
+<td style="text-align:right;">
+-3
+</td>
+<td style="text-align:right;">
+-0.6662498
+</td>
 </tr>
-<tr class="even">
-<td align="left">BL</td>
-<td align="left">REF</td>
-<td align="left">AMJ</td>
-<td align="right">-1</td>
-<td align="right">0.6817459</td>
+<tr>
+<td style="text-align:left;">
+BL
+</td>
+<td style="text-align:left;">
+REF
+</td>
+<td style="text-align:left;">
+AMJ
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:right;">
+0.6817459
+</td>
 </tr>
-<tr class="odd">
-<td align="left">PB</td>
-<td align="left">MPA</td>
-<td align="left">JAS</td>
-<td align="right">-2</td>
-<td align="right">0.8468381</td>
+<tr>
+<td style="text-align:left;">
+PB
+</td>
+<td style="text-align:left;">
+MPA
+</td>
+<td style="text-align:left;">
+JAS
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:right;">
+0.8468381
+</td>
 </tr>
-<tr class="even">
-<td align="left">PB</td>
-<td align="left">REF</td>
-<td align="left">JAS</td>
-<td align="right">-2</td>
-<td align="right">0.8096670</td>
+<tr>
+<td style="text-align:left;">
+PB
+</td>
+<td style="text-align:left;">
+REF
+</td>
+<td style="text-align:left;">
+JAS
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:right;">
+0.8096670
+</td>
 </tr>
-<tr class="odd">
-<td align="left">PL</td>
-<td align="left">MPA</td>
-<td align="left">OND</td>
-<td align="right">-2</td>
-<td align="right">0.7863335</td>
+<tr>
+<td style="text-align:left;">
+PL
+</td>
+<td style="text-align:left;">
+MPA
+</td>
+<td style="text-align:left;">
+OND
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:right;">
+0.7863335
+</td>
 </tr>
-<tr class="even">
-<td align="left">PL</td>
-<td align="left">REF</td>
-<td align="left">AMJ</td>
-<td align="right">-1</td>
-<td align="right">0.8326210</td>
+<tr>
+<td style="text-align:left;">
+PL
+</td>
+<td style="text-align:left;">
+REF
+</td>
+<td style="text-align:left;">
+AMJ
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:right;">
+0.8326210
+</td>
 </tr>
 </tbody>
 </table>
 <table>
-<caption>Top Correlations After Excluding Years 2008-2010 (Pre-MHW)</caption>
+<caption>
+Top Correlations After Excluding Years 2008-2010 (Pre-MHW)
+</caption>
 <thead>
-<tr class="header">
-<th align="left">area</th>
-<th align="left">site</th>
-<th align="left">season</th>
-<th align="right">lag</th>
-<th align="right">correlation</th>
+<tr>
+<th style="text-align:left;">
+area
+</th>
+<th style="text-align:left;">
+site
+</th>
+<th style="text-align:left;">
+season
+</th>
+<th style="text-align:right;">
+lag
+</th>
+<th style="text-align:right;">
+correlation
+</th>
 </tr>
 </thead>
 <tbody>
-<tr class="odd">
-<td align="left">AN</td>
-<td align="left">MPA</td>
-<td align="left">JAS</td>
-<td align="right">-2</td>
-<td align="right">0.8547490</td>
+<tr>
+<td style="text-align:left;">
+AN
+</td>
+<td style="text-align:left;">
+MPA
+</td>
+<td style="text-align:left;">
+JAS
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:right;">
+0.8547490
+</td>
 </tr>
-<tr class="even">
-<td align="left">AN</td>
-<td align="left">REF</td>
-<td align="left">JAS</td>
-<td align="right">-2</td>
-<td align="right">0.8031568</td>
+<tr>
+<td style="text-align:left;">
+AN
+</td>
+<td style="text-align:left;">
+REF
+</td>
+<td style="text-align:left;">
+JAS
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:right;">
+0.8031568
+</td>
 </tr>
-<tr class="odd">
-<td align="left">BL</td>
-<td align="left">MPA</td>
-<td align="left">JFM</td>
-<td align="right">-3</td>
-<td align="right">-0.5256424</td>
+<tr>
+<td style="text-align:left;">
+BL
+</td>
+<td style="text-align:left;">
+MPA
+</td>
+<td style="text-align:left;">
+JFM
+</td>
+<td style="text-align:right;">
+-3
+</td>
+<td style="text-align:right;">
+-0.5256424
+</td>
 </tr>
-<tr class="even">
-<td align="left">BL</td>
-<td align="left">REF</td>
-<td align="left">JFM</td>
-<td align="right">-1</td>
-<td align="right">0.5921132</td>
+<tr>
+<td style="text-align:left;">
+BL
+</td>
+<td style="text-align:left;">
+REF
+</td>
+<td style="text-align:left;">
+JFM
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:right;">
+0.5921132
+</td>
 </tr>
-<tr class="odd">
-<td align="left">PB</td>
-<td align="left">MPA</td>
-<td align="left">JAS</td>
-<td align="right">-2</td>
-<td align="right">0.8332059</td>
+<tr>
+<td style="text-align:left;">
+PB
+</td>
+<td style="text-align:left;">
+MPA
+</td>
+<td style="text-align:left;">
+JAS
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:right;">
+0.8332059
+</td>
 </tr>
-<tr class="even">
-<td align="left">PB</td>
-<td align="left">REF</td>
-<td align="left">JAS</td>
-<td align="right">-2</td>
-<td align="right">0.7828737</td>
+<tr>
+<td style="text-align:left;">
+PB
+</td>
+<td style="text-align:left;">
+REF
+</td>
+<td style="text-align:left;">
+JAS
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:right;">
+0.7828737
+</td>
 </tr>
-<tr class="odd">
-<td align="left">PL</td>
-<td align="left">MPA</td>
-<td align="left">JAS</td>
-<td align="right">-2</td>
-<td align="right">0.7181028</td>
+<tr>
+<td style="text-align:left;">
+PL
+</td>
+<td style="text-align:left;">
+MPA
+</td>
+<td style="text-align:left;">
+JAS
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:right;">
+0.7181028
+</td>
 </tr>
-<tr class="even">
-<td align="left">PL</td>
-<td align="left">REF</td>
-<td align="left">OND</td>
-<td align="right">0</td>
-<td align="right">-0.4720447</td>
+<tr>
+<td style="text-align:left;">
+PL
+</td>
+<td style="text-align:left;">
+REF
+</td>
+<td style="text-align:left;">
+OND
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+-0.4720447
+</td>
 </tr>
 </tbody>
 </table>
 <table>
-<caption>Top Correlations After Excluding Years 2009-2011 (Pre-MHW)</caption>
+<caption>
+Top Correlations After Excluding Years 2009-2011 (Pre-MHW)
+</caption>
 <thead>
-<tr class="header">
-<th align="left">area</th>
-<th align="left">site</th>
-<th align="left">season</th>
-<th align="right">lag</th>
-<th align="right">correlation</th>
+<tr>
+<th style="text-align:left;">
+area
+</th>
+<th style="text-align:left;">
+site
+</th>
+<th style="text-align:left;">
+season
+</th>
+<th style="text-align:right;">
+lag
+</th>
+<th style="text-align:right;">
+correlation
+</th>
 </tr>
 </thead>
 <tbody>
-<tr class="odd">
-<td align="left">AN</td>
-<td align="left">MPA</td>
-<td align="left">JAS</td>
-<td align="right">-2</td>
-<td align="right">0.8282867</td>
+<tr>
+<td style="text-align:left;">
+AN
+</td>
+<td style="text-align:left;">
+MPA
+</td>
+<td style="text-align:left;">
+JAS
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:right;">
+0.8282867
+</td>
 </tr>
-<tr class="even">
-<td align="left">AN</td>
-<td align="left">REF</td>
-<td align="left">JAS</td>
-<td align="right">-2</td>
-<td align="right">0.7727399</td>
+<tr>
+<td style="text-align:left;">
+AN
+</td>
+<td style="text-align:left;">
+REF
+</td>
+<td style="text-align:left;">
+JAS
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:right;">
+0.7727399
+</td>
 </tr>
-<tr class="odd">
-<td align="left">BL</td>
-<td align="left">MPA</td>
-<td align="left">JFM</td>
-<td align="right">-3</td>
-<td align="right">-0.5047454</td>
+<tr>
+<td style="text-align:left;">
+BL
+</td>
+<td style="text-align:left;">
+MPA
+</td>
+<td style="text-align:left;">
+JFM
+</td>
+<td style="text-align:right;">
+-3
+</td>
+<td style="text-align:right;">
+-0.5047454
+</td>
 </tr>
-<tr class="even">
-<td align="left">BL</td>
-<td align="left">REF</td>
-<td align="left">JFM</td>
-<td align="right">-1</td>
-<td align="right">0.5384934</td>
+<tr>
+<td style="text-align:left;">
+BL
+</td>
+<td style="text-align:left;">
+REF
+</td>
+<td style="text-align:left;">
+JFM
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:right;">
+0.5384934
+</td>
 </tr>
-<tr class="odd">
-<td align="left">PB</td>
-<td align="left">MPA</td>
-<td align="left">JAS</td>
-<td align="right">-2</td>
-<td align="right">0.8012438</td>
+<tr>
+<td style="text-align:left;">
+PB
+</td>
+<td style="text-align:left;">
+MPA
+</td>
+<td style="text-align:left;">
+JAS
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:right;">
+0.8012438
+</td>
 </tr>
-<tr class="even">
-<td align="left">PB</td>
-<td align="left">REF</td>
-<td align="left">JAS</td>
-<td align="right">-2</td>
-<td align="right">0.7410483</td>
+<tr>
+<td style="text-align:left;">
+PB
+</td>
+<td style="text-align:left;">
+REF
+</td>
+<td style="text-align:left;">
+JAS
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:right;">
+0.7410483
+</td>
 </tr>
-<tr class="odd">
-<td align="left">PL</td>
-<td align="left">MPA</td>
-<td align="left">JAS</td>
-<td align="right">-2</td>
-<td align="right">0.6809517</td>
+<tr>
+<td style="text-align:left;">
+PL
+</td>
+<td style="text-align:left;">
+MPA
+</td>
+<td style="text-align:left;">
+JAS
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:right;">
+0.6809517
+</td>
 </tr>
-<tr class="even">
-<td align="left">PL</td>
-<td align="left">REF</td>
-<td align="left">OND</td>
-<td align="right">0</td>
-<td align="right">-0.5443020</td>
+<tr>
+<td style="text-align:left;">
+PL
+</td>
+<td style="text-align:left;">
+REF
+</td>
+<td style="text-align:left;">
+OND
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+-0.5443020
+</td>
 </tr>
 </tbody>
 </table>
 <table>
-<caption>Top Correlations After Excluding Years 2010-2012 (Pre-MHW)</caption>
+<caption>
+Top Correlations After Excluding Years 2010-2012 (Pre-MHW)
+</caption>
 <thead>
-<tr class="header">
-<th align="left">area</th>
-<th align="left">site</th>
-<th align="left">season</th>
-<th align="right">lag</th>
-<th align="right">correlation</th>
+<tr>
+<th style="text-align:left;">
+area
+</th>
+<th style="text-align:left;">
+site
+</th>
+<th style="text-align:left;">
+season
+</th>
+<th style="text-align:right;">
+lag
+</th>
+<th style="text-align:right;">
+correlation
+</th>
 </tr>
 </thead>
 <tbody>
-<tr class="odd">
-<td align="left">AN</td>
-<td align="left">MPA</td>
-<td align="left">JAS</td>
-<td align="right">-2</td>
-<td align="right">0.8104297</td>
+<tr>
+<td style="text-align:left;">
+AN
+</td>
+<td style="text-align:left;">
+MPA
+</td>
+<td style="text-align:left;">
+JAS
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:right;">
+0.8104297
+</td>
 </tr>
-<tr class="even">
-<td align="left">AN</td>
-<td align="left">REF</td>
-<td align="left">JAS</td>
-<td align="right">-2</td>
-<td align="right">0.7633965</td>
+<tr>
+<td style="text-align:left;">
+AN
+</td>
+<td style="text-align:left;">
+REF
+</td>
+<td style="text-align:left;">
+JAS
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:right;">
+0.7633965
+</td>
 </tr>
-<tr class="odd">
-<td align="left">BL</td>
-<td align="left">MPA</td>
-<td align="left">JFM</td>
-<td align="right">0</td>
-<td align="right">0.4299144</td>
+<tr>
+<td style="text-align:left;">
+BL
+</td>
+<td style="text-align:left;">
+MPA
+</td>
+<td style="text-align:left;">
+JFM
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0.4299144
+</td>
 </tr>
-<tr class="even">
-<td align="left">BL</td>
-<td align="left">REF</td>
-<td align="left">JFM</td>
-<td align="right">-1</td>
-<td align="right">0.5975090</td>
+<tr>
+<td style="text-align:left;">
+BL
+</td>
+<td style="text-align:left;">
+REF
+</td>
+<td style="text-align:left;">
+JFM
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:right;">
+0.5975090
+</td>
 </tr>
-<tr class="odd">
-<td align="left">PB</td>
-<td align="left">MPA</td>
-<td align="left">JAS</td>
-<td align="right">-2</td>
-<td align="right">0.8181008</td>
+<tr>
+<td style="text-align:left;">
+PB
+</td>
+<td style="text-align:left;">
+MPA
+</td>
+<td style="text-align:left;">
+JAS
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:right;">
+0.8181008
+</td>
 </tr>
-<tr class="even">
-<td align="left">PB</td>
-<td align="left">REF</td>
-<td align="left">JAS</td>
-<td align="right">-2</td>
-<td align="right">0.8032703</td>
+<tr>
+<td style="text-align:left;">
+PB
+</td>
+<td style="text-align:left;">
+REF
+</td>
+<td style="text-align:left;">
+JAS
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:right;">
+0.8032703
+</td>
 </tr>
-<tr class="odd">
-<td align="left">PL</td>
-<td align="left">MPA</td>
-<td align="left">OND</td>
-<td align="right">-2</td>
-<td align="right">0.7463642</td>
+<tr>
+<td style="text-align:left;">
+PL
+</td>
+<td style="text-align:left;">
+MPA
+</td>
+<td style="text-align:left;">
+OND
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:right;">
+0.7463642
+</td>
 </tr>
-<tr class="even">
-<td align="left">PL</td>
-<td align="left">REF</td>
-<td align="left">AMJ</td>
-<td align="right">-1</td>
-<td align="right">0.5434238</td>
+<tr>
+<td style="text-align:left;">
+PL
+</td>
+<td style="text-align:left;">
+REF
+</td>
+<td style="text-align:left;">
+AMJ
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:right;">
+0.5434238
+</td>
 </tr>
 </tbody>
 </table>
-<table>
-<caption>Top Correlations After Excluding Years 2011-2013 (Pre-MHW)</caption>
+<table class=" lightable-paper" style="font-family: &quot;Arial Narrow&quot;, arial, helvetica, sans-serif; margin-left: auto; margin-right: auto;">
+<caption>
+Top Correlations After Excluding Years 2011-2013 (Pre-MHW)
+</caption>
 <thead>
-<tr class="header">
-<th align="left">area</th>
-<th align="left">site</th>
-<th align="left">season</th>
-<th align="right">lag</th>
-<th align="right">correlation</th>
+<tr>
+<th style="text-align:left;">
+area
+</th>
+<th style="text-align:left;">
+site
+</th>
+<th style="text-align:left;">
+season
+</th>
+<th style="text-align:right;">
+lag
+</th>
+<th style="text-align:right;">
+correlation
+</th>
 </tr>
 </thead>
 <tbody>
-<tr class="odd">
-<td align="left">AN</td>
-<td align="left">MPA</td>
-<td align="left">JAS</td>
-<td align="right">-2</td>
-<td align="right">0.7467649</td>
+<tr>
+<td style="text-align:left;">
+AN
+</td>
+<td style="text-align:left;">
+MPA
+</td>
+<td style="text-align:left;">
+JAS
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:right;">
+0.7467649
+</td>
 </tr>
-<tr class="even">
-<td align="left">AN</td>
-<td align="left">REF</td>
-<td align="left">JAS</td>
-<td align="right">-2</td>
-<td align="right">0.6976381</td>
+<tr>
+<td style="text-align:left;">
+AN
+</td>
+<td style="text-align:left;">
+REF
+</td>
+<td style="text-align:left;">
+JAS
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:right;">
+0.6976381
+</td>
 </tr>
-<tr class="odd">
-<td align="left">BL</td>
-<td align="left">MPA</td>
-<td align="left">JFM</td>
-<td align="right">-8</td>
-<td align="right">-0.4325304</td>
+<tr>
+<td style="text-align:left;">
+BL
+</td>
+<td style="text-align:left;">
+MPA
+</td>
+<td style="text-align:left;">
+JFM
+</td>
+<td style="text-align:right;">
+-8
+</td>
+<td style="text-align:right;">
+-0.4325304
+</td>
 </tr>
-<tr class="even">
-<td align="left">BL</td>
-<td align="left">REF</td>
-<td align="left">JFM</td>
-<td align="right">-1</td>
-<td align="right">0.5657652</td>
+<tr>
+<td style="text-align:left;">
+BL
+</td>
+<td style="text-align:left;">
+REF
+</td>
+<td style="text-align:left;">
+JFM
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:right;">
+0.5657652
+</td>
 </tr>
-<tr class="odd">
-<td align="left">PB</td>
-<td align="left">MPA</td>
-<td align="left">JAS</td>
-<td align="right">-2</td>
-<td align="right">0.7727802</td>
+<tr>
+<td style="text-align:left;">
+PB
+</td>
+<td style="text-align:left;">
+MPA
+</td>
+<td style="text-align:left;">
+JAS
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:right;">
+0.7727802
+</td>
 </tr>
-<tr class="even">
-<td align="left">PB</td>
-<td align="left">REF</td>
-<td align="left">JAS</td>
-<td align="right">-2</td>
-<td align="right">0.7588075</td>
+<tr>
+<td style="text-align:left;">
+PB
+</td>
+<td style="text-align:left;">
+REF
+</td>
+<td style="text-align:left;">
+JAS
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:right;">
+0.7588075
+</td>
 </tr>
-<tr class="odd">
-<td align="left">PL</td>
-<td align="left">MPA</td>
-<td align="left">OND</td>
-<td align="right">-2</td>
-<td align="right">0.7565673</td>
+<tr>
+<td style="text-align:left;">
+PL
+</td>
+<td style="text-align:left;">
+MPA
+</td>
+<td style="text-align:left;">
+OND
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:right;">
+0.7565673
+</td>
 </tr>
-<tr class="even">
-<td align="left">PL</td>
-<td align="left">REF</td>
-<td align="left">AMJ</td>
-<td align="right">-1</td>
-<td align="right">0.4933154</td>
+<tr>
+<td style="text-align:left;">
+PL
+</td>
+<td style="text-align:left;">
+REF
+</td>
+<td style="text-align:left;">
+AMJ
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:right;">
+0.4933154
+</td>
 </tr>
 </tbody>
 </table>
-<table>
-<caption>Top Correlations After Excluding Years 2017-2019 (Post-MHW)</caption>
+<table class=" lightable-paper lightable-striped" style="font-family: &quot;Arial Narrow&quot;, arial, helvetica, sans-serif; margin-left: auto; margin-right: auto;">
+<caption>
+Top Correlations After Excluding Years 2017-2019 (Post-MHW)
+</caption>
 <thead>
-<tr class="header">
-<th align="left">area</th>
-<th align="left">site</th>
-<th align="left">season</th>
-<th align="right">lag</th>
-<th align="right">correlation</th>
+<tr>
+<th style="text-align:left;">
+area
+</th>
+<th style="text-align:left;">
+site
+</th>
+<th style="text-align:left;">
+season
+</th>
+<th style="text-align:right;">
+lag
+</th>
+<th style="text-align:right;">
+correlation
+</th>
 </tr>
 </thead>
 <tbody>
-<tr class="odd">
-<td align="left">AN</td>
-<td align="left">MPA</td>
-<td align="left">JAS</td>
-<td align="right">-1</td>
-<td align="right">0.7193342</td>
+<tr>
+<td style="text-align:left;">
+AN
+</td>
+<td style="text-align:left;">
+MPA
+</td>
+<td style="text-align:left;">
+JAS
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:right;">
+0.7193342
+</td>
 </tr>
-<tr class="even">
-<td align="left">AN</td>
-<td align="left">REF</td>
-<td align="left">OND</td>
-<td align="right">-2</td>
-<td align="right">0.7149816</td>
+<tr>
+<td style="text-align:left;">
+AN
+</td>
+<td style="text-align:left;">
+REF
+</td>
+<td style="text-align:left;">
+OND
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:right;">
+0.7149816
+</td>
 </tr>
-<tr class="odd">
-<td align="left">BL</td>
-<td align="left">MPA</td>
-<td align="left">OND</td>
-<td align="right">-1</td>
-<td align="right">0.6582624</td>
+<tr>
+<td style="text-align:left;">
+BL
+</td>
+<td style="text-align:left;">
+MPA
+</td>
+<td style="text-align:left;">
+OND
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:right;">
+0.6582624
+</td>
 </tr>
-<tr class="even">
-<td align="left">BL</td>
-<td align="left">REF</td>
-<td align="left">AMJ</td>
-<td align="right">0</td>
-<td align="right">0.6461599</td>
+<tr>
+<td style="text-align:left;">
+BL
+</td>
+<td style="text-align:left;">
+REF
+</td>
+<td style="text-align:left;">
+AMJ
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0.6461599
+</td>
 </tr>
-<tr class="odd">
-<td align="left">PB</td>
-<td align="left">MPA</td>
-<td align="left">JAS</td>
-<td align="right">-1</td>
-<td align="right">0.8657953</td>
+<tr>
+<td style="text-align:left;">
+PB
+</td>
+<td style="text-align:left;">
+MPA
+</td>
+<td style="text-align:left;">
+JAS
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:right;">
+0.8657953
+</td>
 </tr>
-<tr class="even">
-<td align="left">PB</td>
-<td align="left">REF</td>
-<td align="left">JAS</td>
-<td align="right">-1</td>
-<td align="right">0.8402914</td>
+<tr>
+<td style="text-align:left;">
+PB
+</td>
+<td style="text-align:left;">
+REF
+</td>
+<td style="text-align:left;">
+JAS
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:right;">
+0.8402914
+</td>
 </tr>
-<tr class="odd">
-<td align="left">PL</td>
-<td align="left">MPA</td>
-<td align="left">OND</td>
-<td align="right">-2</td>
-<td align="right">0.6712178</td>
+<tr>
+<td style="text-align:left;">
+PL
+</td>
+<td style="text-align:left;">
+MPA
+</td>
+<td style="text-align:left;">
+OND
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:right;">
+0.6712178
+</td>
 </tr>
-<tr class="even">
-<td align="left">PL</td>
-<td align="left">REF</td>
-<td align="left">JAS</td>
-<td align="right">-1</td>
-<td align="right">0.4203682</td>
+<tr>
+<td style="text-align:left;">
+PL
+</td>
+<td style="text-align:left;">
+REF
+</td>
+<td style="text-align:left;">
+JAS
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:right;">
+0.4203682
+</td>
 </tr>
 </tbody>
 </table>
-<table>
-<caption>Top Correlations After Excluding Years 2018-2020 (Post-MHW)</caption>
+<table class=" lightable-paper lightable-hover" style="font-family: &quot;Arial Narrow&quot;, arial, helvetica, sans-serif; margin-left: auto; margin-right: auto;">
+<caption>
+Top Correlations After Excluding Years 2018-2020 (Post-MHW)
+</caption>
 <thead>
-<tr class="header">
-<th align="left">area</th>
-<th align="left">site</th>
-<th align="left">season</th>
-<th align="right">lag</th>
-<th align="right">correlation</th>
+<tr>
+<th style="text-align:left;">
+area
+</th>
+<th style="text-align:left;">
+site
+</th>
+<th style="text-align:left;">
+season
+</th>
+<th style="text-align:right;">
+lag
+</th>
+<th style="text-align:right;">
+correlation
+</th>
 </tr>
 </thead>
 <tbody>
-<tr class="odd">
-<td align="left">AN</td>
-<td align="left">MPA</td>
-<td align="left">JAS</td>
-<td align="right">-2</td>
-<td align="right">0.8927601</td>
+<tr>
+<td style="text-align:left;">
+AN
+</td>
+<td style="text-align:left;">
+MPA
+</td>
+<td style="text-align:left;">
+JAS
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:right;">
+0.8927601
+</td>
 </tr>
-<tr class="even">
-<td align="left">AN</td>
-<td align="left">REF</td>
-<td align="left">JAS</td>
-<td align="right">-2</td>
-<td align="right">0.9084538</td>
+<tr>
+<td style="text-align:left;">
+AN
+</td>
+<td style="text-align:left;">
+REF
+</td>
+<td style="text-align:left;">
+JAS
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:right;">
+0.9084538
+</td>
 </tr>
-<tr class="odd">
-<td align="left">BL</td>
-<td align="left">MPA</td>
-<td align="left">AMJ</td>
-<td align="right">-1</td>
-<td align="right">0.6370068</td>
+<tr>
+<td style="text-align:left;">
+BL
+</td>
+<td style="text-align:left;">
+MPA
+</td>
+<td style="text-align:left;">
+AMJ
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:right;">
+0.6370068
+</td>
 </tr>
-<tr class="even">
-<td align="left">BL</td>
-<td align="left">REF</td>
-<td align="left">AMJ</td>
-<td align="right">-1</td>
-<td align="right">0.6221294</td>
+<tr>
+<td style="text-align:left;">
+BL
+</td>
+<td style="text-align:left;">
+REF
+</td>
+<td style="text-align:left;">
+AMJ
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:right;">
+0.6221294
+</td>
 </tr>
-<tr class="odd">
-<td align="left">PB</td>
-<td align="left">MPA</td>
-<td align="left">JAS</td>
-<td align="right">-2</td>
-<td align="right">0.8911463</td>
+<tr>
+<td style="text-align:left;">
+PB
+</td>
+<td style="text-align:left;">
+MPA
+</td>
+<td style="text-align:left;">
+JAS
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:right;">
+0.8911463
+</td>
 </tr>
-<tr class="even">
-<td align="left">PB</td>
-<td align="left">REF</td>
-<td align="left">JAS</td>
-<td align="right">-2</td>
-<td align="right">0.8705556</td>
+<tr>
+<td style="text-align:left;">
+PB
+</td>
+<td style="text-align:left;">
+REF
+</td>
+<td style="text-align:left;">
+JAS
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:right;">
+0.8705556
+</td>
 </tr>
-<tr class="odd">
-<td align="left">PL</td>
-<td align="left">MPA</td>
-<td align="left">JAS</td>
-<td align="right">-2</td>
-<td align="right">0.8897315</td>
+<tr>
+<td style="text-align:left;">
+PL
+</td>
+<td style="text-align:left;">
+MPA
+</td>
+<td style="text-align:left;">
+JAS
+</td>
+<td style="text-align:right;">
+-2
+</td>
+<td style="text-align:right;">
+0.8897315
+</td>
 </tr>
-<tr class="even">
-<td align="left">PL</td>
-<td align="left">REF</td>
-<td align="left">AMJ</td>
-<td align="right">-1</td>
-<td align="right">0.5006442</td>
+<tr>
+<td style="text-align:left;">
+PL
+</td>
+<td style="text-align:left;">
+REF
+</td>
+<td style="text-align:left;">
+AMJ
+</td>
+<td style="text-align:right;">
+-1
+</td>
+<td style="text-align:right;">
+0.5006442
+</td>
 </tr>
 </tbody>
 </table>

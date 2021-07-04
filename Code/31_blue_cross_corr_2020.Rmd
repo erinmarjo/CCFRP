@@ -19,6 +19,8 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = F)
 
 library(tidyverse)
 library(here)
+library(knitr) ## for kable()
+library(kableExtra) ## for save_kable()
 
 ```
 
@@ -249,8 +251,8 @@ top_juv_2020_dat <- top_juv_meeting %>%
           plot.caption = element_text(size = 8),
           axis.text.x = element_text(face = "bold",angle = 45, hjust =1))
 
-top_juv_2020_dat
 
+top_juv_2020_dat
 
 
 ```
@@ -367,6 +369,16 @@ top_adult_2020_dat <-  top_adult_meeting %>%
           axis.text.x = element_text(face = "bold",angle = 45, hjust =1))
 
 top_adult_2020_dat
+
+```
+
+
+```{r saving images, eval = F, echo = F}
+
+# 
+# ggsave(filename = "2021-07-04_adult_blue_top_corr.png", plot = top_adult_2020_dat,
+#        path = "C:/Users/erinj/Documents/Thesis/Figures/Lag/2021", dpi = 1000, width = 6,
+#         height = 4)
 
 ```
 

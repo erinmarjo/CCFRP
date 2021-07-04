@@ -36,25 +36,26 @@ For full details of cleaning the dataset including the 2020 data, see [this page
 
 # Juvenile Blue Rockfish and MHWs
 
-![](/Users/erinj/Documents/Thesis/R Stuff/Thesis_Proj/Images/2021-04-14_juv_corr_2020_dat.png){width=80%}
+![](/Users/erinj/Documents/Thesis/Figures/Lag/2021/2021-07-04_juv_blue_cross_corr.png){width=80%}
 
-![](/Users/erinj/Documents/Thesis/R Stuff/Thesis_Proj/Images/2021-04-14_top_juv_2020_dat.png){width=80%}
+![](/Users/erinj/Documents/Thesis/Figures/Lag/2021/2021-07-04_juv_blue_top_corr.png){width=80%}
 
 # Adult Blue Rockfish and MHWs
 
-![](/Users/erinj/Documents/Thesis/R Stuff/Thesis_Proj/Images/2021-04-14_adult_corr_2020_dat.png){width=80%}
+![](/Users/erinj/Documents/Thesis/Figures/Lag/2021/2021-07-04_adult_blue_cross_corr.png){width=80%}
 
-![](/Users/erinj/Documents/Thesis/R Stuff/Thesis_Proj/Images/2021-04-14_top_adult_2020_dat.png){width=80%}
+![](/Users/erinj/Documents/Thesis/Figures/Lag/2021/2021-07-04_adult_blue_top_corr.png){width=80%}
 
 # Importance of MHW Years
 
 If marine heatwave years have a disproportionately important impact on the correlation between CPUE and MOCI for juvenile blue rockfish, excluding those year will lower the correlation.
 
-![](/Users/erinj/Documents/Thesis/R Stuff/Thesis_Proj/Images/2021-04-14_no_mhw.png){width=80%}
+![](/Users/erinj/Documents/Thesis/Figures/Lag/2021/2021-07-04_no_mhw.png){width=80%}
+
 
 To ensure that these correlations were not lower simply because data were missing, three other years were excluded from cross correlation.
 
-![](/Users/erinj/Documents/Thesis/R Stuff/Thesis_Proj/Images/2021-04-14_no7_9.png){width=80%}
+![](/Users/erinj/Documents/Thesis/Figures/Lag/2021/2021-07-04_no7_9.png){width=80%}
 
 Multiple sets of years were excluded. For full representation, click [here](https://erinmarjo.github.io/CCFRP/28_DATA_year_exclusion.html)
 

@@ -18,6 +18,7 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE)
 library(tidyverse)
 library(here)
 library(knitr)
+library(kableExtra) ## for different table output options
 
 ```
 
@@ -107,6 +108,8 @@ juv_plot_no_mhw <- ggplot()+
 juv_plot_no_mhw
 
 ```
+
+
 
 ## Missing Three Random Years
 
@@ -540,6 +543,14 @@ no18_20
 
 ```
 
+```{r, eval = F, echo = F}
+
+# ggsave(filename = "2021-07-04_no7_9.png", plot = no7_9,
+#        path = "C:/Users/erinj/Documents/Thesis/Figures/Lag/2021", dpi = 1000, width = 6,
+#         height = 4)
+
+```
+
 ```{r, echo = F}
 
 no_mhw_table <- juv_vis_no_mhw%>%
@@ -579,7 +590,6 @@ no_18_20_table <- juv_vis_no_18_20%>%
 
 
 ```{r, echo = F}
-
 kable(no_mhw_table, caption = "Top Correlations After Excluding Years 2014-2016 (MHW Years)")
 
 kable(no_7_9_table, caption = "Top Correlations After Excluding Years 2007-2009 (Pre-MHW)")
@@ -595,6 +605,16 @@ kable(no_11_13_table, caption = "Top Correlations After Excluding Years 2011-201
 kable(no_17_19_table, caption = "Top Correlations After Excluding Years 2017-2019 (Post-MHW)")
 
 kable(no_18_20_table, caption = "Top Correlations After Excluding Years 2018-2020 (Post-MHW)")
+```
+
+
+```{r, eval = F, echo = F}
+## extra stuff you can do with tables
+atmp <- kable(no_18_20_table, caption = "Top Correlations After Excluding Years 2018-2020 (Post-MHW)") %>%
+  kable_paper(lightable_options = "hover")
+
+kable_styling(kable_input = atmp, stripe_color = "blue") %>%
+  row_spec(c(1,6), background  = "red")
 
 ```
 
