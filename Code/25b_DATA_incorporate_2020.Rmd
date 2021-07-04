@@ -20,98 +20,94 @@ library(here)
 
 ```
 
-Querying the new database for CCFRP information for Cal Poly and Moss Landing Marine Laboratories (MLML) from 2007 to 2020. 
 
-Information taken includes: group, trip, drift, area, site, month, day, year, gridcell, species, length, and angler hours.
-
-```{r data}
-
-cp_ml_20 <- read_csv(here("Data","2021-04-12_full_query_2007_2020.csv"))
-
-cp_ml_20 %>%
-  select(everything())%>%
-  summarise_all(funs(sum(is.na(.))))
-
-cp_ml_20 <- cp_ml_20 %>% drop_na()
-
-
-life_drifts <- read_csv(here("Data", "2021-04-12_lifetime_drifts_metadata.csv"))
-
- 
-cp_ml_20_sp <- cp_ml_20 %>%
-   filter(species %in% c("BLU", "GPR", "BLA", "OLV", "LCD", "VER", "DEA", "YTL",
-                         "KLP", "CPR", "CNY", "CHN", "RSY", "BWN", "KGL", "QBK", 
-                         "CBZ", "BAY", "PSD", "TRE", "SRY"))%>%
-  unite(col = spec_size, species:length, sep = "_")
- 
-
- 
- z_cp_ml <- cp_ml_20_sp %>%
-   count(spec_size, drift)%>%
-   rename(num_caught = n) %>% ## 72,025 obs 3 vars
-   pivot_wider(names_from = drift,
-               values_from = num_caught)%>% ## 659 obs 5253 vars
-   pivot_longer(-spec_size,
-                names_to = "drift",
-                values_to = "num_caught") %>%
-   mutate(num_caught = case_when(
-     is.na(num_caught) ~ 0,
-    TRUE ~ as.numeric(num_caught)
-   )) ## 3,461,068 obs 3 vars ## YEEEESSS this df is 659*5252
- 
- #sum(length(unique(z_cp_ml$drift)))
- 
- 
- meta_cp_ml <- cp_ml_20_sp %>%
-   select(group, trip, area, site, month, day, year, gridcell, anglerhours, drift)%>%
-   distinct()
- 
- full_cp_ml <- left_join(z_cp_ml, meta_cp_ml, by = "drift") %>%
-   mutate(cpue = num_caught/anglerhours)%>%
-   separate(spec_size, into = c("species", "size"), sep = "_") %>%
-   rename(site_1 = site)%>%
-   transform(site_2 = substr(drift, 3, 3))%>%
-   mutate(
-     site = case_when(
-       site_2 == "M" ~ "MPA",
-       site_2 == "R" ~ "REF"))%>%
-   select(-site_1, - site_2)%>%
-   mutate(size = as.numeric(size))
-
-```
-
-## Incorporate Missing Drifts & MOCI
 
 ```{r blue and moci data}
 
-blue_full <- full_cp_ml %>%
-  filter(species == "BLU")
+# blue_full <- full_cp_ml %>%
+#   filter(species == "BLU")
+# 
+# 
+# blue_full_drifts <- blue_full %>%
+#   select(drift)%>%
+#   distinct
+# 
+# missing_drift <- anti_join(life_drifts, blue_full_drifts, by = "drift")
+# 
+# ## the 210 drifts that didn't catch any fish at all. Need to be added to blues each time
+# add_drifts <- missing_drift %>%
+#   mutate(species = "BLU",
+#          num_caught = 0,
+#          cpue = num_caught/anglerhour)%>%
+#   rename(anglerhours = anglerhour,
+#          site_1 = site)%>%
+#    transform(site_2 = substr(drift, 3, 3))%>%
+#    mutate(
+#      site = case_when(
+#        site_2 == "M" ~ "MPA",
+#        site_2 == "R" ~ "REF"))%>%
+#    select(-site_1, - site_2)
+# 
+# juv <- blue_full %>%
+#   filter(size <= 21) %>%
+#   select(-size) %>%
+#   bind_rows(add_drifts)%>%
+#   group_by(drift, trip, area, site, month, day, year, gridcell) %>%
+#   summarise(cpue_sum = sum(cpue))%>%
+#   group_by(trip, area, site, month, day, year, gridcell) %>%
+#   summarise(cpue_date = mean(cpue_sum))%>%
+#   group_by( area, site, year, gridcell) %>%
+#   summarise(cpue_cell = mean(cpue_date))%>%
+#   group_by( area, site, year) %>%
+#   summarise(cpue_site = mean(cpue_cell))
+# 
+# ## below is the juveniles without adding the 210 drifts. Check to see how much CPUE changes. Look at each of the 0 drifts
+# 
+# juv2 <- blue_full %>%
+#   filter(size <= 21) %>%
+#   select(-size) %>%
+#   #bind_rows(add_drifts)%>%
+#   group_by(drift, trip, area, site, month, day, year, gridcell) %>%
+#   summarise(cpue_sum = sum(cpue))%>%
+#   group_by(trip, area, site, month, day, year, gridcell) %>%
+#   summarise(cpue_date = mean(cpue_sum))%>%
+#   group_by( area, site, year, gridcell) %>%
+#   summarise(cpue_cell = mean(cpue_date))%>%
+#   group_by( area, site, year) %>%
+#   summarise(cpue_site = mean(cpue_cell))
+# 
+# 
+# adult <- blue_full %>%
+#   filter(size >= 32) %>%
+#   select(-size)%>%
+#   bind_rows(add_drifts)%>%
+#   group_by(drift, trip, area, site, month, day, year, gridcell) %>%
+#   summarise(cpue_sum = sum(cpue))%>%
+#   group_by(trip, area, site, month, year, gridcell) %>%
+#   summarise(cpue_date = mean(cpue_sum)) %>%
+#   group_by( area, site, year, gridcell) %>%
+#   summarise(cpue_cell = mean(cpue_date)) %>%
+#   group_by( area, site, year) %>%
+#   summarise(cpue_site = mean(cpue_cell))
+
+```
 
 
-blue_full_drifts <- blue_full %>%
-  select(drift)%>%
-  distinct
+```{r}
 
-missing_drift <- anti_join(life_drifts, blue_full_drifts, by = "drift")
+master <- read_csv(here("Data", "2021-06-28_full_master_2020.csv"))
 
-## the 210 drifts that didn't catch any fish at all. Need to be added to blues each time
-add_drifts <- missing_drift %>%
-  mutate(species = "BLU",
-         num_caught = 0,
-         cpue = num_caught/anglerhour)%>%
-  rename(anglerhours = anglerhour,
-         site_1 = site)%>%
-   transform(site_2 = substr(drift, 3, 3))%>%
-   mutate(
-     site = case_when(
-       site_2 == "M" ~ "MPA",
-       site_2 == "R" ~ "REF"))%>%
-   select(-site_1, - site_2)
+blue_full <- master %>%
+  filter(species == "BLU") 
+
+missing_bl_blue <- data.frame(area = c("BL", "BL", "BL", "BL"),
+                              site = c("REF", "MPA", "REF", "MPA"),
+                              year = c(2007, 2007, 2015, 2015), 
+                              cpue_site = c(NA, NA, NA, NA))
 
 juv <- blue_full %>%
   filter(size <= 21) %>%
   select(-size) %>%
-  bind_rows(add_drifts)%>%
   group_by(drift, trip, area, site, month, day, year, gridcell) %>%
   summarise(cpue_sum = sum(cpue))%>%
   group_by(trip, area, site, month, day, year, gridcell) %>%
@@ -119,28 +115,13 @@ juv <- blue_full %>%
   group_by( area, site, year, gridcell) %>%
   summarise(cpue_cell = mean(cpue_date))%>%
   group_by( area, site, year) %>%
-  summarise(cpue_site = mean(cpue_cell))
-
-## below is the juveniles without adding the 210 drifts. Check to see how much CPUE changes. Look at each of the 0 drifts
-
-juv2 <- blue_full %>%
-  filter(size <= 21) %>%
-  select(-size) %>%
-  #bind_rows(add_drifts)%>%
-  group_by(drift, trip, area, site, month, day, year, gridcell) %>%
-  summarise(cpue_sum = sum(cpue))%>%
-  group_by(trip, area, site, month, day, year, gridcell) %>%
-  summarise(cpue_date = mean(cpue_sum))%>%
-  group_by( area, site, year, gridcell) %>%
-  summarise(cpue_cell = mean(cpue_date))%>%
-  group_by( area, site, year) %>%
-  summarise(cpue_site = mean(cpue_cell))
+  summarise(cpue_site = mean(cpue_cell)) %>%
+  bind_rows(missing_bl_blue)
 
 
 adult <- blue_full %>%
   filter(size >= 32) %>%
   select(-size)%>%
-  bind_rows(add_drifts)%>%
   group_by(drift, trip, area, site, month, day, year, gridcell) %>%
   summarise(cpue_sum = sum(cpue))%>%
   group_by(trip, area, site, month, year, gridcell) %>%
@@ -148,22 +129,55 @@ adult <- blue_full %>%
   group_by( area, site, year, gridcell) %>%
   summarise(cpue_cell = mean(cpue_date)) %>%
   group_by( area, site, year) %>%
-  summarise(cpue_site = mean(cpue_cell))
+  summarise(cpue_site = mean(cpue_cell))%>%
+  bind_rows(missing_bl_blue)
 
 ```
+
 
 ```{r data with na}
 
-juv_na <- read_csv(here("Data", "2021-04-13_juv_blue_site_cpue_NA.csv"))
-adult_na <- read_csv(here("Data", "2021-04-13_adult_blue_site_cpue_NA.csv"))
-
-## had to get new MOCI data to include all of 2020
 MOCI <- read_csv(here("Data", "Central_California_MOCI_2020.csv"))
 
-juv_moci <- left_join(juv_na, MOCI, by = "year") 
-adult_moci <- left_join(adult_na, MOCI, by = "year")
+juv_moci <- left_join(juv, MOCI, by = "year") 
+adult_moci <- left_join(adult, MOCI, by = "year")
+
+
 
 ```
+
+```{r, eval = F, echo = F}
+
+## checking to make sure that adding NA's as a different dataframe was the same as manually adding NA's for Piedras Blancas in both 2015 and 2007 for the REF and MPA.
+## It is. So there, I can do so for the other species as well.
+
+juv2 <- blue_full %>%
+  filter(size <= 21) %>%
+  select(-size) %>%
+  group_by(drift, trip, area, site, month, day, year, gridcell) %>%
+  summarise(cpue_sum = sum(cpue))%>%
+  group_by(trip, area, site, month, day, year, gridcell) %>%
+  summarise(cpue_date = mean(cpue_sum))%>%
+  group_by( area, site, year, gridcell) %>%
+  summarise(cpue_cell = mean(cpue_date))%>%
+  group_by( area, site, year) %>%
+  summarise(cpue_site = mean(cpue_cell))
+
+write_csv(juv2, here("Data", "2021-07-04_juv_blue_site_cpue.csv"))
+juv_na <- read_csv(here("Data", "2021-07-04_juv_blue_site_cpue_NA.csv"))
+
+juv_moci2 <- left_join(juv_na, MOCI, by = "year") 
+
+anti_juv <- juv_moci %>%
+  unite(col = "joined", c("area", "site", "year", "season"), sep = "_")
+
+anti_juv2 <- juv_moci2 %>%
+  unite(col = "joined", c("area", "site", "year", "season"), sep = "_")
+
+different <- anti_join(anti_juv, anti_juv2, by = "joined")
+
+```
+
 
 ### Cross Correlation Function
 
@@ -239,10 +253,12 @@ juv_plot_erin_ccf <- ggplot()+
 #### Juvenile Blue Rockfish vs MOCI
 
 ```{r juv result and figure}
+
 juv_vis %>%
-  arrange(desc(correlation)) %>%
+  arrange(desc(abs(correlation))) %>%
   group_by(area, site) %>%
   slice(1)
+
 
 juv_plot_erin_ccf
 

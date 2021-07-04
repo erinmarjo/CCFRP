@@ -22,15 +22,15 @@ library(here)
 master <- read_csv(here("Data", "2021-06-28_full_master_2020.csv"))
 
 
-govl <- c("GPR", "OLV", "VER", "LCD")
-
-## automates the creation of multiple datasets by species filter
-for(i in govl){
-  sp_df <- master %>%
-    filter(species == i)
-  assign(paste0(i, "_full"), sp_df)
-
-}
+# govl <- c("GPR", "OLV", "VER", "LCD")
+# 
+# ## automates the creation of multiple datasets by species filter
+# for(i in govl){
+#   sp_df <- master %>%
+#     filter(species == i)
+#   assign(paste0(i, "_full"), sp_df)
+# 
+# }
 
 ```
 
@@ -72,7 +72,8 @@ missing_bl <- data.frame(species = c("GPR", "GPR", "GPR", "GPR",
                                   2007, 2007, 2015, 2015,
                                   2007, 2007, 2015, 2015,
                                   2007, 2007, 2015, 2015), 
-                         cpue_site = c(0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0))
+                         cpue_site = c(NA, NA, NA, NA, NA, NA, NA, NA,
+                                       NA, NA, NA, NA, NA, NA, NA, NA))
 
 sp_juv3 <- bind_rows(sp_juv2, missing_bl)
 
