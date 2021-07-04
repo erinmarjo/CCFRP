@@ -110,68 +110,9 @@ juv_plot_no_mhw
 
 ## Missing Three Random Years
 
-Taking out all CPUE & MOCI data from 2009-2011. Taking out a random subset of three consecutive years that are *not* marine heatwave years, should mean that the correlation is not completely gone. I would expect to still see a two-ish year lag for many of the area+ site combinations for juv blue rockfish if the MHW are driving the relationship, since those years are still included.
-
-```{r , echo = F}
-
-juv_no_9_11 <- juv_blue %>%
-  rename(central_ca2 = central_ca,
-         cpue_site2 = cpue_site) %>%
-  mutate(cpue_site = case_when(
-    year %in% c(2009, 2010, 2011) ~ NA_real_, 
-    year %in% c(2007, 2008, 2012:2020) ~ as.numeric(cpue_site2)
-    ), central_ca = case_when(
-      year %in% c(2009, 2010, 2011) ~ NA_real_,
-      year %in% c(2007, 2008, 2012:2020) ~ as.numeric(central_ca2)
-    ))
+Taking out all CPUE & MOCI data from different subsets of three years. Taking out a random subset of three consecutive years that are *not* marine heatwave years, should mean that the correlation is not completely gone. I would expect to still see a two-ish year lag for many of the area+ site combinations for juv blue rockfish if the MHW are driving the relationship, since those years are still included.
 
 
-#juv_no_9_11 <- read_csv(here("Data", "2021-04-13_juv_moci_na_no_09-11.csv"))
-
-juv_corr_no_9_11 <- data.frame(area = character(), site = character(), season = character(), lag = character(), correlation = character())
-
-for(j in area_list){
-  for(k in site_list){
-    for(l in season_list){
-      juvenile <- juv_no_9_11 %>%
-        filter(area == j, site == k, season == l)
-      for(i in 0:8){
-        lag_df <- juvenile %>%
-          mutate(central_ca = dplyr::lag(central_ca, n = i)) %>% drop_na()
-        #juvenile2 <- juvenile %>% drop_na()
-        cor <- erin_ccf(juvenile$central_ca, juvenile$cpue_site,
-                        lag_df$central_ca, lag_df$cpue_site)
-        for(m in 1:length(cor)){
-          juv_corr_no_9_11 <- bind_rows(juv_corr_no_9_11, c(area = j, site = k, season = l, 
-                                            lag = -i, correlation = cor[m]))
-        }
-      }
-    }
-  }
-} 
-
-juv_vis_no_9_11 <- juv_corr_no_9_11 %>%
-  mutate(correlation = as.numeric(correlation),
-         lag = as.numeric(lag))
-  
-juv_vis_no_9_11$season <- factor(juv_vis_no_9_11$season, levels = c("JFM", "AMJ" ,"JAS", "OND"))  
-
-no9_11<- ggplot()+
-  scale_color_manual(values = c("#999999", "#009999", "#666666", "#000000"))+
-  scale_fill_manual(values = c("#999999", "#009999", "#666666", "#000000"))+
-  geom_col(position = "dodge2", data = juv_vis_no_9_11, aes(x = lag, y = correlation, color = season, fill = season))+
-  labs(title = "No 2009-2011 Data")+
-  theme_bw()+
-  theme(panel.grid = element_blank(),
-        plot.title = element_text(hjust = 0.5))+
-  facet_grid(site~area)
-
-# juv_vis_no_18_20%>%
-#   arrange(desc(correlation)) %>%
-#   group_by(area, site) %>%
-#   slice(1)
-
-```
 
 ## Excluding 2007-2009
 
@@ -292,6 +233,67 @@ no8_10
 ```
 
 ## Excluding 2009-2011
+
+```{r , echo = F}
+
+juv_no_9_11 <- juv_blue %>%
+  rename(central_ca2 = central_ca,
+         cpue_site2 = cpue_site) %>%
+  mutate(cpue_site = case_when(
+    year %in% c(2009, 2010, 2011) ~ NA_real_, 
+    year %in% c(2007, 2008, 2012:2020) ~ as.numeric(cpue_site2)
+    ), central_ca = case_when(
+      year %in% c(2009, 2010, 2011) ~ NA_real_,
+      year %in% c(2007, 2008, 2012:2020) ~ as.numeric(central_ca2)
+    ))
+
+
+#juv_no_9_11 <- read_csv(here("Data", "2021-04-13_juv_moci_na_no_09-11.csv"))
+
+juv_corr_no_9_11 <- data.frame(area = character(), site = character(), season = character(), lag = character(), correlation = character())
+
+for(j in area_list){
+  for(k in site_list){
+    for(l in season_list){
+      juvenile <- juv_no_9_11 %>%
+        filter(area == j, site == k, season == l)
+      for(i in 0:8){
+        lag_df <- juvenile %>%
+          mutate(central_ca = dplyr::lag(central_ca, n = i)) %>% drop_na()
+        #juvenile2 <- juvenile %>% drop_na()
+        cor <- erin_ccf(juvenile$central_ca, juvenile$cpue_site,
+                        lag_df$central_ca, lag_df$cpue_site)
+        for(m in 1:length(cor)){
+          juv_corr_no_9_11 <- bind_rows(juv_corr_no_9_11, c(area = j, site = k, season = l, 
+                                            lag = -i, correlation = cor[m]))
+        }
+      }
+    }
+  }
+} 
+
+juv_vis_no_9_11 <- juv_corr_no_9_11 %>%
+  mutate(correlation = as.numeric(correlation),
+         lag = as.numeric(lag))
+  
+juv_vis_no_9_11$season <- factor(juv_vis_no_9_11$season, levels = c("JFM", "AMJ" ,"JAS", "OND"))  
+
+no9_11<- ggplot()+
+  scale_color_manual(values = c("#999999", "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c("#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = juv_vis_no_9_11, aes(x = lag, y = correlation, color = season, fill = season))+
+  labs(title = "No 2009-2011 Data")+
+  theme_bw()+
+  theme(panel.grid = element_blank(),
+        plot.title = element_text(hjust = 0.5))+
+  facet_grid(site~area)
+
+# juv_vis_no_18_20%>%
+#   arrange(desc(correlation)) %>%
+#   group_by(area, site) %>%
+#   slice(1)
+
+```
 
 ```{r, echo = F}
 no9_11
@@ -538,7 +540,7 @@ no18_20
 
 ```
 
-```{r}
+```{r, echo = F}
 
 no_mhw_table <- juv_vis_no_mhw%>%
   arrange(desc(abs(correlation))) %>%
