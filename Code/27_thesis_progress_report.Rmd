@@ -37,6 +37,9 @@ Details for cleaning the dataset including the 2020 data can be found on [this p
 
 # Part I: Juvenile Blue Rockfish and MHWs
 
+The Multivariate Ocean Climate Indicator includes several local parameters, including upwelling index, sea level, alongshore wind, sea surface temperature, air temperature, sea level pressure, and regional climate indices, including the Multivariate ENSO index (MEI), the Pacific Decadal Oscillation (PDO), and Northern Oscillation Index (NOI). MOCI is split into three regions in California: Southern, Central, and Northern. For the purposes of this study, spatial indicator values for Central California were used, which include the area between Point conception ($34.5^oN$) to Point Reyes ($38^oN$). Similar to ENSO and PDO, high MOCI values represent warm water temperature and decreased upwelling, while low MOCI values represent cool water temperatures and increased upwelling (Garcia-Reyes and Sydeman 2017). MOCI captures El Nino events as well as Marine Heatwave events like the 2014-2015 North Pacific marine heat wave ('The Blob')
+
+
 For building cross correlation figures, see [this page](https://erinmarjo.github.io/CCFRP/31_blue_cross_corr_2020.html)
 
 ![](/Users/erinj/Documents/Thesis/Figures/Lag/2021/2021-07-04_juv_blue_cross_corr.png){width=80%}
@@ -82,8 +85,6 @@ Multiple sets of years were excluded. For full representation, click [here](http
 
 # Part IV: Importance of Component Parts of MOCI
 
-The Multivariate Ocean Climate Indicator includes several local parameters, including upwelling index, sea level, alongshore wind, sea surface temperature, air temperature, sea level pressure, and regional climate indices, including the Multivariate ENSO index (MEI), the Pacific Decadal Oscillation (PDO), and Northern Oscillation Index (NOI). MOCI is split into three regions in California: Southern, Central, and Northern. For the purposes of this study, spatial indicator values for Central California were used, which include the area between Point conception ($34.5^oN$) to Point Reyes ($38^oN$). Similar to ENSO and PDO, high MOCI values represent warm water temperature and decreased upwelling, while low MOCI values represent cool water temperatures and increased upwelling (Garcia-Reyes and Sydeman 2017).
-
 Of the regional climate indices included in the MOCI calculation, PDO is often used as a predictor of biology. The Pacific Decadal Oscillation is an index that measures variability in sea surface temperature and has been described as a long-lived El Nino-like pattern (Mantua and Hare 2001). There may be one or more parameters of MOCI that drive the correlation between environmental variability in rockfish CPUE. To test this, I will calculate cross correlations between PDO values and Blue rockfish CPUE. The prediction being that if PDO is the main driver of the relationship between environmental variability and rockfish CPUE, the magnitude of the correlation will be higher. I predict that the single value of MOCI will be a stronger predictor of biology than any one parameter alone, though there may be some parameters (like PDO) that are more relevant than others. I predict PDO may be driving the relationship to some extent, so we will see the same lags as with MOCI (~2 years summer for juveniles; ~ 1-2 years for adult) with similarly high correlations. There will also be more variability in adult correlations than in juvenile correlations. I will not test each component part of MOCI, but rather the drivers that have been shown to be strong predictors of biology.
 
 The monthly PDO index used for this correlation is the NOAA NCEI reconstruction of anomalous sea surface temperatures from [ERSST Version 5](https://www.ncdc.noaa.gov/data-access/marineocean-data/extended-reconstructed-sea-surface-temperature-ersst-v5) and can be found at https://www.ncdc.noaa.gov/teleconnections/pdo/. Full code for correlations between CPUE and PDO can be found [here](https://erinmarjo.github.io/CCFRP/32_pdo_blue_cross_corr.html)
@@ -91,11 +92,30 @@ The monthly PDO index used for this correlation is the NOAA NCEI reconstruction 
 
 ## Juvenile Blue Rockfish and PDO
 
+![](/Users/erinj/Documents/Thesis/Figures/Lag/2021/2021-07-05_juv_blue_corr_pdo.png){width=80%}
+
+```{r, echo = F}
+
+topjuv_pdo_table <- read_csv(here("Data", "2021-07-05_juv_pdo_topcorr_table.csv"))
+
+kable(topjuv_pdo_table, caption = "Top Correlations: Juvenile Blue Rockfish - PDO")
+
+
+```
 
 
 ## Adult Blue Rockfish and PDO
 
+![](/Users/erinj/Documents/Thesis/Figures/Lag/2021/2021-07-05_adult_blue_corr_pdo.png){width=80%}
 
+```{r, echo = F}
+
+topadult_pdo_table <- read_csv(here("Data", "2021-07-05_adult_pdo_topcorr_table.csv"))
+
+kable(topadult_pdo_table, caption = "Top Correlations: Adult Blue Rockfish - PDO")
+
+
+```
 
 # Part V: Impacts of MHW on Adult Blue Rockfish Growth
 

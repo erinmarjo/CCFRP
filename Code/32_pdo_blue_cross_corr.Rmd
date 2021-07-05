@@ -313,12 +313,30 @@ top_adult_pdo_plot <- top_adult_pdo %>%
           axis.text.x = element_text(face = "bold",angle = 45, hjust =1))
 
 
-top_juv_pdo_plot
+top_adult_pdo_plot
 
 
 ```
 
 ```{r saving, eval = F, echo = F}
+
+# write_csv(juv_pdo_table, here("Data", "2021-07-05_juv_pdo_topcorr_table.csv"))
+# write_csv(adult_pdo_table, here("Data", "2021-07-05_adult_pdo_topcorr_table.csv"))
+# 
+# 
+# ggsave(filename = "2021-07-05_juv_blue_corr_pdo.png", plot = juv_plot_pdo,
+#        path = "C:/Users/erinj/Documents/Thesis/Figures/Lag/2021", dpi = 1000, width = 6,
+#         height = 4)
+# ggsave(filename = "2021-07-05_adult_blue_corr_pdo.png", plot = adult_plot_pdo,
+#        path = "C:/Users/erinj/Documents/Thesis/Figures/Lag/2021", dpi = 1000, width = 6,
+#         height = 4)
+# 
+# ggsave(filename = "2021-07-05_juv_blue_top_corr_pdo.png", plot = top_juv_pdo_plot,
+#        path = "C:/Users/erinj/Documents/Thesis/Figures/Lag/2021", dpi = 1000, width = 6,
+#         height = 4)
+# ggsave(filename = "2021-07-05_adult_blue_top_corr_pdo.png", plot = top_adult_pdo_plot,
+#        path = "C:/Users/erinj/Documents/Thesis/Figures/Lag/2021", dpi = 1000, width = 6,
+#         height = 4)
 
 ## run this in console: rmarkdown::render(input = here("Code", "32_pdo_blue_cross_corr.Rmd"), output_dir = here("docs"))
 
