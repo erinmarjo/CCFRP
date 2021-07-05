@@ -1,0 +1,60 @@
+---
+title: "PDO and Blue Rockfish CPUE Cross Correlation"
+author: "Erin Johnston"
+date: "7/4/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE,
+                      warning = F,
+                      message = F)
+
+```
+
+```{r}
+
+master <- read_csv(here("Data", "2021-06-28_full_master_2020.csv"))
+
+blue_full <- master %>%
+  filter(species == "BLU") 
+
+missing_bl_blue <- data.frame(area = c("BL", "BL", "BL", "BL"),
+                              site = c("REF", "MPA", "REF", "MPA"),
+                              year = c(2007, 2007, 2015, 2015), 
+                              cpue_site = c(NA, NA, NA, NA))
+
+juv <- blue_full %>%
+  filter(size <= 21) %>%
+  select(-size) %>%
+  group_by(drift, trip, area, site, month, day, year, gridcell) %>%
+  summarise(cpue_sum = sum(cpue))%>%
+  group_by(trip, area, site, month, day, year, gridcell) %>%
+  summarise(cpue_date = mean(cpue_sum))%>%
+  group_by( area, site, year, gridcell) %>%
+  summarise(cpue_cell = mean(cpue_date))%>%
+  group_by( area, site, year) %>%
+  summarise(cpue_site = mean(cpue_cell)) %>%
+  bind_rows(missing_bl_blue)
+
+
+adult <- blue_full %>%
+  filter(size >= 32) %>%
+  select(-size)%>%
+  group_by(drift, trip, area, site, month, day, year, gridcell) %>%
+  summarise(cpue_sum = sum(cpue))%>%
+  group_by(trip, area, site, month, year, gridcell) %>%
+  summarise(cpue_date = mean(cpue_sum)) %>%
+  group_by( area, site, year, gridcell) %>%
+  summarise(cpue_cell = mean(cpue_date)) %>%
+  group_by( area, site, year) %>%
+  summarise(cpue_site = mean(cpue_cell))%>%
+  bind_rows(missing_bl_blue)
+
+```
+
+## Pacific Decadal Oscillation
+
+
+

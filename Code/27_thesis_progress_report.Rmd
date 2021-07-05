@@ -33,9 +33,11 @@ Fishing trips happened at one of four [sampling locations](https://erinmarjo.git
 
 # Data Cleaning
 
-For full details of cleaning the dataset including the 2020 data, see [this page](https://erinmarjo.github.io/CCFRP/30_full_master_df_creation.html), and for building cross correlation figures, see [this page](https://erinmarjo.github.io/CCFRP/31_blue_cross_corr_2020.html)
+Details for cleaning the dataset including the 2020 data can be found on [this page](https://erinmarjo.github.io/CCFRP/30_full_master_df_creation.html), which outlines how the master dataset was created.
 
-# Juvenile Blue Rockfish and MHWs
+# Part I: Juvenile Blue Rockfish and MHWs
+
+For building cross correlation figures, see [this page](https://erinmarjo.github.io/CCFRP/31_blue_cross_corr_2020.html)
 
 ![](/Users/erinj/Documents/Thesis/Figures/Lag/2021/2021-07-04_juv_blue_cross_corr.png){width=80%}
 
@@ -50,7 +52,7 @@ kable(topjuv, caption = "Top Correlations: Juvenile Blue Rockfish")
 
 ```
 
-# Adult Blue Rockfish and MHWs
+# Part II: Adult Blue Rockfish and MHWs
 
 ![](/Users/erinj/Documents/Thesis/Figures/Lag/2021/2021-07-04_adult_blue_cross_corr.png){width=80%}
 
@@ -65,7 +67,7 @@ kable(topadult, caption = "Top Correlations: Adult Blue Rockfish")
 ```
 
 
-# Importance of MHW Years
+# Part III: Importance of MHW Years
 
 If marine heatwave years have a disproportionately important impact on the correlation between CPUE and MOCI for juvenile blue rockfish, excluding those year will lower the correlation.
 
@@ -78,11 +80,13 @@ To ensure that these correlations were not lower simply because data were missin
 
 Multiple sets of years were excluded. For full representation, click [here](https://erinmarjo.github.io/CCFRP/28_DATA_year_exclusion.html)
 
-# Importance of Component Parts of MOCI
+# Part IV: Importance of Component Parts of MOCI
 
-The Multivariate Ocean Climate
+The Multivariate Ocean Climate Indicator includes several local parameters, including upwelling index, sea level, alongshore wind, sea surface temperature, air temperature, sea level pressure, and regional climate indices, including the Multivariate ENSO index (MEI), the Pacific Decadal Oscillation (PDO), and Northern Oscillation Index (NOI). MOCI is split into three regions in California: Southern, Central, and Northern. For the purposes of this study, spatial indicator values for Central California were used, which include the area between Point conception ($34.5^oN$) to Point Reyes ($38^oN$). Similar to ENSO and PDO, high MOCI values represent warm water temperature and decreased upwelling, while low MOCI values represent cool water temperatures and increased upwelling (Garcia-Reyes and Sydeman 2017).
 
-# Impacts of MHW on Adult Blue Rockfish Growth
+Of the regional climate indices included in the MOCI calculation, PDO is often used as a predictor of biology. The Pacific Decadal Oscillation is an index that measures variability in sea surface temperature and has been described as a long-lived El Nino-like pattern (Mantua and Hare 2001). There may be one or more parameters of MOCI that drive the correlation between environmental variability in rockfish CPUE. To test this, I will calculate cross correlations between PDO values and Blue rockfish CPUE. The prediction being that if PDO is the main driver of the relationship between environmental variability and rockfish CPUE, the magnitude of the correlation will be higher. I predict that the single value of MOCI will be a stronger predictor of biology than any one parameter alone, though there may be some parameters (like PDO) that are more relevant than others. I will not test each component part of MOCI, but rather the drivers that have been shown to be strong predictors of biology.
+
+# Part V: Impacts of MHW on Adult Blue Rockfish Growth
 
 
 ```{r, eval = F, echo=F}
