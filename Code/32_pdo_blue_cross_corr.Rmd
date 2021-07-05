@@ -15,7 +15,7 @@ knitr::opts_chunk$set(echo = TRUE,
 
 ```
 
-```{r}
+```{r libraries}
 
 library(tidyverse)
 library(here)
@@ -24,7 +24,10 @@ library(knitr)
 ```
 
 
-```{r}
+[back](https://erinmarjo.github.io/CCFRP/27_thesis_progress_report.html)
+
+
+```{r create juv and adult df}
 
 master <- read_csv(here("Data", "2021-06-28_full_master_2020.csv"))
 
@@ -67,7 +70,9 @@ adult <- blue_full %>%
 
 ## Pacific Decadal Oscillation
 
-```{r}
+This PDO index can be found at this [NOAA website](https://www.ncdc.noaa.gov/teleconnections/pdo/).
+
+```{r pdo data}
 
 pdo <- read_csv(here("Data", "pdo_noaa_ncei_2020.csv")) %>%
   transform( year = substr(date, 1,4), month = substr(date, 5, 6))%>%
@@ -116,7 +121,7 @@ season_list <- c("JFM", "AMJ", "JAS", "OND")
 
 ## Juvenile Blue Rockfish
 
-```{r juv loop}
+```{r juv loop and visual}
 
 for(j in area_list){
   for(k in site_list){
@@ -165,13 +170,13 @@ juv_pdo_table <- juv_vis_pdo %>%
 ```
 
 
-```{r}
+```{r juv table}
 
 kable(juv_pdo_table, caption = "Top Juvenile Blue Rockfish Correlation - PDO")
 
 ```
 
-```{r}
+```{r juv top plot pdo}
 
 top_juv_pdo <- juv_vis_pdo %>% 
   arrange(desc(abs(correlation))) %>% 
@@ -229,7 +234,7 @@ top_juv_pdo_plot
 
 ## Adult Blue Rockfish
 
-```{r}
+```{r adult loop and visual}
 
 for(j in area_list){
   for(k in site_list){
@@ -279,13 +284,13 @@ adult_pdo_table <- adult_vis_pdo %>%
 
 ```
 
-```{r}
+```{r adult table pdo}
 
 kable(adult_pdo_table, caption = "Top Adult Blue Rockfish Correlation - PDO")
 
 ```
 
-```{r}
+```{r adult top plot pdo}
 
 top_adult_pdo <- adult_vis_pdo %>% 
   arrange(desc(abs(correlation))) %>% 
@@ -317,6 +322,9 @@ top_adult_pdo_plot
 
 
 ```
+
+[back](https://erinmarjo.github.io/CCFRP/27_thesis_progress_report.html)
+
 
 ```{r saving, eval = F, echo = F}
 
