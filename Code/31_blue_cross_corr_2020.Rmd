@@ -79,7 +79,7 @@ adult_moci <- left_join(adult, MOCI, by = "year")
 
 ```{r write csvs, echo = F, eval = F}
 
-write_csv()
+#write_csv()
 
 # write_csv(juv_moci, here("Data", "2021-07-04_juv_blue_moci_site_cpue.csv"))
 # write_csv(adult_moci, here("Data", "2021-07-04_adult_blue_moci_site_cpue.csv"))

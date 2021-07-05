@@ -2,7 +2,9 @@
 title: "PDO and Blue Rockfish CPUE Cross Correlation"
 author: "Erin Johnston"
 date: "7/4/2021"
-output: html_document
+output: 
+  prettydoc::html_pretty:
+    theme: cayman
 ---
 
 ```{r setup, include=FALSE}
@@ -12,6 +14,15 @@ knitr::opts_chunk$set(echo = TRUE,
                       message = F)
 
 ```
+
+```{r}
+
+library(tidyverse)
+library(here)
+library(knitr)
+
+```
+
 
 ```{r}
 
@@ -56,5 +67,166 @@ adult <- blue_full %>%
 
 ## Pacific Decadal Oscillation
 
+```{r}
 
+pdo <- read_csv(here("Data", "pdo_noaa_ncei_2020.csv")) %>%
+  transform( year = substr(date, 1,4), month = substr(date, 5, 6))%>%
+  filter(year %in% c(2007:2020))%>%
+  mutate(season = case_when(
+    month %in% c("01", "02", "03") ~ "JFM",
+    month %in% c("04", "05", "06") ~ "AMJ",
+    month %in% c("07", "08", "09") ~ "JAS",
+    month %in% c("10", "11", "12") ~ "OND")) %>%
+  group_by(year, season) %>%
+  summarise(pdo_val = mean(value)) %>%
+  mutate(year = as.numeric(as.character(year)))
+
+
+juv_pdo <- left_join(juv, pdo, by = "year")
+adult_pdo <- left_join(adult, pdo, by = "year")
+
+```
+
+```{r custom function}
+
+erin_ccf <- function(full_x, full_y, lag_x_rm, lag_y_rm) {
+  mean_x <- mean(full_x, na.rm = T)
+  mean_y <- mean(full_y, na.rm = T)
+  corval <- (sum((lag_x_rm - mean_x)*
+                   (lag_y_rm - mean_y)))/
+    ((sqrt(sum((full_x - mean_x)^2, na.rm = T)))*
+       (sqrt(sum((full_y - mean_y)^2, na.rm = T))))
+  return(corval)
+  
+}
+
+```
+
+```{r loop set up}
+
+juv_corr_pdo <- data.frame(area = character(), site = character(), season = character(), lag = character(), correlation = character())
+
+adult_corr_pdo <- data.frame(area = character(), site = character(), season = character(), lag = character(), correlation = character())
+
+area_list <- c("PB", "BL", "AN", "PL")
+site_list <- c("MPA", "REF")
+season_list <- c("JFM", "AMJ", "JAS", "OND")
+
+```
+
+## Juvenile Blue Rockfish
+
+```{r juv loop}
+
+for(j in area_list){
+  for(k in site_list){
+    for(l in season_list){
+      juvenile <- juv_pdo %>%
+        filter(area == j, site == k, season == l)
+      for(i in 0:8){
+        lag_df <- juvenile %>%
+          mutate(pdo_val = dplyr::lag(pdo_val, n = i)) %>% drop_na()
+        cor <- erin_ccf(juvenile$pdo_val, juvenile$cpue_site,
+                        lag_df$pdo_val, lag_df$cpue_site)
+        for(m in 1:length(cor)){
+          juv_corr_pdo <- bind_rows(juv_corr_pdo, c(area = j, site = k, season = l, 
+                                            lag = -i, correlation = cor[m]))
+        }
+      }
+    }
+  }
+} 
+
+
+juv_vis_pdo <- juv_corr_pdo %>%
+  mutate(correlation = as.numeric(correlation),
+         lag = as.numeric(lag))
+  
+juv_vis_pdo$season <- factor(juv_vis_pdo$season, levels = c("JFM", "AMJ" ,"JAS", "OND"))  
+
+juv_plot_pdo <- ggplot()+
+  scale_color_manual(values = c("#999999", "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c("#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = juv_vis_pdo, aes(x = lag, y = correlation, 
+                                                    color = season, fill = season))+
+  labs(title = "Juvenile Blue Rockfish Lag Correlation: PDO")+
+  theme_bw()+
+  theme(panel.grid = element_blank(),
+        plot.title = element_text(hjust = 0.5))+
+  facet_grid(site~area)
+
+juv_plot_pdo
+
+juv_pdo_table <- juv_vis_pdo %>%
+  arrange(desc(abs(correlation))) %>%
+  group_by(area, site) %>%
+  slice(1)
+
+```
+
+
+```{r}
+
+kable(juv_pdo_table, caption = "Top Juvenile Blue Rockfish Correlation - PDO")
+
+```
+
+
+## Adult Blue Rockfish
+
+```{r}
+
+for(j in area_list){
+  for(k in site_list){
+    for(l in season_list){
+      adult <- adult_pdo %>%
+        filter(area == j, site == k, season == l)
+      for(i in 0:8){
+        lag_df <- adult %>%
+          mutate(pdo_val = dplyr::lag(pdo_val, n = i)) %>% drop_na()
+        cor <- erin_ccf(adult$pdo_val, adult$cpue_site,
+                        lag_df$pdo_val, lag_df$cpue_site)
+        for(m in 1:length(cor)){
+          adult_corr_pdo <- bind_rows(adult_corr_pdo, c(area = j, site = k, season = l, 
+                                            lag = -i, correlation = cor[m]))
+        }
+      }
+    }
+  }
+} 
+
+
+adult_vis_pdo <- adult_corr_pdo %>%
+  mutate(correlation = as.numeric(correlation),
+         lag = as.numeric(lag))
+  
+adult_vis_pdo$season <- factor(adult_vis_pdo$season, levels = c("JFM", "AMJ" ,"JAS", "OND"))  
+
+adult_plot_pdo <- ggplot()+
+  scale_color_manual(values = c("#999999", "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c("#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = adult_vis_pdo, aes(x = lag, y = correlation, 
+                                                    color = season, fill = season))+
+  labs(title = "Adult Blue Rockfish Lag Correlation: PDO")+
+  theme_bw()+
+  theme(panel.grid = element_blank(),
+        plot.title = element_text(hjust = 0.5))+
+  facet_grid(site~area)
+
+adult_plot_pdo
+
+adult_pdo_table <- adult_vis_pdo %>%
+  arrange(desc(abs(correlation))) %>%
+  group_by(area, site) %>%
+  slice(1)
+
+
+
+```
+
+```{r}
+
+kable(adult_pdo_table, caption = "Top Adult Blue Rockfish Correlation - PDO")
+
+```
 
