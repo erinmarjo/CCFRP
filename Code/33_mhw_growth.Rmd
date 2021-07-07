@@ -1,0 +1,63 @@
+---
+title: "MHW Impacts on Adult Growth"
+author: "Erin Johnston"
+date: "7/6/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE,
+                      message = F,
+                      warning = F)
+
+```
+
+```{r}
+
+library(tidyverse)
+library(here)
+library(ggridges)
+
+```
+
+```{r}
+
+master <- read_csv(here("Data", "2021-06-28_full_master_2020.csv"))
+
+caught_blue <- master %>%
+  filter(num_caught > 0, species == "BLU") %>%
+  mutate(year = as.factor(year))
+
+
+hist(caught_blue$size)
+
+caught_adult <- caught_blue %>%
+  filter(site == "MPA", area == "BL", size >= 32) %>%
+  mutate(size = as.factor(size))
+
+
+ggplot() +
+  geom_histogram(data = caught_adult, aes(x = size), stat = "count")+
+  facet_grid(year ~ .) +
+  theme_classic()
+
+
+ggplot() +
+  geom_col(data = caught_blue, aes(x = size, y = year, color = site))+
+  facet_grid(year~ area)
+
+ggplot()+
+  geom_density_ridges(data = caught_blue, aes(x = size, y = year, fill = year), 
+                      show.legend = F)+
+  geom_vline(xintercept = 21, col = "red")+
+  scale_fill_manual(values = c("#003399", "#0000FF", "#3366CC","#006699", "#336666",
+                               "#339999","#33CCCC", "#33FFFF", "#00FFCC", 
+                               "#00FF66", "#00FF33", "#009933", "#006633", "#666666"))+
+  labs(title = "Blue Rockfish Size Density") +
+  facet_grid(site~area) +
+  theme_bw()+
+  theme(panel.grid = element_blank())
+
+```
+

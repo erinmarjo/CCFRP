@@ -26,6 +26,17 @@ library(knitr)
 
 ```
 
+# Questions
+
+1. How well does a regional-scale oceanographi index, like MOCI, correlate with Blue rockfish CPUE in the nearshore environment off the central coast of California?
+  a. Are these correlations different for different life stages (i.e., juvenile vs adult Blue rockfish)?
+
+2. Do marine heatwave(MHW) years have a disproportionate impact on the relationship between oceanographic parameters and Blue rockfish CPUE?
+
+3. What is the importance of the component parts of MOCI in determining the relationship between oceanographic parameters and Blue rockfish CPUE?
+
+4. What are the impacts of MHWs on Blue rockfish growth?
+
 # Field Methods
 
 Fishing trips happened at one of four [sampling locations](https://erinmarjo.github.io/CCFRP/20_VIS_interactive-widget-maps.html)
@@ -117,12 +128,12 @@ kable(topadult_pdo_table, caption = "Top Correlations: Adult Blue Rockfish - PDO
 
 ```
 
-# Part V: Impacts of MHW on Adult Blue Rockfish Growth
+# Part V: Impacts of MHW on Blue Rockfish Growth
 
 
 
 
-### References
+# References
 
 García-Reyes, M., & Sydeman, W. J. (2017). California Multivariate Ocean Climate Indicator (MOCI) and marine ecosystem dynamics. *Ecological Indicators*, 9.
 
