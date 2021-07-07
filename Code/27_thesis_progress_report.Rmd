@@ -39,12 +39,12 @@ library(knitr)
 
 # Field Methods
 
-Fishing trips happened at one of four [sampling locations](https://erinmarjo.github.io/CCFRP/20_VIS_interactive-widget-maps.html)
+Fishing trips happened at one of four [sampling areas](https://erinmarjo.github.io/CCFRP/20_VIS_interactive-widget-maps.html). Each area spans two site types, an unfished MPA and an adjacent, fished reference site (REF). Within each site, sampling was performed in accordance with standard CCFRP procedures (Star *et al.*, 2015). 
 
 
 # Data Cleaning
 
-Details for cleaning the dataset including the 2020 data can be found on [this page](https://erinmarjo.github.io/CCFRP/30_full_master_df_creation.html), which outlines how the master dataset was created.
+Details for cleaning the dataset, including the 2020 data, can be found on [this page](https://erinmarjo.github.io/CCFRP/30_full_master_df_creation.html), which outlines how the master dataset was created.
 
 # Part I: Juvenile Blue Rockfish and MHWs
 
@@ -138,6 +138,8 @@ kable(topadult_pdo_table, caption = "Top Correlations: Adult Blue Rockfish - PDO
 García-Reyes, M., & Sydeman, W. J. (2017). California Multivariate Ocean Climate Indicator (MOCI) and marine ecosystem dynamics. *Ecological Indicators*, 9.
 
 Mantua, N. J., & Hare, S. R. (2002). The Pacific Decadal Oscillation. *Journal of Oceanography*, 58, 35–44.
+
+Starr, R. M., Wendt, D. E., Barnes, C. L., Marks, C. I., Malone, D., Waltz, G., … Yochum, N. (2015). Variation in Responses of Fishes across Multiple Reserves within a Network of Marine Protected Areas in Temperate Waters. *PLoS ONE*, 10.
 
 
 ```{r, eval = F, echo=F}
