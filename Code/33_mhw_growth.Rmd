@@ -61,3 +61,124 @@ ggplot()+
 
 ```
 
+
+
+```{r}
+
+Mode <- function(x) {
+  ux <- unique(x)
+  ux[which.max(tabulate(match(x, ux)))]
+}
+
+try <- c(2,3,4,123,123,2,4,5,5,5,5,5,5,5,5,5,6, 6, 6, 6, 6, 6, 6, 6,  6, 4,78,9,99,8,77,7,7)
+
+u <- as.data.frame(try) %>%
+  count(try) %>%
+  arrange(desc(n)) %>%
+  slice(1)
+
+erin_mode <- function(x) {
+  u <- as.data.frame(x) %>%
+  count(x) %>%
+  arrange(desc(n)) %>%
+  slice(1)
+}
+
+Mode(try)
+
+try_blue <- caught_blue %>%
+  group_by(year) %>%
+  summarise(mode = erin_mode(size))
+
+try_blue0.5 <- caught_blue %>%
+  group_by(year) %>%
+  summarise(mode = Mode(size))
+
+try_blue2 <- caught_blue %>%
+  group_by(year, size) %>%
+  summarise(sumsize = sum(num_caught)) %>%
+  unite(col = size_num, size:sumsize, sep = "_", remove = F)
+
+
+try_blue3 <- caught_blue %>%
+  group_by(year, size) %>%
+  summarise(sumsize = sum(num_caught))
+
+try_blue4 <- caught_blue %>%
+  uncount(num_caught)
+
+try_blue5 <- try_blue4 %>%
+  group_by(year) %>%
+  summarise(mode = Mode(size))
+
+
+
+
+blue_ungroup <- caught_blue %>%
+  uncount(num_caught) %>%
+  mutate(group = case_when(
+    size %in% 5:20 ~ "A",
+    size %in% 21:30 ~ "B",
+    size %in% 31:40 ~ "C",
+    size %in% 41:50 ~ "D"
+  ))
+
+# blue_ungroup <- caught_blue %>%
+#   uncount(num_caught) %>%
+#   mutate(group = case_when(
+#     size %in% 5:9 ~ "A",
+#     size %in% 10:14 ~ "B",
+#     size %in% 15:19 ~ "C",
+#     size %in% 20:24 ~ "D",
+#     size %in% 25:29 ~ "E",
+#     size %in% 30:34 ~ "F",
+#     size %in% 35:39 ~ "G",
+#     size %in% 40:44 ~ "H",
+#     size %in% 45:49 ~ "I",
+#   ))
+
+blue_modes <- blue_ungroup %>%
+  group_by(year, group) %>%
+  summarise(mode = Mode(size))
+
+```
+
+
+
+```{r}
+
+library(TropFishR)
+
+data("synLFQ7")
+
+set.seed(1)
+synLFQ7a <- lfqModify(synLFQ7, bin_size = 4)
+
+
+# plot raw and restructured LFQ data
+lfqbin <- lfqRestructure(synLFQ7a, MA = 5, addl.sqrt = FALSE)
+opar <- par(mfrow = c(2,1), mar = c(2,5,2,3), oma = c(2,0,0,0))
+plot(lfqbin, Fname = "catch", date.axis = "modern")
+plot(lfqbin, Fname = "rcounts", date.axis = "modern")
+par(opar)
+
+```
+
+
+
+
+```{r}
+
+# summarise catch matrix into vector and add plus group which is smaller than Linf
+synLFQ7b <- lfqModify(synLFQ7a, vectorise_catch = TRUE, plus_group = 118)
+# run catch curve
+res_cc <- catchCurve(synLFQ7b, reg_int = c(8,26), calc_ogive = TRUE)
+# assign estimates to the data list
+synLFQ7b$Z <- res_cc$Z
+synLFQ7b$FM <- as.numeric(synLFQ7b$Z - synLFQ7b$M)
+synLFQ7b$E <- synLFQ7b$FM/synLFQ7b$Z
+
+
+```
+
+
