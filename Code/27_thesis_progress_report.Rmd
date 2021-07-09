@@ -130,7 +130,7 @@ kable(topadult_pdo_table, caption = "Top Correlations: Adult Blue Rockfish - PDO
 
 # Part V: Impacts of MHW on Blue Rockfish Growth
 
-
+New line about cohort analyses.
 
 
 # References
