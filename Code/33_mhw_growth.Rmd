@@ -64,26 +64,159 @@ ggplot()+
 
 
 ```{r}
-
 Mode <- function(x) {
   ux <- unique(x)
   ux[which.max(tabulate(match(x, ux)))]
 }
 
-try <- c(2,3,4,123,123,2,4,5,5,5,5,5,5,5,5,5,6, 6, 6, 6, 6, 6, 6, 6,  6, 4,78,9,99,8,77,7,7)
+getmode <- function(v) {
+ uniqv <- unique(v)
+ uniqv[which.max(tabulate(match(v, uniqv)))]
+}
 
-u <- as.data.frame(try) %>%
+try <- c(2,3,4,123,123,2,4,5,5,5,5,5,5,5,5,5,6, 6, 6, 6, 6, 6, 6, 6, 10,10,10,10,10,10,10,10,11,11,11,11,11,11,11,11,11, 4,78,9,99,8,77,7,7, 77, 77, 77, 77, 77, 77, 55, 55, 55, 55, 55, 55, 55)
+
+
+
+umode <- as.data.frame(try) %>%
   count(try) %>%
   arrange(desc(n)) %>%
-  slice(1)
+  slice_head(n =5) 
+umodes2 <- umode$try
 
+nummodes <- 2:5
+
+for(i in nummodes){
+  if(abs(umodes2[1] - umodes2[i]) >= 5){
+    print(umodes2[i])
+  }
+  else{
+   # print("goodbye")
+  }
+}
+
+umodes2[1:5]
+
+umodes2[1]- umodes2[3]
+
+print(u$try)
+
+## Find n number of multiple modes
 erin_mode <- function(x) {
   u <- as.data.frame(x) %>%
   count(x) %>%
   arrange(desc(n)) %>%
-  slice(1)
+  slice_head(n = 5)
+  
+  modes <- u$x
+  print(modes[1])
+  nummodes <- 2:5
+  
+  for(i in nummodes){
+  if(abs(modes[1] - modes[i]) >= 3){
+    print(modes[i])
+  }
+  else{
+  }
+}
 }
 
+erin_mode(try)
+
+
+
+umode <- as.data.frame(try) %>%
+  count(try) %>%
+  arrange(desc(n)) %>%
+  slice_head(n =5) %>%
+  arrange(try)
+umodes2 <- umode$try
+
+nummodes <- 1:4
+
+#umodes2[1+1]
+
+for(i in nummodes){
+  if(abs(umodes2[i] - umodes2[i+1]) >= 5){
+    print(umodes2[i+1])
+  }
+  else{
+    print("goodbye")
+  }
+}
+
+for(i in nummodes){
+  if(abs(umodes2[1] - umodes2[i+1]) >= 5){
+    print(umodes2[i+1])
+  }
+  else{
+    if(abs(umodes2[i]-umodes2[i+1]) >= 5){
+      print(umodes2[i+1])
+    }
+    else{
+      print("goodbye")
+    }
+  }
+}
+
+erin_mode2 <- function(x) {
+  u <- as.data.frame(x) %>%
+    count(x) %>%
+    arrange(desc(n)) %>%
+    slice_head(n = 5) %>%
+    arrange(x)
+  
+  modes <- u$x
+  print(modes[1])
+  nummodes <- 1:4
+  
+  for(i in nummodes){
+  if(abs(modes[i] - modes[i+1]) >= 5){
+    print(modes[i+1])
+  }
+  else{
+  }
+}
+}
+
+erin_mode2(try)
+```
+
+
+
+```{r}
+
+mode_count <- as.data.frame(try) %>%
+  count(try) %>%
+  arrange(desc(n)) %>%
+  slice_head(n = 5)
+
+mod1 <- mode_count %>%
+  arrange(try) %>%
+  slice_head(n = 1)
+
+mod1try <- mod1$try
+
+mod2 <- mode_count %>%
+  filter(try >= mod1try + 5)%>%
+  arrange(try) %>%
+  slice_head(n = 1)
+
+mod2try <- mod2$try
+
+mod3 <- mode_count %>%
+  filter(try >= mod2try + 5) %>%
+  arrange(try) %>%
+  slice_head(n = 1)
+
+hist(try, breaks = 140)
+
+
+```
+
+
+
+```{r}
 Mode(try)
 
 try_blue <- caught_blue %>%
@@ -140,6 +273,54 @@ blue_ungroup <- caught_blue %>%
 blue_modes <- blue_ungroup %>%
   group_by(year, group) %>%
   summarise(mode = Mode(size))
+
+```
+
+
+```{r}
+
+library(multimode)
+
+data("geyser")
+locmodes(geyser, mod0=2,display=TRUE)
+
+locmodes(try, mod0=2, display = T)
+
+nmodes(try, bw = 5)
+
+
+blue18 <- caught_blue %>%
+  filter(year == 2018, site == "MPA", area == "BL") %>%
+  uncount(num_caught)
+blue17 <- caught_blue %>%
+  filter(year == 2017, site == "MPA", area == "BL") %>%
+  uncount(num_caught)
+
+
+hist(blue17$size, breaks = 45)
+
+
+hist(blue18$size, breaks = 45)
+
+hist(blue17$size, breaks = 45)
+erin_mode2(blue17$size)
+erin_mode(blue17$size)
+
+```
+
+```{r}
+
+## just trying my function out with a dataset
+
+datas <- c(1,2,2,3,3,3,3, 3, 3, 3, 3,4,4,4,4,4,4,4,4,5,5,6,6,7,7,8,8,8,8,8,9,9,9,9,9, 10, 11, 11, 11, 12, 12, 13, 13, 13, 13, 14, 14, 14, 14, 15, 16, 16, 17, 17, 17, 17, 17, 17, 17, 17, 17, 18, 18, 18, 18, 18, 18, 18, 19, 19, 19, 19, 20, 20, 20, 21, 21, 22, 22, 22, 22, 22, 22, 22, 22)
+
+hist(datas, breaks =22)
+
+erin_mode(datas)
+
+hist(datas, breaks =22)
+
+erin_mode2(datas)
 
 ```
 
