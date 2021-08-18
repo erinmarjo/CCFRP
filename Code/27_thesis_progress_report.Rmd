@@ -1,7 +1,7 @@
 ---
 title: "Thesis Progress Report"
 author: "Erin Johnston"
-date: "6/23/2021"
+date: ""
 output: 
   prettydoc::html_pretty:
   #html_document:
@@ -33,9 +33,9 @@ library(knitr)
 
 2. Do marine heatwave(MHW) years have a disproportionate impact on the relationship between oceanographic parameters and Blue rockfish CPUE?
 
-3. What is the importance of the component parts of MOCI in determining the relationship between oceanographic parameters and Blue rockfish CPUE?
+3. What is the importance of the component parts of MOCI in determining the relationship between oceanographic parameters and Blue rockfish CPUE? (work in progress)
 
-4. What are the impacts of MHWs on Blue rockfish growth?
+4. What are the impacts of MHWs on Blue rockfish growth? (work in progress)
 
 # Field Methods
 
@@ -96,12 +96,19 @@ Multiple sets of years were excluded. For full representation, click [here](http
 
 # Part IV: Importance of Component Parts of MOCI
 
+Two potential hypotheses about the driver of the correlation between MOCI and Blue rockfish CPUE (juveniles and adults) have emerged. We can use data from MPAs to remove the potential confounding factors of direct fishing pressure on *S. mystinus* populations. Ocean conditions two years before spikes in S. mystinus CPUE included warm water, positive PDO phase, and the El Nino phase of ENSO. Upwelling was supressed during these events and phytoplankton blooms were subsequently smaller. Despite smaller bloom magnitude, there was a shift to an earlier peak in the Spring phytoplankton bloom. 
+We are currently experiencing cooler ocean conditions (2021), but there has been a shift to earlier peaks of phytoplankton. Therefore, if we see a spike in S. mystinus CPUE in two years, the correlations between oceanography and CPUE may be driven by the timing of phytoplankton blooms (food availability driver hypothesis?). If we do not see a spike in S mystinus CPUE in two year, the correlations between oceanography and CPUE may be driven by ocean temperature regimes (MHW driver hypothesis?)
+
+More coming soon...
+
+## PDO
+
 Of the regional climate indices included in the MOCI calculation, PDO is often used as a predictor of biology. The Pacific Decadal Oscillation is an index that measures variability in sea surface temperature and has been described as a long-lived El Nino-like pattern (Mantua and Hare, 2001). There may be one or more parameters of MOCI that drive the correlation between environmental variability in rockfish CPUE. To test this, I will calculate cross correlations between PDO values and Blue rockfish CPUE. The prediction being that if PDO is the main driver of the relationship between environmental variability and rockfish CPUE, the magnitude of the correlation will be higher. I predict that the single value of MOCI will be a stronger predictor of biology than any one parameter alone, though there may be some parameters (like PDO) that are more relevant than others. I predict PDO may be driving the relationship to some extent, so we will see the same lags as with MOCI (~2 years summer for juveniles; ~ 1-2 years for adult) with similarly high correlations. There will also be more variability in adult correlations than in juvenile correlations. I will not test each component part of MOCI, but rather the drivers that have been shown to be strong predictors of biology.
 
 The monthly PDO index used for this correlation is the NOAA NCEI reconstruction of anomalous sea surface temperatures from [ERSST Version 5](https://www.ncdc.noaa.gov/data-access/marineocean-data/extended-reconstructed-sea-surface-temperature-ersst-v5) and can be found at https://www.ncdc.noaa.gov/teleconnections/pdo/. Full code for correlations between CPUE and PDO can be found [here](https://erinmarjo.github.io/CCFRP/32_pdo_blue_cross_corr.html)
 
 
-## Juvenile Blue Rockfish and PDO
+### Juvenile Blue Rockfish and PDO
 
 ![](/Users/erinj/Documents/Thesis/Figures/Lag/2021/2021-07-05_juv_blue_corr_pdo.png){width=80%}
 
@@ -115,7 +122,7 @@ kable(topjuv_pdo_table, caption = "Top Correlations: Juvenile Blue Rockfish - PD
 ```
 
 
-## Adult Blue Rockfish and PDO
+### Adult Blue Rockfish and PDO
 
 ![](/Users/erinj/Documents/Thesis/Figures/Lag/2021/2021-07-05_adult_blue_corr_pdo.png){width=80%}
 
@@ -128,9 +135,14 @@ kable(topadult_pdo_table, caption = "Top Correlations: Adult Blue Rockfish - PDO
 
 ```
 
+## Local Oceanographic Parameters
+
+Information regarding the relationship between wind stress, wind stress curl, coastal upwelling, and the timing of Spring phytoplankton blooms coming soon. Reference: meeting with A. Pasulka and J. Gilbert on 2021-08-18
+
+
 # Part V: Impacts of MHW on Blue Rockfish Growth
 
-New line about cohort analyses.
+Cohort analysis and information from CCFRP tag returns coming soon.
 
 
 # References

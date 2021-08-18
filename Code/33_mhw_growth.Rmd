@@ -256,6 +256,13 @@ blue_ungroup <- caught_blue %>%
     size %in% 41:50 ~ "D"
   ))
 
+caught_blue2 <- caught_blue %>%
+  uncount(num_caught)
+
+hist_df <- caught_blue2 %>%
+  filter(year == 2015, area == "PB", site == "MPA")
+
+
 # blue_ungroup <- caught_blue %>%
 #   uncount(num_caught) %>%
 #   mutate(group = case_when(
@@ -273,6 +280,27 @@ blue_ungroup <- caught_blue %>%
 blue_modes <- blue_ungroup %>%
   group_by(year, group) %>%
   summarise(mode = Mode(size))
+
+caught_blue2 <- caught_blue %>%
+  uncount(num_caught) %>%
+  mutate(size = as.factor(size))
+
+hist_df <- caught_blue2 %>%
+  filter(year == 2015, area == "PB", site == "MPA")
+
+ggplot() +
+  geom_histogram(stat = "count", data = hist_df, aes(x = size),
+                 col = "grey", binwidth = 1)+
+  theme_classic()
+
+hist_df2 <- caught_blue2 %>%
+  filter(year %in% c(2015:2020), area == "PB", site == "MPA")
+
+ggplot() +
+  geom_histogram(stat = "count", data = hist_df2, aes(x = size),
+                 col = "grey", binwidth = 1)+
+  facet_grid(year~.) +
+  theme_classic()
 
 ```
 
@@ -362,4 +390,27 @@ synLFQ7b$E <- synLFQ7b$FM/synLFQ7b$Z
 
 ```
 
+From TropFishR
+
+```{r}
+
+data(hake)
+
+hake <- hake
+
+VPA(hake, terminalE = 0.5, analysis_type = "VPA", plot = TRUE,
+    catch_unit = "'000", plus_group = TRUE)
+
+VPA(hake, terminalE = 0.5, analysis_type = "CA", plot = TRUE,
+   catch_unit = "'000", plus_group = TRUE)
+
+## trying to make my own list
+midpoints <- c(1,2,3,4,5,6,7,8,9,10)
+
+kval <- 0.5
+
+mydatlist <- list(midpoints, kval)
+names(mydatlist) <- c("midpoints", "kvalue")
+
+```
 
