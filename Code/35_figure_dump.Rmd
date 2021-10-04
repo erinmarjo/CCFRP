@@ -1,0 +1,515 @@
+---
+title: "Figure Dump Code"
+author: "Erin Johnston"
+date: "10/4/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      warning = F,
+                      message = F)
+```
+
+```{r libraries}
+
+library(tidyverse)
+library(here)
+library(patchwork)
+library(plotrix)
+library(ggridges)
+
+```
+
+```{r data}
+
+master <- read_csv(here("Data", "2021-06-28_full_master_2020.csv"))
+
+moci <- read_csv(here("Data", "CaliforniaMOCI_JFM1991-AMJ2021.csv"))
+
+```
+
+
+Wish list of figure dump:
+
+* CPUE line graph blue rockfish – each area and site… with error bars
+* BPUE line graph blue rockfish
+* CPUE vs size dot plot... broken up by area + site and also together
+* MOCI line graph
+* MOCI bar chart colored blue and red
+* Length frequency bar charts
+* Length frequency density plots
+* Mean length box and whisker plots
+* MOCI/CPUE lag figures – adults, juvenile, together
+* Top MOCI/CPUE correlation
+* No MHW vs no data from other three years in a row
+
+## CPUE line graph
+
+Might want to think of more interesting ways to visualize CPUE than just line graphs with error bars. Ditto BPUE.
+
+```{r cpue figures}
+
+check <- blue_bpue %>%
+  filter(is.na(class))
+
+## these are drift added in where there were no blues caught
+## need to assign these as both Juvenile and Adult in order to break up by 'class'
+class_j <- master %>%
+  filter(species == "BLU", is.na(size), !is.na(cpue)) %>%
+  mutate(class = "Juvenile")
+
+class_a <- master %>%
+  filter(species == "BLU", is.na(size), !is.na(cpue)) %>%
+  mutate(class = "Adult")
+
+## original missing years df
+missing_bl_blue <- data.frame(area = c("BL", "BL", "BL", "BL"),
+                              site = c("REF", "MPA", "REF", "MPA"),
+                              year = c(2007, 2007, 2015, 2015), 
+                              cpue_site = c(NA, NA, NA, NA))
+
+## creating dataframe with missing years to bind to CPUE data frame
+## without these missing points, 2015 BL is an average of the years around it
+## can not bind these if people would like to see this as an average
+missing_bl_blue2 <- data.frame(area = c("BL", "BL", "BL", "BL", "BL", "BL", "BL", "BL"),
+                              site = c("REF", "REF", "MPA", "MPA", "REF", "REF", "MPA", "MPA"),
+                              year = c(2007, 2007, 2007, 2007, 2015, 2015, 2015, 2015), 
+                              class = c("Juvenile", "Adult", "Juvenile", "Adult", 
+                                        "Juvenile", "Adult", "Juvenile", "Adult"),
+                              cpue_site = c(NA, NA, NA, NA, NA, NA, NA, NA),
+                              se_site = c(NA, NA, NA, NA, NA, NA, NA, NA))
+
+## df for cpue vis
+blue_cpue <- master %>%
+  filter(species == "BLU", !is.na(cpue)) %>%
+  mutate(class = case_when(
+    size <= 21 ~ "Juvenile", 
+    size > 21 ~ "Adult"
+  )) %>%
+  filter(!is.na(size)) %>%
+  bind_rows(class_j, class_a) %>%
+  group_by(drift, trip, area, site, month, day, year, gridcell, class) %>%
+  summarise(cpue_drift = sum(cpue))%>%
+  group_by(trip, area, site, month, day, year, gridcell, class) %>%
+  summarise(cpue_date = mean(cpue_drift)) %>%
+  group_by( area, site, year, gridcell, class) %>%
+  summarise(cpue_cell = mean(cpue_date)) %>%
+  group_by( area, site, year, class) %>%
+  summarise(cpue_site = mean(cpue_cell),
+            se_site = std.error(cpue_cell))%>%
+  bind_rows(missing_bl_blue2) %>%
+  mutate(area = case_when(
+    area == "AN" ~ "A\U00F1o Nuevo",
+    area == "PL" ~ "Point Lobos",
+    area == "BL" ~ "Piedras Blancas",
+    area == "PB" ~ "Point Buchon"
+  ))
+
+## ordering from N to S
+blue_cpue$area <- factor(blue_cpue$area, levels = c("A\U00F1o Nuevo", "Point Lobos", 
+                                                    "Piedras Blancas", "Point Buchon"))
+
+## CPUE together
+adult_juv_cpue <- ggplot(data = blue_cpue, aes(x = year, y = cpue_site, 
+                                               color = site, group = site))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin = cpue_site - se_site, ymax = cpue_site + se_site), width = 0.2)+
+  scale_color_manual(values = c("#CC0000", "#0066CC"))+
+  scale_x_continuous(limits = c(2007, 2020), breaks = seq(2007, 2020, 2))+
+  labs(y = "CPUE (number of fishes/angler hours\n", x = "")+
+  facet_grid(area ~ class) +
+  theme_bw()+
+  theme(panel.grid = element_blank())
+
+
+## juvenile CPUE
+juv_cpue <- blue_cpue %>%
+  filter(class == "Juvenile") %>%
+  ggplot(aes(x = year, y = cpue_site, color = site, group = site))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin = cpue_site - se_site, ymax = cpue_site + se_site), width = 0.2)+
+  scale_color_manual(values = c("#CC0000", "#0066CC"))+
+  scale_x_continuous(limits = c(2007, 2020), breaks = seq(2007, 2020, 1))+
+  labs(y = "CPUE (number of fishes/angler hours\n", x = "",
+       caption = "Juvenile")+
+  facet_grid(area ~ .) +
+  theme_bw()+
+  theme(panel.grid = element_blank())
+
+## adult CPUE
+adult_cpue <- blue_cpue %>%
+  filter(class == "Adult") %>%
+  ggplot(aes(x = year, y = cpue_site, color = site, group = site))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin = cpue_site - se_site, ymax = cpue_site + se_site), width = 0.2)+
+  scale_color_manual(values = c("#CC0000", "#0066CC"))+
+  scale_x_continuous(limits = c(2007, 2020), breaks = seq(2007, 2020, 1))+
+  labs(y = "CPUE (number of fishes/angler hours\n", x = "",
+       caption = "Adult")+
+  facet_grid(area ~ .) +
+  theme_bw()+
+  theme(panel.grid = element_blank())
+
+## We can have visuals for each area... or class by using filter()
+## for example, Point Buchon with juveniles and adults would look like this
+
+pb <- blue_cpue %>%
+  filter(area == "Point Buchon") %>%
+  ggplot(aes(x = year, y = cpue_site, color = site, group = site))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin = cpue_site - se_site, ymax = cpue_site + se_site), width = 0.2)+
+  scale_color_manual(values = c("#CC0000", "#0066CC"))+
+  scale_x_continuous(limits = c(2007, 2020), breaks = seq(2007, 2020, 1))+
+  labs(y = "CPUE (number of fishes/angler hours\n", x = "",
+       caption = "Point Buchon")+
+  facet_grid(class~ .) +
+  theme_bw()+
+  theme(panel.grid = element_blank())
+
+## save plots with this code
+# ggsave("pb_cpue.png", plot = pb, dpi = 1000, width = 8, height = 7, path = here("Images/figure_dump"))
+
+
+
+```
+
+## BPUE line graph
+
+```{r bpue figures}
+
+bpue_0 <- master %>%
+  filter(species == "BLU", num_caught == 0) %>%
+  select(-num_caught) %>%
+  mutate(biomass = 0)
+
+## same as missing df above, but with bpue_site instead of cpue_site
+missing_bl_blue3 <- data.frame(area = c("BL", "BL", "BL", "BL", "BL", "BL", "BL", "BL"),
+                              site = c("REF", "REF", "MPA", "MPA", "REF", "REF", "MPA", "MPA"),
+                              year = c(2007, 2007, 2007, 2007, 2015, 2015, 2015, 2015), 
+                              class = c("Juvenile", "Adult", "Juvenile", "Adult", 
+                                        "Juvenile", "Adult", "Juvenile", "Adult"),
+                              bpue_site = c(NA, NA, NA, NA, NA, NA, NA, NA),
+                              se_site = c(NA, NA, NA, NA, NA, NA, NA, NA))
+
+## this is the step that is really different between CPUE figures and BPUE figures
+## cleaned this so that after uncounting, I added back in all the drifts where the BPUE would have been 0 so that BPUE is not artifically inflated when averaging across levels
+blue_bpue <- master %>%
+  filter(species == "BLU", !is.na(size)) %>%
+  mutate(biomass = 0.0158*size^2.988) %>%
+  uncount(num_caught) %>%
+  bind_rows(bpue_0) %>%
+  mutate(class = case_when(
+    size <= 21 ~ "Juvenile", 
+    size > 21 ~ "Adult"
+  )) %>%
+  filter(!is.na(size)) %>%
+  mutate(bpue = biomass/anglerhours) %>%
+  group_by(drift, trip, area, site, month, day, year, gridcell, class) %>%
+  summarise(bpue_drift = sum(bpue))%>%
+  group_by(trip, area, site, month, day, year, gridcell, class) %>%
+  summarise(bpue_date = mean(bpue_drift)) %>%
+  group_by( area, site, year, gridcell, class) %>%
+  summarise(bpue_cell = mean(bpue_date)) %>%
+  group_by( area, site, year, class) %>%
+  summarise(bpue_site = mean(bpue_cell),
+            se_site = std.error(bpue_cell))%>%
+  bind_rows(missing_bl_blue3) %>%
+  mutate(area = case_when(
+    area == "AN" ~ "A\U00F1o Nuevo",
+    area == "PL" ~ "Point Lobos",
+    area == "BL" ~ "Piedras Blancas",
+    area == "PB" ~ "Point Buchon"
+  ))
+
+## ordering from N to S
+blue_bpue$area <- factor(blue_bpue$area, levels = c("A\U00F1o Nuevo", "Point Lobos", 
+                                                    "Piedras Blancas", "Point Buchon"))
+
+## BPUE together
+adult_juv_bpue <- ggplot(data = blue_bpue, aes(x = year, y = bpue_site, 
+                                               color = site, group = site))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin = bpue_site - se_site, ymax = bpue_site + se_site), width = 0.2)+
+  scale_color_manual(values = c("#CC0000", "#0066CC"))+
+  scale_x_continuous(limits = c(2007, 2020), breaks = seq(2007, 2020, 2))+
+  labs(y = "BPUE (biomass/angler hours\n", x = "")+
+  facet_grid(area ~ class) +
+  theme_bw()+
+  theme(panel.grid = element_blank())
+
+## juvenile BPUE
+juv_bpue <- blue_bpue %>%
+  filter(class == "Juvenile") %>%
+  ggplot(aes(x = year, y = bpue_site, color = site, group = site))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin = bpue_site - se_site, ymax = bpue_site + se_site), width = 0.2)+
+  scale_color_manual(values = c("#CC0000", "#0066CC"))+
+  scale_x_continuous(limits = c(2007, 2020), breaks = seq(2007, 2020, 1))+
+  labs(y = "BPUE (biomass/angler hours\n", x = "",
+       caption = "Juvenile")+
+  facet_grid(area ~ .) +
+  theme_bw()+
+  theme(panel.grid = element_blank())
+
+## adult BPUE
+adult_bpue <- blue_bpue %>%
+  filter(class == "Adult") %>%
+  ggplot(aes(x = year, y = bpue_site, color = site, group = site))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin = bpue_site - se_site, ymax = bpue_site + se_site), width = 0.2)+
+  scale_color_manual(values = c("#CC0000", "#0066CC"))+
+  scale_x_continuous(limits = c(2007, 2020), breaks = seq(2007, 2020, 1))+
+  labs(y = "BPUE (biomass/angler hours\n", x = "",
+       caption = "Adult")+
+  facet_grid(area ~ .) +
+  theme_bw()+
+  theme(panel.grid = element_blank())
+
+#ggsave("adult_bpue.png", plot = adult_bpue, dpi = 1000, width = 8, height = 7, path = here("Images/figure_dump"))
+
+```
+
+
+```{r, echo = F, eval = F}
+
+## this takes a long time to run. Do only if necessary to fix code
+
+# t <- master %>%
+#   filter(species == "BLU")%>%
+#   ggplot()+
+#   geom_point(aes(x = size, y = cpue), shape = 21, color = "black", fill = "white", size = 1)+
+#   facet_grid(site ~ area)+
+#   theme_bw()+
+#   theme(panel.grid = element_blank())
+# 
+# ggsave("cpue_by_size_as.png", plot = t, dpi = 1000, width = 8, height = 7, path = here("Images/figure_dump"))
+
+```
+
+
+## MOCI Graphs
+
+```{r moci}
+
+moci_central <- moci %>%
+  select(year, season, central_ca) %>%
+  filter(year %in% c(1991:2020)) %>%
+  group_by(year) %>%
+  summarize(av_central = mean(central_ca))
+
+moci_1SD_pos <- moci_central %>%
+  filter(av_central > 3.97499)
+moci_1SD_neg <- moci_central %>%
+  filter(av_central < -3.97499)
+
+sd(moci$central_ca) ## 3.97499
+mean(moci$central_ca) ## -4.834653e-17 pretty close to 0
+
+
+moci_jas <- moci %>%
+  select(year, season, north_ca, central_ca) %>%
+  filter(year %in% c(1991:2020), season == "JAS")
+
+sd(moci_jas$central_ca) ## 3.97499
+mean(moci_jas$central_ca)
+
+jas_1SD_pos <- moci_jas %>%
+  filter(central_ca > 3.560993, north_ca > 3.770262)
+
+jas_1SD_neg <- moci_jas %>%
+  filter(central_ca <= -3.560993, north_ca <= 3.770262)
+
+
+
+ggplot()+
+  ## in red, the MOCI value for JAS
+  geom_point(data = moci_jas, aes(year, central_ca), color = "red")+
+  geom_line(data = moci_jas, aes(year, central_ca), color = "red")+
+  ## in blue, the MOCI value for all seasons
+  geom_point(data = moci_central, aes(year, av_central), color = "blue")+
+  geom_line(data = moci_central, aes(year, av_central), color = "blue")+
+  ## solid line at the mean MOCI value
+  geom_hline(yintercept = 0)+
+  ## dashed line at one standard deviation
+  geom_hline(yintercept = 3.993048, linetype = "dashed")+
+  geom_hline(yintercept = -3.993048, linetype = "dashed")+
+  labs(x = "", y = "MOCI", title = "Central Coast MOCI JAS vs All Seasons",
+       caption = "Data Source: http://www.faralloninstitute.org/moci")+
+  ## continuous years
+  scale_x_continuous(limits=c(1990,2020),breaks=seq(1990,2020,2))+
+  theme_bw()+
+        ## puts box around graph
+  theme(panel.grid=element_blank(),
+        ## centers the title, controls size
+        plot.title = element_text(hjust = 0.5, size = 12),
+        axis.title = element_text(size=10),
+        plot.caption = element_text(size = 5))+
+  ## my attempt at a legend
+  annotate(geom = "text", x = 1995, y = 10, label = "All",colour = "blue") + 
+  annotate(geom = "text", x = 1995, y = 9, label = "JAS", 
+           color = "red")+
+  annotate(geom = "text", x = 1995, y = 8, label = "--- 1 SD", color = "black")
+
+
+ggplot()+
+  geom_point(data = moci_jas, aes(year, central_ca), shape = 21, colour = "black", 
+                                  fill = "white", size = 2)+
+  geom_line(data = moci_jas, aes(year, central_ca))+
+  geom_point(data = jas_1SD_pos, aes(year, central_ca), color = "red", size = 2)+
+  geom_point(data = jas_1SD_neg, aes(year, central_ca), color = "blue", size = 2)+
+  geom_hline(yintercept = 0)+
+  geom_hline(yintercept = 3.560993, linetype = "dashed")+
+  geom_hline(yintercept = -3.560993, linetype = "dashed")+
+  labs(x = "", y = "MOCI", title = "Central Coast Summer MOCI 1991-2020",
+       caption = "Data Source: http://www.faralloninstitute.org/moci")+
+  scale_x_continuous(limits=c(1991,2020),breaks=seq(1991,2020,2))+
+  theme_bw()+
+  theme(panel.grid=element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 12),
+        axis.title = element_text(size=10),
+        plot.caption = element_text(size = 5))
+
+moci_yr_avg <- ggplot()+
+  geom_point(data = moci_central, aes(year, av_central), shape = 21, colour = "black", 
+                                  fill = "white", size = 2)+
+  geom_line(data = moci_central, aes(year, av_central))+
+  geom_point(data = moci_1SD_pos, aes(year, av_central), color = "red", size = 2)+
+  geom_point(data = moci_1SD_neg, aes(year, av_central), color = "blue", size = 2)+
+  geom_hline(yintercept = 0)+
+  geom_hline(yintercept = 3.97499, linetype = "dashed")+
+  geom_hline(yintercept = -3.97499, linetype = "dashed")+
+  labs(x = "", y = "MOCI", title = "Central Coast MOCI 1991-2020",
+       caption = "Data Source: http://www.faralloninstitute.org/moci")+
+  scale_x_continuous(limits=c(1991,2020),breaks=seq(1991,2020,2))+
+  theme_bw()+
+  theme(panel.grid=element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 12),
+        axis.title = element_text(size=10),
+        plot.caption = element_text(size = 5))
+
+
+moci_central2 <- moci %>%
+  select(year, season, central_ca) %>%
+  filter(year %in% c(1991:2020)) %>%
+  mutate(pos_neg = case_when(
+    central_ca > 0 ~ "positive",
+    central_ca < 0 ~ "negative"
+  ))
+
+
+ggplot() +
+  geom_col(data = moci_central2, position = position_dodge2(), 
+           aes(x = year, y = central_ca, color = pos_neg, fill = pos_neg))+
+  geom_line(data = moci_central, aes(x = year, y = av_central), size = 1)+
+  scale_fill_manual(values = c( "#0066CC", "#CC0000"))+
+  scale_color_manual(values = c( "#00008B", "#8B0000")) +
+  scale_x_continuous(limits=c(1990,2021),breaks=seq(1990,2021,2))+
+  labs(y = "MOCI",  x = "")+
+  theme_bw()+
+  theme(panel.grid = element_blank())
+
+
+## spline of the averages looks a little better for vis.
+## make spline this way
+spline.moci<- as.data.frame(spline(moci_central2$year, moci_central2$central_ca))
+
+
+moci_bar <- ggplot() +
+  geom_col(data = moci_central2, position = position_dodge2(), 
+           aes(x = year, y = central_ca, color = pos_neg, fill = pos_neg))+
+  geom_line(data = spline.moci, aes(x = x, y = y), size = 1)+
+  geom_hline(yintercept = 0)+
+  scale_fill_manual(values = c( "#0066CC", "#CC0000"))+
+  scale_color_manual(values = c( "#00008B", "#8B0000")) +
+  scale_x_continuous(limits=c(1990,2021),breaks = seq(1990, 2021, 2))+
+  scale_y_continuous(limits = c(-8, 11), breaks = seq(-8, 11, 2))+
+  labs(y = "MOCI",  x = "", caption = "Data Source: http://www.faralloninstitute.org/moci")+
+  theme_bw()+
+  theme(panel.grid = element_blank(),
+        legend.position = "none",
+        plot.caption = element_text(size = 5))
+
+
+#ggsave("moci_yr_avg.png", plot = moci_yr_avg, dpi = 1000, width = 8, height = 6, path = here("Images/figure_dump"))
+
+## check this out later! secondary axes?
+
+# # This may useful for labelling different time scales in the same plot
+# ggplot(df, aes(x = dx, y = price)) + geom_line() +
+#   scale_x_datetime("Date", date_labels = "%b %d",
+#   date_breaks = "6 hour",
+#   sec.axis = dup_axis(name = "Time of Day",
+#   labels = scales::time_format("%I %p")))
+# 
+# # or to transform axes for different timezones
+# ggplot(df, aes(x = dx, y = price)) + geom_line() +
+#   scale_x_datetime("GMT", date_labels = "%b %d %I %p",
+#   sec.axis = sec_axis(~ . + 8 * 3600, name = "GMT+8",
+#   labels = scales::time_format("%b %d %I %p")))
+
+
+```
+
+
+## Length Frequency
+### Bar plots and Density plot
+
+```{r lf density plots}
+
+## add size cutoff for juvenile, or else leave all data in
+dens_dat <- master %>%
+  filter(species == "BLU", num_caught != 0) %>%
+  mutate(year = as.factor(year)) %>%
+  uncount(num_caught) %>%
+  mutate(area = case_when(
+    area == "AN" ~ "A\U00F1o Nuevo",
+    area == "PL" ~ "Point Lobos",
+    area == "BL" ~ "Piedras Blancas",
+    area == "PB" ~ "Point Buchon"
+  ))
+
+dens_dat$area <- factor(dens_dat$area, levels = c("Point Buchon", "Piedras Blancas",
+                                                  "Point Lobos", "A\U00F1o Nuevo" ))
+
+dens_mpa_ref <- dens_dat %>%
+  #filter(year == 2008) %>%
+  ggplot()+
+  geom_density_ridges(aes(x = size, y = area, color = site, fill = site), alpha = 0.3, 
+                      show.legend = T)+
+  labs(y = "", x = "Size (cm)")+
+  facet_wrap(year~.)+
+  theme_bw()+
+  theme(panel.grid = element_blank())
+
+dens_dat$area <- factor(dens_dat$area, levels = c("A\U00F1o Nuevo", "Point Lobos", 
+                                                    "Piedras Blancas", "Point Buchon"))
+dens_dat$year <- factor(dens_dat$year, levels = c(2020:2007))
+
+dens <- ggplot()+
+  geom_density_ridges(data = dens_dat, aes(x = size, y = year, fill = year), 
+                      show.legend = F, scale = 5)+
+  geom_vline(xintercept = 21, col = "red")+
+  scale_fill_manual(values = c( "#000000" ,"#003399", "#0000FF", "#3366CC","#006699", "#336666",
+                               "#339999","#33CCCC", "#33FFFF", "#00FFCC", 
+                               "#00FF66", "#00FF33", "#009933", "#006633"))+
+  labs(title = "Blue Rockfish Size Density") +
+  facet_grid(site ~ area) +
+  theme_bw()+
+  theme(panel.grid = element_blank())
+
+dens
+
+#ggsave("dens_mpa_ref.png", plot = dens_mpa_ref, path = here("Images/figure_dump"), dpi = 1000, width = 8, height = 6)
+
+
+
+```
+
