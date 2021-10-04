@@ -20,19 +20,19 @@ juv_moci_na <- read_csv(here("Data", "2021-03-02_juv_moci_na.csv"))
 
 adult_moci_na <- read_csv(here("Data", "2021-04-02_adult_moci_na.csv"))
 
-bl_mean <- juv_moci %>%
-  filter(area == "BL", year %in% c(2014, 2016))%>%
-  summarise(mean = mean(cpue_site, na.rm = T))
+# bl_mean <- juv_moci %>%
+#   filter(area == "BL", year %in% c(2014, 2016))%>%
+#   summarise(mean = mean(cpue_site, na.rm = T))
 
-juv_moci_na_real <- juv_moci %>%
-  select(-var_site) %>%
-  mutate(cpue_site = replace_na(data = cpue_site, 2e-16))
-  
-
-juv_moci2 <- juv_moci %>%
-  mutate(cpue_site2 = na.interp(juv_moci$cpue_site),
-         cpue_site3 = na.approx(juv_moci$cpue_site))%>%
-  select(-cpue_site, -var_site)
+# juv_moci_na_real <- juv_moci %>%
+#   select(-var_site) %>%
+#   mutate(cpue_site = replace_na(data = cpue_site, 2e-16))
+#   
+# 
+# juv_moci2 <- juv_moci %>%
+#   mutate(cpue_site2 = na.interp(juv_moci$cpue_site),
+#          cpue_site3 = na.approx(juv_moci$cpue_site))%>%
+#   select(-cpue_site, -var_site)
 
 ##### NO MHW ######
 
@@ -269,40 +269,40 @@ for(j in area_list){
 
 
 ## with ccf() function
-for(j in area_list){
-  for(k in site_list){
-    for(l in season_list){
-      juvenile <- juv_moci %>%
-        filter(area == j, site == k, season == l)
-      cross_corr <- ccf(juvenile$central_ca,
-                        juvenile$cpue_site, plot = F, na.action = na.pass)
-      lag <- cross_corr$lag
-      correlation <- cross_corr$acf
-      for(m in 1:length(lag)){
-        juv_corr_2 <- bind_rows(juv_corr_2, c(area = j, site = k, season = l,
-                                              lag = lag[m], correlation = correlation[m]))
-      }
-    }
-  }
-}
+# for(j in area_list){
+#   for(k in site_list){
+#     for(l in season_list){
+#       juvenile <- juv_moci %>%
+#         filter(area == j, site == k, season == l)
+#       cross_corr <- ccf(juvenile$central_ca,
+#                         juvenile$cpue_site, plot = F, na.action = na.pass)
+#       lag <- cross_corr$lag
+#       correlation <- cross_corr$acf
+#       for(m in 1:length(lag)){
+#         juv_corr_2 <- bind_rows(juv_corr_2, c(area = j, site = k, season = l,
+#                                               lag = lag[m], correlation = correlation[m]))
+#       }
+#     }
+#   }
+# }
 
 ## ccf with na.approx
-for(j in area_list){
-  for(k in site_list){
-    for(l in season_list){
-      juvenile2 <- juv_moci2 %>%
-        filter(area == j, site == k, season == l)
-      cross_corr <- ccf(juvenile2$central_ca,
-                        juvenile2$cpue_site2, plot = F, na.action = na.pass)
-      lag <- cross_corr$lag
-      correlation <- cross_corr$acf
-      for(m in 1:length(lag)){
-        juv_corr_3 <- bind_rows(juv_corr_3, c(area = j, site = k, season = l,
-                                              lag = lag[m], correlation = correlation[m]))
-      }
-    }
-  }
-}
+# for(j in area_list){
+#   for(k in site_list){
+#     for(l in season_list){
+#       juvenile2 <- juv_moci2 %>%
+#         filter(area == j, site == k, season == l)
+#       cross_corr <- ccf(juvenile2$central_ca,
+#                         juvenile2$cpue_site2, plot = F, na.action = na.pass)
+#       lag <- cross_corr$lag
+#       correlation <- cross_corr$acf
+#       for(m in 1:length(lag)){
+#         juv_corr_3 <- bind_rows(juv_corr_3, c(area = j, site = k, season = l,
+#                                               lag = lag[m], correlation = correlation[m]))
+#       }
+#     }
+#   }
+# }
 
 
 ######## NO MHW #######
@@ -540,9 +540,21 @@ top_juv <- juv_vis %>%
   arrange(desc(correlation)) %>% 
   group_by(area, site) %>% slice(1)
 
+juv_pval <- top_juv %>%
+  mutate(pval = 2 * (1 - pnorm(abs(correlation),
+                               mean = 0, sd = 1/sqrt(13))))
+
+# write_csv(juv_pval, here("Data/output", "2021-09-16_juv_pval_opc.csv"))
+# write_csv(adult_pval, here("Data/output", "2021-09-16_adult_pval_opc.csv"))
+
+
 top_adult <- adult_vis %>% 
   arrange(desc(correlation)) %>% 
   group_by(area, site) %>% slice(1)
+
+adult_pval <- top_adult %>%
+  mutate(pval = 2 * (1 - pnorm(abs(correlation),
+                               mean = 0, sd = 1/sqrt(13))))
 
 #######juv############
 top_juv_meeting <- top_juv %>%

@@ -51,6 +51,10 @@ cp_ml_20_sp <- cp_ml_20 %>%
                          "CBZ", "BAY", "PSD", "TRE", "SRY"))%>%
   unite(col = spec_size, species:length, sep = "_")
 
+# 
+# drift_check <- cp_ml_20 %>%
+#    filter(drift == "ANM0816161603")
+
 ```
 
 ## Data Restructuring

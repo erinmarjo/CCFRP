@@ -1,0 +1,388 @@
+---
+title: "MPA vs REF"
+author: "E Johnston"
+date: "9/27/2021"
+output: html_document
+---
+
+Working with Josiah G. On MPA vs REF
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      warning = F,
+                      message = F)
+
+library(tidyverse)
+library(here)
+```
+
+
+```{r datas}
+
+## from 30_full_master_df_creation.Rmd
+
+master <- read_csv(here("Data", "2021-06-28_full_master_2020.csv"))
+
+caught_fishes <- master %>%
+  filter(num_caught != 0)
+
+caught_fishes21 <- caught_fishes %>%
+  filter(size <22) %>%
+  uncount(num_caught)
+
+aa <- master %>%
+  group_by(area, site, year) %>%
+  summarise(hour_sum = sum(anglerhours, na.rm = T))
+
+mlml <- master %>%
+  filter(area %in% c("AN", "PL"))
+
+length(unique(mlml$trip))
+
+
+
+ggplot(data =aa) +
+  geom_line(aes(x = year, y = hour_sum)) +
+  facet_grid(area ~ site) +
+  scale_y_continuous(limits = c(0, 100000))
+
+
+```
+
+
+# T Tests by year
+
+Testing the difference in mean length of juvenile blue rockfish between MPA and REF by area and year.
+
+null hypothesis: The difference in group means is 0
+alternative hypothesis: The difference in group means in different than 0
+
+
+```{r t test combo loop}
+
+area_list <- c("AN", "PL", "BL", "PB")
+year_list <- c(2007:2020)
+
+t_test_df <- data.frame(area = character(), year = character(), pval = character(), n = character())
+
+for(i in area_list){
+  for(j in year_list){
+    by_year <- caught_fishes21 %>%
+    filter(species == "BLU", area == i, year == j)
+    if(length(by_year$size) > 4){
+      test <- t.test(by_year$size ~ by_year$site, var.equal = TRUE)
+      # print(i)
+      # print(j)
+      # print(test)
+      t_test_df <- bind_rows(t_test_df, c(area = i, year = j, 
+                                      pval = test$p.value, n = length(by_year$size)))
+    } 
+    else t_test_df <- bind_rows(t_test_df, c(area = i, year = j, 
+                                             pval = "NA", n = length(by_year$size)))
+  }
+}
+
+## or if(length(by_year$site[by_year$site == "MPA"]) > 30 & length(by_year$site[by_year$site == "REF"]) > 30)
+
+```
+
+*Interp*: Only six cases where the p-value indicates to reject the null hypothesis at a 0.05 alpha level. BL in 2016 (p-value = 0.00553) & 2019 (p-value = 0.02731), AN in 2017 (p-value = 0.01880), PB in 2011 (p-value = 0.02333), 2017 (p-value = 0.04792), & 2020 (p-value = 0.04380).
+Insufficient data for the t test in seven cases. Pval should be 'NA' for these cases and the number of fish are indicated in the column 'n'. Though I am not really sure what a sufficient number of fish should be. Probably n=30. I can restrict that in the loop. Second problem... should probably have n = 30 for both the MPA and REF. 
+
+
+
+
+#### NOTES 2021-09-27
+
+Talked with Grant about statistical tests to run and he did not think I could overcome the problem I face with either using raw data (no correction for uneven sampling design) or using data that were aggregated at too high a level. He suggested a glm with BPUE as response and site, area, and year as the predictors. I have definitely seen this one done before (Starr 2015)? Might be a good place to start to look that up again. What about interactions though? I want to stay clear of that for now, but I shouldn't stop thinking about it.
+
+Second thought. Josiah talked about using a K-S test within each size class (each size class being one cm), but Grant and I talked about one K-S test for juvenile Blue rockfish (0-21cm) for each area + year combination. The two things being compared would be REF and MPA. That means that there will be 48 K-S tests to think about (14 years * 4 areas), but that might be a better direction to go in than a K-S test for every single cm size class. Besides, each cm doesn't really represent a size class. The way that we break it up if we were to do every size class would be kind of arbitrary because we don't have the data to know if what we are breaking them into are actual size classes.
+
+
+# GLM with BPUE as response
+
+Do I need to keep 0's in to get an accurate BPUE? I think I do... BPUE at what level though? We did talk about this. BPUE of each individual fish or each individual fish at the drift level? Okay... In that case I should only use caught fishes instead of master.
+
+Using L-W relationship from Milton 2002.
+
+```{r glm models}
+
+##calculate biomass and BPUE
+caught_blue <- caught_fishes %>%
+  filter(species == "BLU") %>%
+  mutate(biomass = 0.0158*size^2.988,
+         bpue = biomass/anglerhours,
+         area = as.factor(area),
+         year = as.factor(year),
+         site = as.factor(site)) %>%
+   filter(size <= 21) #%>%
+  # ## if I want to get it on the drift level.. which I think I do
+  # group_by(drift, area, year, site, gridcell, anglerhours, trip, month, day, species) %>%
+  # summarise(num_caught = sum(num_caught),
+  #           cpue = sum(cpue),
+  #           biomass = sum(biomass),
+  #           bpue = sum(bpue))
+
+## not normally distributed...
+## poisson with link = "log"?
+hist(caught_blue$bpue)
+
+ggplot(data = caught_blue) +
+  geom_histogram(aes(x = bpue))+
+  facet_grid(site ~ area)
+
+ggplot(data = caught_blue) +
+  geom_histogram(aes(x = cpue))+
+  facet_grid(site ~ area)
+
+## "Full" model
+m1 <- glm(bpue ~ area + site + year, data = caught_blue, family = poisson(link = "log"))
+summary(m1)
+
+## I think it should be broken up by area first, unless I want to include that interaction
+
+pb_blue <- caught_blue %>%
+  filter(area == "PB")
+
+m2 <- glm(bpue ~ site*year, data = pb_blue, family = poisson(link = "log"))
+summary(m2)
+
+
+## piedras
+bl_blue <- caught_blue %>%
+  filter(area == "BL")
+
+m3 <- glm(bpue ~ site*year, data = bl_blue, family = poisson(link = "log"))
+summary(m3)
+
+## ano
+an_blue <- caught_blue %>%
+  filter(area == "AN")
+
+m4 <- glm(bpue ~ site*year, data = an_blue, family = poisson(link = "log"))
+summary(m4)
+
+## lobos
+pl_blue <- caught_blue %>%
+  filter(area == "PL")
+
+m5 <- glm(bpue ~ site*year, data = pl_blue, family = poisson(link = "log"))
+summary(m5)
+```
+
+
+Okay, I based on models and with visuals I want to say that MPA and REF are different CPUE or BPUE. Significantly different.
+
+# KS Test Juvenile Rockfish per Area
+
+```{r ks test loops}
+
+caught_blue_mpa <- caught_blue %>%
+  filter(site == "MPA") %>%
+  uncount(num_caught)
+caught_blue_ref <- caught_blue %>%
+  filter(site == "REF") %>%
+  uncount(num_caught)
+
+# mpa <- caught_blue_mpa %>%
+#   filter(area == "PB", year == 2020)
+# ref <- caught_blue_ref %>%
+#   filter(area == "PB", year == 2017)
+# ks.test(mpa$size, ref$size) ## do not reject null hypothesis ##same dist
+
+
+## null hypothesis is that the two distributions are the same
+
+## now make a loop that does this for all 48...
+
+area_list <- c("AN", "PL", "BL", "PB")
+year_list <- c(2007:2020)
+
+ks_test_df <- data.frame(area = character(), year = character(), pval = character(), mpa_n = character(), ref_n = character())
+
+
+for( i in area_list){
+  for(j in year_list){
+    mpa <- caught_blue_mpa %>%
+      filter(area == i, year == j)
+    ref <- caught_blue_ref %>%
+      filter(area == i, year == j)
+    if(length(mpa$size) > 0 & length(ref$size) > 0){
+      ks_test <- ks.test(mpa$size, ref$size)
+      # print(i)
+      # print(j)
+      # print(ks_test$p.value)
+      # cat("\n")
+      ks_test_df <- bind_rows(ks_test_df, c(area = i, year = j, 
+                                      pval = ks_test$p.value, mpa_n = length(mpa$size),
+                                      ref_n = length(ref$size)))
+    } 
+    else #print("NOT ENOUGH DATA!!")
+    #cat("\n")
+    ks_test_df <- bind_rows(ks_test_df, c(area = i, year = j, 
+                                             pval = "NA", mpa_n = length(mpa$size),
+                                          ref_n = length(ref$size)))
+  }
+}
+
+
+```
+
+
+See Draft CCFRP report:
+
+Statistical Analyses
+	To assess differences in lengths among species inside and outside of each MPA we examined mean lengths, length frequency distributions and the proportion of individuals larger than the size at 50% maturity. To assess differences between mean lengths of individuals inside MPAs and in the associated REFs across years, we ran two-way Analysis of Variance (ANOVA) and a Tukey’s PostHoc test to examine pairwise comparisons. To determine the differences in length frequency distributions between fish populations inside and outside of MPAs for a given time period (2007-2010, 2011-2013, 2014-2016, 2017-2020), we conducted a Kolmogrov-Smirnov (K-S) test for the top ten species in each region. We paired the K-S with a Kruskall-Wallis test to quantify the difference in median length for the paired species length distribution inside and outside the MPAs. To compare differences in the proportion of individuals of each species larger than the size at 50% maturity between MPA and REF in each region, we ran serial one-way ANOVAs.       
+	To assess total fish CPUE and BPUE in the MPA and REF areas with time since MPA implementation, we ran a two-way interactive Analysis of Covariance (ANCOVA). To further assess the relative effect of protection (or fishing closure) on CPUE, mean lengths, and BPUE through time since MPA implementation in 2007 to 2020 along the central coast, we ran generalized linear models on the calculated response ratios through time at each MPA area, independently. We visualized the average response of each species within a region to MPA implementation with tornado plots (2017-2020 all regions; 2007-2020 central coast). We then examined the frequency of positive or negative species responses for each region. To determine differences in the overall response of species to MPAs among regions we ran K-S tests for each regional comparison.
+	We examined the species-specific trends in abundance, biomass and length for the 10 species with the highest CPUE across all years and sites for each region. For the North Coast these species included: Black rockfish, Blue/Deacon rockfish, Canary rockfish, China rockfish, Copper rockfish, Gopher Rockfish, Lingcod, Olive rockfish, Vermilion Rockfish and Yellowtail Rockfish.  For the Central Coast these species included: Black rockfish, Blue/Deacon rockfish, Canary rockfish, Copper rockfish, Gopher Rockfish, Lingcod, Olive rockfish, Kelp rockfish, Vermilion Rockfish and Yellowtail Rockfish. For the South Coast these species were Blue/Deacon rockfish, California sheephead, California scorpionfish, Copper rockfish, Gopher Rockfish, Honeycomb rockfish, Ocean whitefish, Kelp bass, Kelp rockfish, and Vermilion Rockfish.
+	To determine if human-induced stressors (i.e., fishing pressure) and environmental conditions significantly varied across years and MPAs, we serially conducted a two-way analysis of variance (ANOVA) for each environmental variable and external fishing effort for years with sufficient data. Environmental data that differed statistically by year and location (temperature and primary production) were included while variables that were not significant (wind speed, wave height and wave orbital velocity) were dropped from subsequent analyses. To determine the relative effect of environmental conditions (temperature and primary production), and fishing effort on the effect of fishing closure on total fish biomass (i.e., biomass response ratios), we ran generalized additive mixed models (GAMM) with the mgcv package in R to smooth the interannual stochasticity in the data (Wood 2011). Our models included net primary production, mean sea surface temperature during the sampling period, and the number of angler days per microblock as fixed effects with a smoothed random effect of year. The model with the best fit was selected using Akaike Information Criterion (AIC).
+
+
+To determine if the distributions of slopes inside MPAs or REFs varied before and after the marine heatwave, we conducted a K-S test.
+
+
+Q32c. Is there an increase over time in the difference between MPAs and reference sites in abundance (density, cover, biomass) of focal species and if so are there differences between SMR and SMCAs of similar size?
+Statewide time series (4 years)
+We modified this question to examine how variables such as MPA size (measured as the total area for both paired and unpaired SMCA/SMR zones at each site) and latitude influenced the rate of MPA response for the total fish assemblage, using generalized linear models with the CPUE response ratio or the BPUE response ratio as our metric of differences between paired MPA-Reference sites. We found a clear positive relationship between the CPUE response ratio and the total protected cluster area of the MPAs across the state, such that larger MPAs exhibited bigger differences in catch rates between the MPA and Reference sites than smaller MPAs (R2= 0.37, p<0.001; Figure 42). Similarly, we found a strong positive association between MPA area and the strength of the MPA response using the BPUE response ratio metric (R2= 0.37, p<0.001; Figure 43), indicating that strength of the MPA response was higher in larger reserves compared to smaller reserves. Stating this another way, fish biomass was proportionally higher inside larger MPAs. These results indicate that reserve effects are greatest in the South coast region and weakest in the North coast region, despite being implemented at similar times, and that the Central coast was intermediate in the strength of the MPA response, despite being implemented earlier. These geographic effects on MPA responses are likely due to life history differences among the species that are common in each region (i.e., consistency of recruitment, growth rates in warmer waters, etc.) and differences in the amount of external fishing pressure outside the MPAs in each region.
+
+# CODE GRAVEYARD R.I.P.
+
+
+```{r pretty dead code}
+
+## blue rockfish
+## different areas
+## point buchon
+caught_blue_pb <- caught_fishes %>%
+  filter(species == "BLU", area == "PB")
+
+t.test(caught_blue_pb$size ~ caught_blue_pb$site, var.equal = TRUE)
+
+
+## piedras blancas
+caught_blue_bl<- caught_fishes %>%
+  filter(species == "BLU", area == "BL")
+
+t.test(caught_blue_bl$size ~ caught_blue_bl$site, var.equal = TRUE)
+
+## ano nuevo
+caught_blue_an <- caught_fishes %>%
+  filter(species == "BLU", area == "AN")
+
+t.test(caught_blue_an$size ~ caught_blue_an$site, var.equal = TRUE)
+
+
+## point lobos
+caught_blue_pl <- caught_fishes %>%
+  filter(species == "BLU", area == "PL")
+
+t.test(caught_blue_pl$size ~ caught_blue_pl$site, var.equal = TRUE)
+
+
+```
+
+```{r dead code, eval = F, echo=F}
+
+
+
+caught_fishes_size <- caught_fishes %>%
+  filter(species == "BLU", area == "PB") %>%
+  group_by(size, drift, trip, area, site, month, day, year, gridcell) %>%
+  summarise(cpue_sum = sum(cpue))%>%
+  group_by(size, trip, area, site, month, day, year, gridcell) %>%
+  summarise(cpue_date = mean(cpue_sum))%>%
+  group_by(size,  area, site, year, gridcell) %>%
+  summarise(cpue_cell = mean(cpue_date))%>%
+  group_by( size, area, site, year) %>%
+  summarise(cpue_site = mean(cpue_cell))
+
+
+
+
+
+
+caught_fish_size_agg <- caught_fishes %>%
+  filter(species == "BLU", area == "PB") %>%
+  group_by(drift, trip, area, site, month, day, year, gridcell) %>%
+  summarise(drift_size  = mean(size),
+            drift_var = var(size)) %>%
+  group_by(trip, area, site, month, day, year, gridcell) %>%
+  summarise(date_size = mean(drift_size),
+            date_var = mean(drift_var))%>%
+  group_by(area, site, year, gridcell) %>%
+  summarise(cell_size = mean(date_size)) %>%
+  group_by(area, site ,year) %>%
+  summarise(site_size = mean(cell_size))
+
+
+
+
+
+
+
+year_list <- c(2007:2020)
+
+for( i in year_list) {
+  pb_by_year <- caught_fish_size_agg %>%
+    filter(year == i)
+  test <- t.test(pb_by_year$cell_size ~ pb_by_year$site, var.equal = TRUE)
+  print(test)
+}
+
+
+#Point Buchon
+
+for( i in year_list) {
+  pb_by_year <- caught_fishes21 %>%
+    filter( species == "BLU", area == "PB", year == i)
+  if(length(pb_by_year$size) > 10){
+    test <- t.test(pb_by_year$size ~ pb_by_year$site, var.equal = TRUE)
+    print(test)
+  }
+  else print("FECK OFF")
+}
+
+
+## Bonferoni correction... pretty conservative
+## significant p-value would then be 0.05/14 = 0.00357
+
+
+#Piedras Blancas
+
+for( i in year_list) {
+  bl_by_year <- caught_fishes21 %>%
+    filter(species == "BLU", area == "BL", year == i)
+  if(length(bl_by_year$size) > 10){
+    test <- t.test(bl_by_year$size ~ bl_by_year$site, var.equal = TRUE)
+    print(test)
+  }
+  else print("FECK OFF")
+}
+
+#Ano Nuevo
+
+for( i in year_list) {
+  an_by_year <- caught_fishes21 %>%
+    filter(species == "BLU", area == "AN", year == i)
+  if(length(an_by_year$size) > 10){
+    test <- t.test(an_by_year$size ~ an_by_year$site, var.equal = TRUE)
+    print(test)
+  }
+  else print("FECK OFF")
+}
+
+#Point Lobos
+
+for( i in year_list) {
+  pl_by_year <- caught_fishes21 %>%
+    filter(species == "BLU", area == "PL", year == i)
+  if(length(pl_by_year$size) > 10){
+    test <- t.test(pl_by_year$size ~ pl_by_year$site, var.equal = TRUE)
+    print(test)
+    test$p.value
+  }
+  else print("FECK OFF")
+}
+
+
+```

@@ -281,6 +281,19 @@ What I see here is that MPAs generally have higher correlation between cpue and 
 
 ```{r juv vs adult loop}
 
+
+# erin_ccf <- function(full_x, full_y, lag_x_rm, lag_y_rm) {
+#   mean_x <- mean(full_x, na.rm = T)
+#   mean_y <- mean(full_y, na.rm = T)
+#   corval <- (sum((lag_x_rm - mean_x)*
+#                    (lag_y_rm - mean_y)))/
+#     ((sqrt(sum((full_x - mean_x)^2, na.rm = T)))*
+#        (sqrt(sum((full_y - mean_y)^2, na.rm = T))))
+#   return(corval)
+#   
+# }
+
+
 ## juv loop
 for(j in area_list){
   for(k in site_list){
@@ -379,6 +392,10 @@ vis_juv <- juv_corr %>%
   filter(lag %in% c(-10:0))%>%
   mutate(corr_values = as.numeric(corr_values),
          lag = as.numeric(lag))
+
+juv_opcreport <- vis_juv %>%
+  arrange(desc(corr_values)) %>%
+  group_by(area, site) %>% slice(1)
 
 vis_juv$season <- factor(vis_juv$season, levels = c("JFM", "AMJ", "JAS", "OND"))
 
@@ -1347,9 +1364,9 @@ juv_an_meeting <- ggplot() +
 
 
 
-ggsave("juv_an_plot_meeting.png", plot = juv_an_meeting, 
-       path = "C:/Users/erinj/Documents/Thesis/Figures/Lag", dpi = 1000, width = 6,
-       height = 4)
+# ggsave("juv_an_plot_meeting.png", plot = juv_an_meeting, 
+#        path = "C:/Users/erinj/Documents/Thesis/Figures/Lag", dpi = 1000, width = 6,
+#        height = 4)
 
 
 
