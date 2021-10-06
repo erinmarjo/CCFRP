@@ -460,7 +460,7 @@ moci_bar <- ggplot() +
 
 
 
-```{r moci and cpue}
+```{r moci and cpue barplots}
 
 plot1a_cpue <- blue_cpue %>%
   filter(class == "Adult") %>%
@@ -527,6 +527,120 @@ cpue_bar_moci_spline_class_j <- plot1b_cpue/plot2_moci
 
 
 #ggsave("cpue_bar_moci_spline_class_j.png", plot = cpue_bar_moci_spline_class_j, dpi = 1000, width = 8, height = 6, path = here("Images/figure_dump"))
+
+```
+
+```{r moci and cpue line graphs}
+
+spline.a <- blue_cpue %>%
+  filter(class == "Adult", area == "A\U00F1o Nuevo") %>%
+  group_by(area, year) %>%
+  summarise(cpue_area = mean(cpue_site))
+spline.a <- as.data.frame(spline(spline.a$year, spline.a$cpue_area))
+spline.a <- spline.a %>%
+  mutate(area = "A\U00F1o Nuevo")
+
+spline.b <- blue_cpue %>%
+  filter(class == "Adult", area == "Point Lobos") %>%
+  group_by(area, year) %>%
+  summarise(cpue_area = mean(cpue_site))
+spline.b <- as.data.frame(spline(spline.b$year, spline.b$cpue_area))
+spline.b <- spline.b %>%
+  mutate(area = "Point Lobos")
+
+spline.c <- blue_cpue %>%
+  filter(class == "Adult", area == "Piedras Blancas") %>%
+  group_by(area, year) %>%
+  summarise(cpue_area = mean(cpue_site))
+spline.c <- as.data.frame(spline(spline.c$year, spline.c$cpue_area))
+spline.c <- spline.c %>%
+  mutate(area = "Piedras Blancas")
+
+spline.d <- blue_cpue %>%
+  filter(class == "Adult", area == "Point Buchon") %>%
+  group_by(area, year) %>%
+  summarise(cpue_area = mean(cpue_site))
+spline.d <- as.data.frame(spline(spline.d$year, spline.d$cpue_area))
+spline.d <- spline.d %>%
+  mutate(area = "Point Buchon")
+
+spline.cpue.area <- bind_rows(spline.a, spline.b, spline.c, spline.d)
+
+
+plot1c_cpue %>%
+  group_by(area) %>%
+  as.data.frame(spline(plot1c_cpue$year, plot1c_cpue$cpue_area))
+
+plot1c_cpue <- ggplot()+
+  scale_color_manual(name = "Area", values = c("#666666", "#104E8B","#999999" , "#000000"))+
+  scale_fill_manual(name = "Area", values = c("#666666", "#104E8B","#999999" , "#000000"))+
+  #geom_smooth(aes(x = year, y = cpue_area, color = area), se = F)+
+  geom_line(data = spline.cpue.area, aes(x = x, y = y, color = area), size = 1)+
+  labs(y = "Catch per Angler Hour", x = "", 
+       title = "Adult Blue Rockfish CPUE Spline & MOCI Spline")+
+  scale_x_continuous(limits=c(2006,2021),breaks = seq(2006, 2021, 2))+
+  theme_bw()+
+  theme(panel.grid = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 12))
+
+spline_class_a <- plot1c_cpue/plot2_moci
+
+
+spline.e <- blue_cpue %>%
+  filter(class == "Juvenile", area == "A\U00F1o Nuevo") %>%
+  group_by(area, year) %>%
+  summarise(cpue_area = mean(cpue_site))
+spline.e <- as.data.frame(spline(spline.e$year, spline.e$cpue_area))
+spline.e <- spline.e %>%
+  mutate(area = "A\U00F1o Nuevo")
+
+spline.f <- blue_cpue %>%
+  filter(class == "Juvenile", area == "Point Lobos") %>%
+  group_by(area, year) %>%
+  summarise(cpue_area = mean(cpue_site))
+spline.f <- as.data.frame(spline(spline.f$year, spline.f$cpue_area))
+spline.f <- spline.f %>%
+  mutate(area = "Point Lobos")
+
+spline.g <- blue_cpue %>%
+  filter(class == "Juvenile", area == "Piedras Blancas") %>%
+  group_by(area, year) %>%
+  summarise(cpue_area = mean(cpue_site))
+spline.g <- as.data.frame(spline(spline.g$year, spline.g$cpue_area))
+spline.g <- spline.g %>%
+  mutate(area = "Piedras Blancas")
+
+spline.h <- blue_cpue %>%
+  filter(class == "Juvenile", area == "Point Buchon") %>%
+  group_by(area, year) %>%
+  summarise(cpue_area = mean(cpue_site))
+spline.h <- as.data.frame(spline(spline.h$year, spline.h$cpue_area))
+spline.h <- spline.h %>%
+  mutate(area = "Point Buchon")
+
+spline.cpue.area.juv <- bind_rows(spline.e, spline.f, spline.g, spline.h)
+
+
+
+plot1d_cpue <- ggplot()+
+  scale_color_manual(name = "Area", values = c("#666666", "#104E8B","#999999" , "#000000"))+
+  scale_fill_manual(name = "Area", values = c("#666666", "#104E8B","#999999" , "#000000"))+
+  #geom_smooth(aes(x = year, y = cpue_area, color = area), se = F)+
+  geom_line(data = spline.cpue.area.juv, aes(x = x, y = y, color = area), size = 1)+
+  labs(y = "Catch per Angler Hour", x = "", 
+       title = "Juvenile Blue Rockfish CPUE Spline & MOCI Spline")+
+  scale_x_continuous(limits=c(2006,2021),breaks = seq(2006, 2021, 2))+
+  theme_bw()+
+  theme(panel.grid = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 12))
+
+spline_class_j <- plot1d_cpue/plot2_moci
+
+#ggsave("cpue_spline_class_j.png", plot = spline_class_j, dpi = 1000, width = 8, height = 6, path = here("Images/figure_dump"))
 
 ```
 
