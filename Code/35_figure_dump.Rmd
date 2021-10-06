@@ -522,9 +522,11 @@ plot2_moci <- ggplot() +
         legend.position = "none",
         plot.caption = element_text(size = 5))
 
-plot1a_cpue/plot2_moci
-plot1b_cpue/plot2_moci
+cpue_bar_moci_spline_class_a <- plot1a_cpue/plot2_moci
+cpue_bar_moci_spline_class_j <- plot1b_cpue/plot2_moci
 
+
+#ggsave("cpue_bar_moci_spline_class_j.png", plot = cpue_bar_moci_spline_class_j, dpi = 1000, width = 8, height = 6, path = here("Images/figure_dump"))
 
 ```
 
