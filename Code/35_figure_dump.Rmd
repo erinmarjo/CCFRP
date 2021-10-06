@@ -459,6 +459,76 @@ moci_bar <- ggplot() +
 ```
 
 
+
+```{r moci and cpue}
+
+plot1a_cpue <- blue_cpue %>%
+  filter(class == "Adult") %>%
+  ggplot()+
+  # scale_color_manual(values = c("#666666", "#009999", "#999999" , "#000000"))+
+  # scale_fill_manual(values = c("#666666", "#009999", "#999999",  "#000000"))+
+  scale_color_manual(name = "Area", values = c("#666666", "#104E8B","#999999" , "#000000"))+
+  scale_fill_manual(name = "Area", values = c("#666666", "#104E8B","#999999" , "#000000"))+
+  geom_col(position = "dodge", stat = "identity", 
+           aes(x = year, y = cpue_site, color = area, fill = area))+
+  labs(y = "Catch per Angler Hour", x = "", 
+       title = "Adult Blue Rockfish CPUE & MOCI Spline")+
+  scale_x_continuous(limits=c(2006,2021),breaks = seq(2006, 2021, 2))+
+  theme_bw()+
+  theme(panel.grid = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 12))
+
+plot1b_cpue <- blue_cpue %>%
+  filter(class == "Juvenile") %>%
+  ggplot()+
+  ## giving a name here renames the legend.. wanted area to be capitolized
+  scale_color_manual(name = "Area", values = c("#666666", "#104E8B","#999999" , "#000000"))+
+  scale_fill_manual(name = "Area", values = c("#666666", "#104E8B","#999999" , "#000000"))+
+  geom_col(position = "dodge", stat = "identity", 
+           aes(x = year, y = cpue_site, color = area, fill = area))+
+  labs(y = "Catch per Angler Hour", x = "", 
+       title = "Juvenile Blue Rockfish CPUE & MOCI Spline")+
+  scale_x_continuous(limits=c(2006,2021),breaks = seq(2006, 2021, 2))+
+  theme_bw()+
+  theme(panel.grid = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 12))
+
+moci_central3 <- moci_central2 %>%
+  filter(year %in% c(2007:2020))
+
+moci_central4 <- moci_central3 %>%
+  group_by(year) %>%
+  summarise(central_mean = mean(central_ca))
+
+plot2_moci <- ggplot() +
+  #geom_col(data = moci_central3, position = position_dodge2(), 
+           #aes(x = year, y = central_ca, color = pos_neg, fill = pos_neg))+
+  geom_line(data = spline.moci, aes(x = x, y = y), size = 1)+
+  geom_point(data = moci_central4, aes(x = year, y = central_mean), size = 2)+
+  geom_hline(yintercept = 0)+
+  geom_hline(yintercept = 3.97499, linetype = "dashed")+
+  geom_hline(yintercept = -3.97499, linetype = "dashed")+
+  scale_fill_manual(values = c( "#0066CC", "#CC0000"))+
+  scale_color_manual(values = c( "#00008B", "#8B0000")) +
+  scale_x_continuous(limits=c(2006,2021),breaks = seq(2006, 2021, 2))+
+  scale_y_continuous(limits = c(-8, 11), breaks = seq(-8, 11, 2))+
+  labs(y = "MOCI",  x = "", caption = "Data Source: http://www.faralloninstitute.org/moci")+
+  theme_bw()+
+  theme(panel.grid = element_blank(),
+        legend.position = "none",
+        plot.caption = element_text(size = 5))
+
+plot1a_cpue/plot2_moci
+plot1b_cpue/plot2_moci
+
+
+```
+
+
 ## Length Frequency
 ### Density plot
 
