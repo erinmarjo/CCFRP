@@ -50,8 +50,8 @@ Might want to think of more interesting ways to visualize CPUE than just line gr
 
 ```{r cpue figures}
 
-check <- blue_bpue %>%
-  filter(is.na(class))
+# check <- blue_bpue %>%
+#   filter(is.na(class))
 
 ## these are drift added in where there were no blues caught
 ## need to assign these as both Juvenile and Adult in order to break up by 'class'
@@ -460,7 +460,7 @@ moci_bar <- ggplot() +
 
 
 ## Length Frequency
-### Bar plots and Density plot
+### Density plot
 
 ```{r lf density plots}
 
@@ -468,6 +468,8 @@ moci_bar <- ggplot() +
 dens_dat <- master %>%
   filter(species == "BLU", num_caught != 0) %>%
   mutate(year = as.factor(year)) %>%
+  ## uncount is a super important step here. Each individual fish should be it's own line
+  ## they were consolidated for CPUE calculations
   uncount(num_caught) %>%
   mutate(area = case_when(
     area == "AN" ~ "A\U00F1o Nuevo",
@@ -495,7 +497,7 @@ dens_dat$year <- factor(dens_dat$year, levels = c(2020:2007))
 
 dens <- ggplot()+
   geom_density_ridges(data = dens_dat, aes(x = size, y = year, fill = year), 
-                      show.legend = F, scale = 5)+
+                      show.legend = F)+
   geom_vline(xintercept = 21, col = "red")+
   scale_fill_manual(values = c( "#000000" ,"#003399", "#0000FF", "#3366CC","#006699", "#336666",
                                "#339999","#33CCCC", "#33FFFF", "#00FFCC", 
@@ -509,6 +511,30 @@ dens
 
 #ggsave("dens_mpa_ref.png", plot = dens_mpa_ref, path = here("Images/figure_dump"), dpi = 1000, width = 8, height = 6)
 
+
+
+```
+
+
+### Bar Plots
+
+
+```{r}
+## Length Frequency bar plots... all, adults, and juveniles
+
+## put back in order
+dens_dat$year <- factor(dens_dat$year, levels = c(2007:2020))
+
+# check <- dens_dat %>%
+#   filter(size == 20, area == "A\U00F1o Nuevo", year == 2016) %>%
+#   group_by(drift) %>%
+#   count()
+
+
+dens_dat %>%
+  ggplot()+
+  geom_bar(aes(x = size, color = site)) + 
+  facet_grid(area ~ year)
 
 
 ```

@@ -30,22 +30,27 @@ caught_fishes21 <- caught_fishes %>%
   filter(size <22) %>%
   uncount(num_caught)
 
-aa <- master %>%
-  group_by(area, site, year) %>%
-  summarise(hour_sum = sum(anglerhours, na.rm = T))
 
 mlml <- master %>%
   filter(area %in% c("AN", "PL"))
 
 length(unique(mlml$trip))
 
+angler_hr_check <- master %>%
+  select(area, site, drift, year, anglerhours) %>%
+  distinct() %>%
+  group_by(area, year) %>%
+  summarise(hour_sum = sum(anglerhours, na.rm = T))
+
+num_drift <- master %>%
+  select(area, site, drift, year, anglerhours) %>%
+  distinct() %>%
+  group_by(area, site, year) 
 
 
-ggplot(data =aa) +
+ggplot(data =angler_hr_check) +
   geom_line(aes(x = year, y = hour_sum)) +
-  facet_grid(area ~ site) +
-  scale_y_continuous(limits = c(0, 100000))
-
+  facet_grid(area ~ site) 
 
 ```
 
