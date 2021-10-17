@@ -5,7 +5,8 @@ date: "9/27/2021"
 output: html_document
 ---
 
-Working with Josiah G. On MPA vs REF
+
+
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE,
@@ -391,3 +392,48 @@ for( i in year_list) {
 
 
 ```
+
+
+## Use Grid Cell as replicate
+
+```{r}
+
+blue_full <- master %>%
+  filter(species == "BLU") 
+
+
+missing_bl_blue <- data.frame(area = c("BL", "BL", "BL", "BL"),
+                              site = c("REF", "MPA", "REF", "MPA"),
+                              year = c(2007, 2007, 2015, 2015), 
+                              cpue_site = c(NA, NA, NA, NA))
+
+jv_blu_cell <- blue_full %>%
+  filter(size <= 21) %>%
+  select(-size) %>%
+  group_by(drift, trip, area, site, month, day, year, gridcell) %>%
+  summarise(cpue_sum = sum(cpue),
+            var_sum = var(cpue)) %>%
+  group_by(trip, area, site, month, day, year, gridcell) %>%
+  summarise(cpue_date = mean(cpue_sum),
+            var_date = mean(var_sum)) %>%
+  group_by( area, site, year, gridcell) %>%
+  summarise(cpue_cell = mean(cpue_date),
+            var_cell = mean(var_date))
+
+jv_pb <- jv_blu_cell %>%
+  filter(area == "PB") %>%
+  mutate(year = as.factor(year))
+
+hist(jv_pb$cpue_cell)
+
+str(jv_blu_cell)
+
+ggplot(data = jv_pb) +
+  geom_jitter(aes(x = year, y = cpue_cell, color = site))
+
+pbm1 <- glm(cpue_cell ~ year + site, data = jv_pb)
+summary(pbm1)
+
+
+```
+

@@ -31,6 +31,7 @@ library(knitr)
 1. How well does a regional-scale oceanographi index, like MOCI, correlate with Blue rockfish CPUE in the nearshore environment off the central coast of California?
   a. Are these correlations different for different life stages (i.e., juvenile vs adult Blue rockfish)?
 
+NOTES: Language here needs to change for this question. 'mhw', 'disproportionate' -think of these terms.
 2. Do marine heatwave(MHW) years have a disproportionate impact on the relationship between oceanographic parameters and Blue rockfish CPUE?
 
 3. What is the importance of the component parts of MOCI in determining the relationship between oceanographic parameters and Blue rockfish CPUE? (work in progress)
