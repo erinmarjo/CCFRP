@@ -40,6 +40,12 @@ mpa_corner2 <- site_coords %>%
 
 ```{r map, fig.width= 9, fig.align= "center"}
 
+icon_atmp <- makeIcon(
+  #iconUrl = "C:/Users/erinj/Documents/GitHub/CCFRP/Icons/pacmac.png",
+  iconUrl = "https://raw.githubusercontent.com/erinmarjo/CCFRP/main/Icons/pacmac.png",
+  iconWidth = 188, iconHeight = 75
+)
+
 leaflet()%>%
   setView(lng = -121.338427, lat = 36.203187, zoom = 7.5)%>%
   addTiles() %>%
@@ -56,7 +62,7 @@ leaflet()%>%
 
 ```
 
-```{r}
+```{r, echo = F, eval = F}
 
 shinydat <- read_csv(here("Data", "shiny_input_bounds.csv"))
 
@@ -79,10 +85,11 @@ leaflet() %>%
 ```
 
 
+
+
+```{r, echo = F, eval = F}
+
 ### Just for fun additions on 2021-10-31
-
-```{r}
-
 greenLeafIcon <- makeIcon(
   iconUrl = "https://leafletjs.com/examples/custom-icons/leaf-green.png",
   iconWidth = 38, iconHeight = 95,
@@ -95,12 +102,24 @@ greenLeafIcon <- makeIcon(
 
 
 icon_atmp <- makeIcon(
-  iconUrl = "C:/Users/erinj/Documents/GitHub/CCFRP/Icons/pacmac.png",
+  #iconUrl = "C:/Users/erinj/Documents/GitHub/CCFRP/Icons/pacmac.png",
+  iconUrl = "https://raw.githubusercontent.com/erinmarjo/CCFRP/main/Icons/pacmac.png",
   iconWidth = 188, iconHeight = 75
 )
 
+icon_phyto1 <- makeIcon(
+  iconUrl = "C:/Users/erinj/Documents/GitHub/CCFRP/Icons/phyto1.png",
+  #iconUrl = "https://raw.githubusercontent.com/erinmarjo/CCFRP/main/Icons/pacmac.png",
+  iconWidth = 60, iconHeight = 110
+)
+
+icon_cpr <- makeIcon(
+  iconUrl = "C:/Users/erinj/Documents/GitHub/CCFRP/Icons/choppa_lowres.png",
+  iconWidth = 160, iconHeight = 85
+)
+
 leaflet(data = quakes[1:4,]) %>% addTiles() %>%
-  addMarkers(~long, ~lat, icon = icon_atmp)
+  addMarkers(~long, ~lat, icon = icon_cpr)
 
 
 ```
