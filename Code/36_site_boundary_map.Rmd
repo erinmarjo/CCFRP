@@ -1,0 +1,107 @@
+---
+title: "Site Boundary Visuals"
+author: "Erin Johnston"
+date: "10/25/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = F, warning = F)
+```
+
+```{r packages}
+
+library(leaflet)
+library(tidyverse)
+library(here)
+
+```
+
+
+```{r}
+
+site_coords <- read_csv(here("Data", "site_bound_coords.csv"))
+
+ref_corner1 <- site_coords %>%
+  filter(site == "R", corner == 1)
+
+ref_corner2 <- site_coords %>%
+  filter(site == "R", corner == 4)
+
+mpa_corner1 <- site_coords %>%
+  filter(site == "M", corner == 1)
+
+mpa_corner2 <- site_coords %>%
+  filter(site == "M", corner == 4)
+
+```
+
+
+
+```{r map, fig.width= 9, fig.align= "center"}
+
+leaflet()%>%
+  setView(lng = -121.338427, lat = 36.203187, zoom = 7.5)%>%
+  addTiles() %>%
+  addRectangles(lng1 = mpa_corner1$longitude , lat1 = mpa_corner1$latitude, 
+                lng2 = mpa_corner2$longitude  , lat2 = mpa_corner2$latitude,
+                fillColor = "transparent", label = mpa_corner2$name, 
+                color = "#990000")%>%
+  addRectangles(lng1 = ref_corner1$longitude , lat1 = ref_corner1$latitude, 
+                lng2 = ref_corner2$longitude  , lat2 = ref_corner2$latitude,
+                fillColor = "transparent", label = ref_corner2$name)%>%
+  addMarkers(lng = mpa_corner1$longitude, lat = mpa_corner1$latitude, icon = icon_atmp) %>%
+  addMiniMap(position = "bottomleft", width = 200, height = 200) %>%
+  addProviderTiles("Esri.WorldImagery")
+
+```
+
+```{r}
+
+shinydat <- read_csv(here("Data", "shiny_input_bounds.csv"))
+
+corner1 <- shinydat %>%
+  filter(datatype == "Fishes", corner == 1) 
+corner4 <- shinydat %>%
+  filter(datatype == "Fishes", corner == 4)
+
+leaflet() %>%
+  setView(lng = -121.338427, lat = 36.203187, zoom = 7.5)%>%
+  addTiles() %>%
+  addRectangles(lng1 = corner1$longitude , lat1 = corner1$latitude, 
+                lng2 = corner4$longitude  , lat2 = corner4$latitude,
+                fillColor = "transparent", label = corner4$label, 
+                color = "#990000")%>%
+  addMarkers(lng = corner1$longitude, corner1$latitude, icon = icon_atmp) %>%
+  addMiniMap(position = "bottomleft", width = 200, height = 200) %>%
+  addProviderTiles("Esri.WorldImagery")
+
+```
+
+
+### Just for fun additions on 2021-10-31
+
+```{r}
+
+greenLeafIcon <- makeIcon(
+  iconUrl = "https://leafletjs.com/examples/custom-icons/leaf-green.png",
+  iconWidth = 38, iconHeight = 95,
+  iconAnchorX = 22, iconAnchorY = 94,
+  shadowUrl = "https://leafletjs.com/examples/custom-icons/leaf-shadow.png",
+  shadowWidth = 50, shadowHeight = 64,
+  shadowAnchorX = 4, shadowAnchorY = 62
+)
+
+
+
+icon_atmp <- makeIcon(
+  iconUrl = "C:/Users/erinj/Documents/GitHub/CCFRP/Icons/pacmac.png",
+  iconWidth = 188, iconHeight = 75
+)
+
+leaflet(data = quakes[1:4,]) %>% addTiles() %>%
+  addMarkers(~long, ~lat, icon = icon_atmp)
+
+
+```
+
