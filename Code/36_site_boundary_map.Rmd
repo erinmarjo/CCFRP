@@ -118,8 +118,12 @@ icon_cpr <- makeIcon(
   iconWidth = 160, iconHeight = 85
 )
 
+icon_tivela <- makeIcon(
+      iconUrl = "C:/Users/erinj/Documents/GitHub/CCFRP/Icons/tivela.png",
+      iconWidth = 50, iconHeight = 43)
+
 leaflet(data = quakes[1:4,]) %>% addTiles() %>%
-  addMarkers(~long, ~lat, icon = icon_cpr)
+  addMarkers(~long, ~lat, icon = icon_tivela)
 
 
 ```

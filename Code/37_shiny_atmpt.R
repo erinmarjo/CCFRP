@@ -1,7 +1,7 @@
 
 
 library(shiny)
-library(shinyWidgets)
+#library(shinyWidgets)
 library(leaflet)
 library(tidyverse)
 library(here)
@@ -122,10 +122,14 @@ server <- function(input, output) {
     icon_phyto1 <- makeIcon(
       iconUrl = "C:/Users/erinj/Documents/GitHub/CCFRP/Icons/phyto1.png",
       #iconUrl = "https://raw.githubusercontent.com/erinmarjo/CCFRP/main/Icons/pacmac.png",
-      iconWidth = 60, iconHeight = 110)
+      iconWidth = 30, iconHeight = 55)
     icon_cpr <- makeIcon(
-      iconUrl = "C:/Users/erinj/Documents/GitHub/CCFRP/Icons/choppa_lowres.png",
-      iconWidth = 160, iconHeight = 85)
+      iconUrl = "C:/Users/erinj/Documents/GitHub/CCFRP/Icons/choppa150.png",
+      iconWidth = 100, iconHeight = 57)
+    icon_tivela <- makeIcon(
+      iconUrl = "C:/Users/erinj/Documents/GitHub/CCFRP/Icons/tivela.png",
+      iconWidth = 50, iconHeight = 43)
+    
     fmap_corner1 <- full_map %>%
       filter(corner == 1)
     fmap_corner4 <- full_map %>%
@@ -134,6 +138,8 @@ server <- function(input, output) {
       filter(datatype == "Fishes", corner == 1, site == "M")
     fmap_phyto <- full_map %>%
       filter(datatype == "Phytoplankton", corner == 1)
+    fmap_tivela <- full_map %>%
+      filter(datatype == "Invertebrate", corner == 1)
     
     
     leaflet() %>%
@@ -147,6 +153,8 @@ server <- function(input, output) {
                  label = fmap_fish$label) %>%
       addMarkers(lng = fmap_phyto$longitude, lat = fmap_phyto$latitude, icon = icon_phyto1,
                  label = fmap_phyto$label) %>%
+      addMarkers(lng = fmap_tivela$longitude, lat = fmap_tivela$latitude, icon = icon_tivela,
+                 label = fmap_tivela$label) %>%
       addProviderTiles("Esri.WorldImagery")
   })
   
