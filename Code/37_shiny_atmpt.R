@@ -122,10 +122,10 @@ server <- function(input, output) {
     icon_phyto1 <- makeIcon(
       iconUrl = "C:/Users/erinj/Documents/GitHub/CCFRP/Icons/phyto1.png",
       #iconUrl = "https://raw.githubusercontent.com/erinmarjo/CCFRP/main/Icons/pacmac.png",
-      iconWidth = 30, iconHeight = 55)
+      iconWidth = 20, iconHeight = 40)
     icon_cpr <- makeIcon(
       iconUrl = "C:/Users/erinj/Documents/GitHub/CCFRP/Icons/choppa150.png",
-      iconWidth = 100, iconHeight = 57)
+      iconWidth = 80, iconHeight = 45)
     icon_tivela <- makeIcon(
       iconUrl = "C:/Users/erinj/Documents/GitHub/CCFRP/Icons/tivela.png",
       iconWidth = 50, iconHeight = 43)
