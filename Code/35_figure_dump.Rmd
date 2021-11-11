@@ -18,6 +18,7 @@ library(here)
 library(patchwork)
 library(plotrix)
 library(ggridges)
+library(lubridate)
 
 ```
 
@@ -299,6 +300,23 @@ adult_bpue <- blue_bpue %>%
 
 ```{r moci}
 
+### for moci each month ##
+
+moci_monthly <- moci %>%
+  select(year, season, central_ca) %>%
+  slice(rep(1:n(), each = 3))
+
+#write_csv(moci_monthly, here("Data", "moci_monthly.csv"))
+
+moci_monthly_dates <- read_csv(here("Data", "moci_monthly_dates.csv"))
+
+moci_monthly_dates <- moci_monthly_dates %>%
+      mutate(pos_neg = case_when(
+        central_ca > 0 ~ "positive",
+        central_ca < 0 ~ "negative"),
+        date = as.Date(date, "%m/%d/%Y"))
+
+
 moci_central <- moci %>%
   select(year, season, central_ca) %>%
   filter(year %in% c(1991:2020)) %>%
@@ -437,6 +455,22 @@ moci_bar <- ggplot() +
         legend.position = "none",
         plot.caption = element_text(size = 5))
 
+
+moci_month_bar <- ggplot()+
+  geom_col(data = moci_monthly_dates,
+           aes(x = date, y = central_ca, color = pos_neg, fill = pos_neg))+
+  geom_hline(yintercept = 0)+
+  scale_fill_manual(values = c("#0066CC", "#CC0000"))+
+  scale_color_manual(values = c("#00008B", "#8B0000"))+
+  scale_x_date(date_breaks = "2 year", date_labels = "%Y",
+               limits = as.Date(c('2008-01-01','2020-12-01')))+
+  labs(y = "MOCI", x = "")+
+  theme_bw()+
+  theme(panel.grid = element_blank(),
+        legend.position = "none")
+
+
+
 moci_central3 <- moci_central2 %>%
   filter(year %in% c(2008:2021))
 
@@ -454,6 +488,9 @@ moci_bar2 <- ggplot() +
   theme(panel.grid = element_blank(),
         legend.position = "none",
         plot.caption = element_text(size = 5))
+
+moci_month_bar
+moci_bar2
 
 # ggsave("moci_bar2.png", plot = moci_bar2, dpi = 1000, width = 8, height = 4, path = here("Images/figure_dump"))
 
