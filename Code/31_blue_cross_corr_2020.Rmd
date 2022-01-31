@@ -64,6 +64,22 @@ adult <- blue_full %>%
   summarise(cpue_site = mean(cpue_cell))%>%
   bind_rows(missing_bl_blue)
 
+
+## interesting thought to see where the fish in between adult and juvenile end up
+
+teen <- blue_full %>%
+  filter(size > 21 & size < 32) %>%
+  select(-size)%>%
+  group_by(drift, trip, area, site, month, day, year, gridcell) %>%
+  summarise(cpue_sum = sum(cpue))%>%
+  group_by(trip, area, site, month, year, gridcell) %>%
+  summarise(cpue_date = mean(cpue_sum)) %>%
+  group_by( area, site, year, gridcell) %>%
+  summarise(cpue_cell = mean(cpue_date)) %>%
+  group_by( area, site, year) %>%
+  summarise(cpue_site = mean(cpue_cell))%>%
+  bind_rows(missing_bl_blue)
+
 ```
 
 
@@ -73,6 +89,11 @@ MOCI <- read_csv(here("Data", "Central_California_MOCI_2020.csv"))
 
 juv_moci <- left_join(juv, MOCI, by = "year") 
 adult_moci <- left_join(adult, MOCI, by = "year")
+teen_moci <- left_join(teen, MOCI, by = "year")
+
+## just want to see something
+# juv_moci <- juv_moci %>%
+#   filter(year %in% c(2007:2019))
 
 ```
 
@@ -141,6 +162,8 @@ juv_corr <- data.frame(area = character(), site = character(), season = characte
 
 adult_corr <- data.frame(area = character(), site = character(), season = character(), lag = character(), correlation = character())
 
+teen_corr <- data.frame(area = character(), site = character(), season = character(), lag = character(), correlation = character())
+
 area_list <- c("PB", "BL", "AN", "PL")
 site_list <- c("MPA", "REF")
 season_list <- c("JFM", "AMJ", "JAS", "OND")
@@ -172,20 +195,36 @@ for(j in area_list){
 
 juv_vis <- juv_corr %>%
   mutate(correlation = as.numeric(correlation),
-         lag = as.numeric(lag))
+         lag = as.numeric(lag),
+         Season = case_when(
+    season == "JFM" ~ "Winter",
+    season == "AMJ" ~ "Spring",
+    season == "JAS" ~ "Summer",
+    season == "OND" ~ "Fall"
+  ), Area = case_when(
+    area == "AN" ~ "A\u00f1o Nuevo",
+    area == "PL" ~ "Point Lobos",
+    area == "BL" ~ "Piedras Blancas",
+    area == "PB" ~ "Point Buchon"
+  ))
   
-juv_vis$season <- factor(juv_vis$season, levels = c("JFM", "AMJ" ,"JAS", "OND"))  
+juv_vis$season <- factor(juv_vis$season, levels = c("JFM", "AMJ" ,"JAS", "OND"))
+juv_vis$Season <- factor(juv_vis$Season, levels = c("Winter", "Spring" ,"Summer", "Fall"))  
+juv_vis$Area <- factor(juv_vis$Area, levels = c("A\u00f1o Nuevo", "Point Lobos" ,"Piedras Blancas", "Point Buchon"))  
+
 
 juv_plot_erin_ccf <- ggplot()+
   scale_color_manual(values = c("#999999", "#009999", "#666666", "#000000"))+
   scale_fill_manual(values = c("#999999", "#009999", "#666666", "#000000"))+
   geom_col(position = "dodge2", data = juv_vis, aes(x = lag, y = correlation, 
-                                                    color = season, fill = season))+
+                                                    color = Season, fill = Season))+
   labs(title = "Juvenile Blue Rockfish Lag Correlation")+
+  scale_y_continuous(limits = c(-0.6, 1.0), 
+                     breaks = c(-0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8, 1.0))+
   theme_bw()+
   theme(panel.grid = element_blank(),
         plot.title = element_text(hjust = 0.5))+
-  facet_grid(site~area)
+  facet_grid(site~Area)
 
 ```
 
@@ -223,14 +262,14 @@ top_juv_meeting <- top_juv %>%
     lag == "-2" ~ "2",
     lag == "-1" ~ "1"
   ), Area = case_when(
-    area == "AN" ~ "Ano Nuevo",
+    area == "AN" ~ "A\u00f1o Nuevo",
     area == "PL" ~ "Point Lobos",
     area == "BL" ~ "Piedras Blancas",
     area == "PB" ~ "Point Buchon"
   ))
 
 top_juv_meeting$area <- factor(top_juv_meeting$area, levels = c("AN", "PL", "BL", "PB"))
-top_juv_meeting$Area <- factor(top_juv_meeting$Area, levels = c("Ano Nuevo", "Point Lobos", "Piedras Blancas", "Point Buchon"))
+top_juv_meeting$Area <- factor(top_juv_meeting$Area, levels = c("A\u00f1o Nuevo", "Point Lobos", "Piedras Blancas", "Point Buchon"))
 top_juv_meeting$Season <- factor(top_juv_meeting$Season, 
                                  levels = c("Winter", "Spring", "Summer", "Fall"))
 
@@ -286,20 +325,35 @@ for(j in area_list){
 
 adult_vis <- adult_corr %>%
   mutate(correlation = as.numeric(correlation),
-         lag = as.numeric(lag))
+         lag = as.numeric(lag),
+         Season = case_when(
+    season == "JFM" ~ "Winter",
+    season == "AMJ" ~ "Spring",
+    season == "JAS" ~ "Summer",
+    season == "OND" ~ "Fall"
+  ), Area = case_when(
+    area == "AN" ~ "A\u00f1o Nuevo",
+    area == "PL" ~ "Point Lobos",
+    area == "BL" ~ "Piedras Blancas",
+    area == "PB" ~ "Point Buchon"
+  ))
   
 adult_vis$season <- factor(adult_vis$season, levels = c("JFM", "AMJ" ,"JAS", "OND"))  
+adult_vis$Season <- factor(juv_vis$Season, levels = c("Winter", "Spring" ,"Summer", "Fall"))  
+adult_vis$Area <- factor(juv_vis$Area, levels = c("A\u00f1o Nuevo", "Point Lobos" ,"Piedras Blancas", "Point Buchon")) 
 
 adult_plot_erin_ccf <- ggplot()+
   scale_color_manual(values = c("#999999", "#009999", "#666666", "#000000"))+
   scale_fill_manual(values = c("#999999", "#009999", "#666666", "#000000"))+
   geom_col(position = "dodge2", data = adult_vis, aes(x = lag, y = correlation,
-                                                      color = season, fill = season))+
+                                                      color = Season, fill = Season))+
   labs(title = "Adult Blue Rockfish Lag Correlation")+
+  scale_y_continuous(limits = c(-0.6, 1.0), 
+                     breaks = c(-0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8, 1.0))+
   theme_bw()+
   theme(panel.grid = element_blank(),
         plot.title = element_text(hjust = 0.5))+
-  facet_grid(site~area)
+  facet_grid(site~Area)
 
 ```
 
@@ -339,14 +393,14 @@ top_adult_meeting <- top_adult %>%
     lag == "-3" ~ "3",
     lag == "-4" ~ "4"
   ), Area = case_when(
-    area == "AN" ~ "Ano Nuevo",
+    area == "AN" ~ "A\u00f1o Nuevo",
     area == "PL" ~ "Point Lobos",
     area == "BL" ~ "Piedras Blancas",
     area == "PB" ~ "Point Buchon"
   )) 
 
 top_adult_meeting$area <- factor(top_adult_meeting$area, levels = c("AN", "PL", "BL", "PB"))
-top_adult_meeting$Area <- factor(top_adult_meeting$Area, levels = c("Ano Nuevo", "Point Lobos", "Piedras Blancas", "Point Buchon"))
+top_adult_meeting$Area <- factor(top_adult_meeting$Area, levels = c("A\u00f1o Nuevo", "Point Lobos", "Piedras Blancas", "Point Buchon"))
 top_adult_meeting$Season <- factor(top_adult_meeting$Season, 
                                  levels = c("Winter", "Spring", "Summer", "Fall"))
 
@@ -375,12 +429,133 @@ top_adult_2020_dat
 ```
 
 
+## Teen Blue Rockfish
+
+```{r teen loop}
+for(j in area_list){
+  for(k in site_list){
+    for(l in season_list){
+      teenager <- teen_moci %>%
+        filter(area == j, site == k, season == l)
+      for(i in 0:8){
+        lag_df <- teenager %>%
+          mutate(central_ca = dplyr::lag(central_ca, n = i)) %>% drop_na()
+        cor <- erin_ccf(teenager$central_ca, teenager$cpue_site,
+                        lag_df$central_ca, lag_df$cpue_site)
+        for(m in 1:length(cor)){
+          teen_corr <- bind_rows(teen_corr, c(area = j, site = k, season = l, 
+                                            lag = -i, correlation = cor[m]))
+        }
+      }
+    }
+  }
+} 
+
+
+teen_vis <- teen_corr %>%
+  mutate(correlation = as.numeric(correlation),
+         lag = as.numeric(lag),
+         Season = case_when(
+    season == "JFM" ~ "Winter",
+    season == "AMJ" ~ "Spring",
+    season == "JAS" ~ "Summer",
+    season == "OND" ~ "Fall"
+  ), Area = case_when(
+    area == "AN" ~ "A\u00f1o Nuevo",
+    area == "PL" ~ "Point Lobos",
+    area == "BL" ~ "Piedras Blancas",
+    area == "PB" ~ "Point Buchon"
+  ))
+  
+teen_vis$season <- factor(teen_vis$season, levels = c("JFM", "AMJ" ,"JAS", "OND"))
+teen_vis$Season <- factor(teen_vis$Season, levels = c("Winter", "Spring" ,"Summer", "Fall"))  
+teen_vis$Area <- factor(teen_vis$Area, levels = c("A\u00f1o Nuevo", "Point Lobos" ,"Piedras Blancas", "Point Buchon"))  
+
+
+teen_plot_erin_ccf <- ggplot()+
+  scale_color_manual(values = c("#999999", "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c("#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = teen_vis, aes(x = lag, y = correlation, 
+                                                    color = Season, fill = Season))+
+  labs(title = "'Teenage' Blue Rockfish Lag Correlation")+
+  scale_y_continuous(limits = c(-0.6, 1.0), 
+                     breaks = c(-0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8, 1.0))+
+  theme_bw()+
+  theme(panel.grid = element_blank(),
+        plot.title = element_text(hjust = 0.5))+
+  facet_grid(site~Area)
+
+```
+
+
+### Highest Correlation Figure
+
+```{r top teen figure}
+
+top_teen <- teen_vis %>% 
+  arrange(desc(correlation)) %>% 
+  group_by(area, site) %>% slice(1)
+
+
+top_teen_meeting <- top_teen %>%
+  mutate(Season = case_when(
+    season == "JFM" ~ "Winter",
+    season == "AMJ" ~ "Spring",
+    season == "JAS" ~ "Summer",
+    season == "OND" ~ "Fall"
+  ), Lag = case_when(
+    lag == "-4" ~ "4",
+    lag == "-3" ~"3",
+    lag == "-2" ~ "2",
+    lag == "-1" ~ "1"
+  ), Area = case_when(
+    area == "AN" ~ "A\u00f1o Nuevo",
+    area == "PL" ~ "Point Lobos",
+    area == "BL" ~ "Piedras Blancas",
+    area == "PB" ~ "Point Buchon"
+  ))
+
+top_teen_meeting$area <- factor(top_teen_meeting$area, levels = c("AN", "PL", "BL", "PB"))
+top_teen_meeting$Area <- factor(top_teen_meeting$Area, levels = c("A\u00f1o Nuevo", "Point Lobos", "Piedras Blancas", "Point Buchon"))
+top_teen_meeting$Season <- factor(top_teen_meeting$Season, 
+                                 levels = c("Winter", "Spring", "Summer", "Fall"))
+
+
+top_teen_2020_dat <- top_teen_meeting %>%
+  ggplot()+
+  geom_point(size = 4, aes(x = Area, y = correlation, color = Season, 
+                           fill = Season, shape = Lag))+
+  scale_color_manual(values = c("#009999","#666666", "#000000"))+
+  scale_fill_manual(values = c("#009999", "#666666", "#000000"))+
+  scale_shape_manual(values = c(15, 19, 17, 12))+
+  labs(title = "'Teenager' Blue Rockfish Top Correlation CPUE-MOCI", 
+       y = "Correlation\n", x = "\nArea (N to S)", caption = "")+
+  scale_y_continuous(limits = c(0.0, 1.0), 
+                     breaks = c(0.0, 0.2, 0.4, 0.6, 0.8, 1.0))+
+  facet_wrap(.~site)+
+  theme_bw()+
+    theme(panel.grid = element_blank(),
+          plot.title = element_text(hjust = 0.5),
+          plot.caption = element_text(size = 8),
+          axis.text.x = element_text(face = "bold",angle = 45, hjust =1))
+
+
+top_teen_2020_dat
+
+
+```
+
+
 ```{r saving images, eval = F, echo = F}
 
 # 
 # ggsave(filename = "2021-07-04_adult_blue_top_corr.png", plot = top_adult_2020_dat,
 #        path = "C:/Users/erinj/Documents/Thesis/Figures/Lag/2021", dpi = 1000, width = 6,
 #         height = 4)
+
+ggsave(filename = "2022-01-20_adult_blue_top_corr.png", plot = top_adult_2020_dat,
+       path = "C:/Users/erinj/Documents/Thesis/Figures/Lag/2022", dpi = 1000, width = 6, height = 4)
+
 
 # write_csv(top_juv, here("Data", "2021-07-04_top_juv_dataframe.csv"))
 # write_csv(top_adult, here("Data", "2021-07-04_top_adult_dataframe.csv"))
