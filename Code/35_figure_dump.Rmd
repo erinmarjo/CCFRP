@@ -86,7 +86,7 @@ blue_cpue <- master %>%
   filter(species == "BLU", !is.na(cpue)) %>%
   mutate(class = case_when(
     size <= 21 ~ "Juvenile", 
-    size > 21 ~ "Adult"
+    size > 31 ~ "Adult"
   )) %>%
   filter(!is.na(size)) %>%
   bind_rows(class_j, class_a) %>%
@@ -139,6 +139,38 @@ juv_cpue <- blue_cpue %>%
   facet_grid(area ~ .) +
   theme_bw()+
   theme(panel.grid = element_blank())
+
+
+juv_cpue_barplot <- blue_cpue %>%
+  filter(class == "Juvenile") %>%
+  ggplot(aes(x = year, y = cpue_site, color = site, fill = site))+
+  geom_col(position = position_dodge2())+
+  scale_color_manual(values = c("#CC0000", "#0066CC"))+
+  scale_x_continuous(limits = c(2007, 2020), breaks = seq(2007, 2020, 1))+
+  scale_y_continuous(limits = c(0, 10.5), breaks = seq(0, 10, 2))+
+  labs(y = "CPUE (number of fishes/angler hours\n", x = "",
+       caption = "Juvenile")+
+  facet_grid(area ~ .) +
+  theme_bw()+
+  theme(panel.grid = element_blank())
+
+ggsave(filename = "2022-02-01_juvenile_cpue_barplot.png", plot = juv_cpue_barplot,
+       path = "C:/Users/erinj/Documents/Thesis/Figures", dpi = 1000, width = 6, height = 6)
+
+moci_bar <- ggplot() +
+  geom_col(data = moci_central2, position = position_dodge2(), 
+           aes(x = year, y = central_ca, color = pos_neg, fill = pos_neg))+
+  geom_line(data = spline.moci, aes(x = x, y = y), size = 1)+
+  geom_hline(yintercept = 0)+
+  scale_fill_manual(values = c( "#0066CC", "#CC0000"))+
+  scale_color_manual(values = c( "#00008B", "#8B0000")) +
+  scale_x_continuous(limits=c(1990,2021),breaks = seq(1990, 2021, 2))+
+  scale_y_continuous(limits = c(-8, 11), breaks = seq(-8, 11, 2))+
+  labs(y = "MOCI",  x = "", caption = "Data Source: http://www.faralloninstitute.org/moci")+
+  theme_bw()+
+  theme(panel.grid = element_blank(),
+        legend.position = "none",
+        plot.caption = element_text(size = 5))
 
 ## adult CPUE
 adult_cpue <- blue_cpue %>%
@@ -756,7 +788,6 @@ dens_dat$area <- factor(dens_dat$area, levels = c("Point Buchon", "Piedras Blanc
                                                   "Point Lobos", "A\U00F1o Nuevo" ))
 
 dens_mpa_ref <- dens_dat %>%
-  #filter(year == 2008) %>%
   ggplot()+
   geom_density_ridges(aes(x = size, y = area, color = site, fill = site), alpha = 0.3, 
                       show.legend = T)+
@@ -773,6 +804,7 @@ dens <- ggplot()+
   geom_density_ridges(data = dens_dat, aes(x = size, y = year, fill = year), 
                       show.legend = F)+
   geom_vline(xintercept = 21, col = "red")+
+  geom_vline(xintercept = 32, col = "red") +
   scale_fill_manual(values = c( "#000000" ,"#003399", "#0000FF", "#3366CC","#006699", "#336666",
                                "#339999","#33CCCC", "#33FFFF", "#00FFCC", 
                                "#00FF66", "#00FF33", "#009933", "#006633"))+
@@ -785,6 +817,8 @@ dens
 
 #ggsave("dens_mpa_ref.png", plot = dens_mpa_ref, path = here("Images/figure_dump"), dpi = 1000, width = 8, height = 6)
 
+
+ggsave("2022_02_01_blue_dens_size_cutoffs.png", plot = dens, path = "C:/Users/erinj/Documents/Thesis/Figures", dpi = 1000, width = 8, height = 6)
 
 
 ```
