@@ -1,0 +1,1153 @@
+---
+title: "All Species Update Cross Correlation"
+author: "Erin Johnston"
+date: "1/31/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+
+```
+
+```{r libraries, warning=F, message=F}
+
+library(tidyverse)
+library(here)
+library(knitr) ## for kable()
+library(kableExtra) ## for save_kable()
+
+```
+
+```{r datasets}
+
+master <- read_csv(here("Data", "2021-06-28_full_master_2020.csv"))
+
+gpr_full <- master %>%
+  filter(species == "GPR") 
+
+ver_full <- master %>%
+  filter(species == "VER") 
+
+lcd_full <- master %>%
+  filter(species == "LCD") 
+
+olv_full <- master %>%
+  filter(species == "OLV") 
+
+
+missing_bl <- data.frame(area = c("BL", "BL", "BL", "BL"),
+                         site = c("REF", "MPA", "REF", "MPA"),
+                         year = c(2007, 2007, 2015, 2015), 
+                         cpue_site = c(NA, NA, NA, NA))
+
+##### GOPHER ROCKFISH #####
+
+gpr_juv <- gpr_full %>%
+  filter(size <= 17) %>%
+  select(-size) %>%
+  group_by(drift, trip, area, site, month, day, year, gridcell) %>%
+  summarise(cpue_sum = sum(cpue))%>%
+  group_by(trip, area, site, month, day, year, gridcell) %>%
+  summarise(cpue_date = mean(cpue_sum))%>%
+  group_by( area, site, year, gridcell) %>%
+  summarise(cpue_cell = mean(cpue_date))%>%
+  group_by( area, site, year) %>%
+  summarise(cpue_site = mean(cpue_cell)) %>%
+  bind_rows(missing_bl)
+
+
+gpr_adult <- gpr_full %>%
+  filter(size >= 21) %>%
+  select(-size)%>%
+  group_by(drift, trip, area, site, month, day, year, gridcell) %>%
+  summarise(cpue_sum = sum(cpue))%>%
+  group_by(trip, area, site, month, year, gridcell) %>%
+  summarise(cpue_date = mean(cpue_sum)) %>%
+  group_by( area, site, year, gridcell) %>%
+  summarise(cpue_cell = mean(cpue_date)) %>%
+  group_by( area, site, year) %>%
+  summarise(cpue_site = mean(cpue_cell))%>%
+  bind_rows(missing_bl)
+
+
+##### VERMILION ROCKFISH #####
+
+ver_juv <- ver_full %>%
+  filter(size <= 21) %>%
+  select(-size) %>%
+  group_by(drift, trip, area, site, month, day, year, gridcell) %>%
+  summarise(cpue_sum = sum(cpue))%>%
+  group_by(trip, area, site, month, day, year, gridcell) %>%
+  summarise(cpue_date = mean(cpue_sum))%>%
+  group_by( area, site, year, gridcell) %>%
+  summarise(cpue_cell = mean(cpue_date))%>%
+  group_by( area, site, year) %>%
+  summarise(cpue_site = mean(cpue_cell)) %>%
+  bind_rows(missing_bl)
+
+
+ver_adult <- ver_full %>%
+  filter(size >= 32) %>%
+  select(-size)%>%
+  group_by(drift, trip, area, site, month, day, year, gridcell) %>%
+  summarise(cpue_sum = sum(cpue))%>%
+  group_by(trip, area, site, month, year, gridcell) %>%
+  summarise(cpue_date = mean(cpue_sum)) %>%
+  group_by( area, site, year, gridcell) %>%
+  summarise(cpue_cell = mean(cpue_date)) %>%
+  group_by( area, site, year) %>%
+  summarise(cpue_site = mean(cpue_cell))%>%
+  bind_rows(missing_bl)
+
+
+##### LINGCOD #####
+
+lcd_juv <- lcd_full %>%
+  filter(size <= 21) %>%
+  select(-size) %>%
+  group_by(drift, trip, area, site, month, day, year, gridcell) %>%
+  summarise(cpue_sum = sum(cpue))%>%
+  group_by(trip, area, site, month, day, year, gridcell) %>%
+  summarise(cpue_date = mean(cpue_sum))%>%
+  group_by( area, site, year, gridcell) %>%
+  summarise(cpue_cell = mean(cpue_date))%>%
+  group_by( area, site, year) %>%
+  summarise(cpue_site = mean(cpue_cell)) %>%
+  bind_rows(missing_bl)
+
+
+lcd_adult <- lcd_full %>%
+  filter(size >= 32) %>%
+  select(-size)%>%
+  group_by(drift, trip, area, site, month, day, year, gridcell) %>%
+  summarise(cpue_sum = sum(cpue))%>%
+  group_by(trip, area, site, month, year, gridcell) %>%
+  summarise(cpue_date = mean(cpue_sum)) %>%
+  group_by( area, site, year, gridcell) %>%
+  summarise(cpue_cell = mean(cpue_date)) %>%
+  group_by( area, site, year) %>%
+  summarise(cpue_site = mean(cpue_cell))%>%
+  bind_rows(missing_bl)
+
+
+##### OLIVE ROCKFISH #####
+
+olv_juv <- olv_full %>%
+  filter(size <= 21) %>%
+  select(-size) %>%
+  group_by(drift, trip, area, site, month, day, year, gridcell) %>%
+  summarise(cpue_sum = sum(cpue))%>%
+  group_by(trip, area, site, month, day, year, gridcell) %>%
+  summarise(cpue_date = mean(cpue_sum))%>%
+  group_by( area, site, year, gridcell) %>%
+  summarise(cpue_cell = mean(cpue_date))%>%
+  group_by( area, site, year) %>%
+  summarise(cpue_site = mean(cpue_cell)) %>%
+  bind_rows(missing_bl)
+
+
+olv_adult <- olv_full %>%
+  filter(size >= 32) %>%
+  select(-size)%>%
+  group_by(drift, trip, area, site, month, day, year, gridcell) %>%
+  summarise(cpue_sum = sum(cpue))%>%
+  group_by(trip, area, site, month, year, gridcell) %>%
+  summarise(cpue_date = mean(cpue_sum)) %>%
+  group_by( area, site, year, gridcell) %>%
+  summarise(cpue_cell = mean(cpue_date)) %>%
+  group_by( area, site, year) %>%
+  summarise(cpue_site = mean(cpue_cell))%>%
+  bind_rows(missing_bl)
+
+
+```
+
+
+```{r MOCI and data with na}
+
+MOCI <- read_csv(here("Data", "Central_California_MOCI_2020.csv"))
+
+# juv_moci <- left_join(juv, MOCI, by = "year") 
+# adult_moci <- left_join(adult, MOCI, by = "year")
+# teen_moci <- left_join(teen, MOCI, by = "year")
+
+##### GOPHER ROCKFISH #####
+
+gpr_juv_moci <- left_join(gpr_juv, MOCI, by = "year") 
+gpr_adult_moci <- left_join(gpr_adult, MOCI, by = "year")
+
+##### VERMILION ROCKFISH #####
+
+ver_juv_moci <- left_join(ver_juv, MOCI, by = "year") 
+ver_adult_moci <- left_join(ver_adult, MOCI, by = "year")
+
+##### LINGCOD #####
+
+lcd_juv_moci <- left_join(lcd_juv, MOCI, by = "year") 
+lcd_adult_moci <- left_join(lcd_adult, MOCI, by = "year")
+
+##### OLIVE ROCKFISH #####
+
+olv_juv_moci <- left_join(olv_juv, MOCI, by = "year") 
+olv_adult_moci <- left_join(olv_adult, MOCI, by = "year")
+
+
+```
+
+
+### Cross Correlation Function
+
+```{r custom function}
+erin_ccf <- function(full_x, full_y, lag_x_rm, lag_y_rm) {
+  mean_x <- mean(full_x, na.rm = T)
+  mean_y <- mean(full_y, na.rm = T)
+  corval <- (sum((lag_x_rm - mean_x)*
+                   (lag_y_rm - mean_y)))/
+    ((sqrt(sum((full_x - mean_x)^2, na.rm = T)))*
+       (sqrt(sum((full_y - mean_y)^2, na.rm = T))))
+  return(corval)
+  
+}
+```
+
+
+```{r loop set up}
+# 
+# juv_corr <- data.frame(area = character(), site = character(), season = character(), lag = character(), correlation = character())
+# 
+# adult_corr <- data.frame(area = character(), site = character(), season = character(), lag = character(), correlation = character())
+
+area_list <- c("PB", "BL", "AN", "PL")
+site_list <- c("MPA", "REF")
+season_list <- c("JFM", "AMJ", "JAS", "OND")
+
+##### GOPHER ROCKFISH #####
+
+gpr_juv_corr <- data.frame(area = character(), site = character(), season = character(), lag = character(), correlation = character())
+
+gpr_adult_corr <- data.frame(area = character(), site = character(), season = character(), lag = character(), correlation = character())
+
+##### VERMILION ROCKFISH #####
+
+ver_juv_corr <- data.frame(area = character(), site = character(), season = character(), lag = character(), correlation = character())
+
+ver_adult_corr <- data.frame(area = character(), site = character(), season = character(), lag = character(), correlation = character())
+
+##### LINGCOD #####
+
+lcd_juv_corr <- data.frame(area = character(), site = character(), season = character(), lag = character(), correlation = character())
+
+lcd_adult_corr <- data.frame(area = character(), site = character(), season = character(), lag = character(), correlation = character())
+
+##### OLIVE ROCKFISH #####
+
+olv_juv_corr <- data.frame(area = character(), site = character(), season = character(), lag = character(), correlation = character())
+
+olv_adult_corr <- data.frame(area = character(), site = character(), season = character(), lag = character(), correlation = character())
+
+```
+
+# Gopher Rockfish
+
+## Juvenile Gopher Rockfish
+
+```{r gpr juv loop}
+
+for(j in area_list){
+  for(k in site_list){
+    for(l in season_list){
+      juvenile <- gpr_juv_moci %>%
+        filter(area == j, site == k, season == l)
+      for(i in 0:8){
+        lag_df <- juvenile %>%
+          mutate(central_ca = dplyr::lag(central_ca, n = i)) %>% drop_na()
+        cor <- erin_ccf(juvenile$central_ca, juvenile$cpue_site,
+                        lag_df$central_ca, lag_df$cpue_site)
+        for(m in 1:length(cor)){
+          gpr_juv_corr <- bind_rows(gpr_juv_corr, c(area = j, site = k, season = l, 
+                                            lag = -i, correlation = cor[m]))
+        }
+      }
+    }
+  }
+} 
+
+
+gpr_juv_vis <- gpr_juv_corr %>%
+  mutate(correlation = as.numeric(correlation),
+         lag = as.numeric(lag),
+         Season = case_when(
+    season == "JFM" ~ "Winter",
+    season == "AMJ" ~ "Spring",
+    season == "JAS" ~ "Summer",
+    season == "OND" ~ "Fall"
+  ), Area = case_when(
+    area == "AN" ~ "A\u00f1o Nuevo",
+    area == "PL" ~ "Point Lobos",
+    area == "BL" ~ "Piedras Blancas",
+    area == "PB" ~ "Point Buchon"
+  ))
+  
+gpr_juv_vis$season <- factor(gpr_juv_vis$season, levels = c("JFM", "AMJ" ,"JAS", "OND"))
+gpr_juv_vis$Season <- factor(gpr_juv_vis$Season, levels = c("Winter", "Spring" ,"Summer", "Fall"))  
+gpr_juv_vis$Area <- factor(gpr_juv_vis$Area, levels = c("A\u00f1o Nuevo", "Point Lobos" ,"Piedras Blancas", "Point Buchon"))  
+
+
+gpr_juv_plot <- ggplot()+
+  scale_color_manual(values = c("#999999", "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c("#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = gpr_juv_vis, aes(x = lag, y = correlation, 
+                                                    color = Season, fill = Season))+
+  labs(title = "Juvenile Gopher Rockfish Lag Correlation")+
+  scale_y_continuous(limits = c(-0.6, 1.0), 
+                     breaks = c(-0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8, 1.0))+
+  theme_bw()+
+  theme(panel.grid = element_blank(),
+        plot.title = element_text(hjust = 0.5))+
+  facet_grid(site~Area)
+
+
+gpr_top_juv <- gpr_juv_vis %>% 
+  arrange(desc(correlation)) %>% 
+  group_by(area, site) %>% slice(1)
+
+
+gpr_top_juv_meeting <- gpr_top_juv %>%
+  mutate(Season = case_when(
+    season == "JFM" ~ "Winter",
+    season == "AMJ" ~ "Spring",
+    season == "JAS" ~ "Summer",
+    season == "OND" ~ "Fall"
+  ), Lag = case_when(
+    lag == "-6" ~ "6",
+    lag == "-5" ~ "5",
+    lag == "-4" ~ "4",
+    lag == "-3" ~ "3",
+    lag == "-2" ~ "2",
+    lag == "-1" ~ "1",
+    lag == "0" ~ "0"
+  ), Area = case_when(
+    area == "AN" ~ "A\u00f1o Nuevo",
+    area == "PL" ~ "Point Lobos",
+    area == "BL" ~ "Piedras Blancas",
+    area == "PB" ~ "Point Buchon"
+  ))
+
+gpr_top_juv_meeting$area <- factor(gpr_top_juv_meeting$area, levels = c("AN", "PL", "BL", "PB"))
+gpr_top_juv_meeting$Area <- factor(gpr_top_juv_meeting$Area, levels = c("A\u00f1o Nuevo", "Point Lobos", "Piedras Blancas", "Point Buchon"))
+gpr_top_juv_meeting$Season <- factor(gpr_top_juv_meeting$Season, 
+                                 levels = c("Winter", "Spring", "Summer", "Fall"))
+
+
+gpr_top_juv_2020_dat <- gpr_top_juv_meeting %>%
+  ggplot()+
+  geom_point(size = 4, aes(x = Area, y = correlation, color = Season, 
+                           fill = Season, shape = Lag))+
+  scale_color_manual(values = c("#999999", "#009999","#666666", "#000000"))+
+  scale_fill_manual(values = c("#999999", "#009999", "#666666", "#000000"))+
+  scale_shape_manual(values = c(15, 19, 1, 2, 3, 4))+
+  labs(title = "Juvenile Gopher Rockfish Top Correlation CPUE-MOCI", 
+       y = "Correlation\n", x = "\nArea (N to S)", caption = "")+
+  scale_y_continuous(limits = c(0.0, 1.0), 
+                     breaks = c(0.0, 0.2, 0.4, 0.6, 0.8, 1.0))+
+  facet_wrap(.~site)+
+  theme_bw()+
+    theme(panel.grid = element_blank(),
+          plot.title = element_text(hjust = 0.5),
+          plot.caption = element_text(size = 8),
+          axis.text.x = element_text(face = "bold",angle = 45, hjust =1))
+
+
+```
+
+
+## Adult Gopher Rockfish
+
+```{r gpr adult loop}
+
+for(j in area_list){
+  for(k in site_list){
+    for(l in season_list){
+      adult <- gpr_adult_moci %>%
+        filter(area == j, site == k, season == l)
+      for(i in 0:8){
+        lag_df <- adult %>%
+          mutate(central_ca = dplyr::lag(central_ca, n = i)) %>% drop_na()
+        cor <- erin_ccf(adult$central_ca, adult$cpue_site,
+                        lag_df$central_ca, lag_df$cpue_site)
+        for(m in 1:length(cor)){
+          gpr_adult_corr <- bind_rows(gpr_adult_corr, c(area = j, site = k, season = l, 
+                                            lag = -i, correlation = cor[m]))
+        }
+      }
+    }
+  }
+} 
+
+
+gpr_adult_vis <- gpr_adult_corr %>%
+  mutate(correlation = as.numeric(correlation),
+         lag = as.numeric(lag),
+         Season = case_when(
+    season == "JFM" ~ "Winter",
+    season == "AMJ" ~ "Spring",
+    season == "JAS" ~ "Summer",
+    season == "OND" ~ "Fall"
+  ), Area = case_when(
+    area == "AN" ~ "A\u00f1o Nuevo",
+    area == "PL" ~ "Point Lobos",
+    area == "BL" ~ "Piedras Blancas",
+    area == "PB" ~ "Point Buchon"
+  ))
+  
+gpr_adult_vis$season <- factor(gpr_adult_vis$season, levels = c("JFM", "AMJ" ,"JAS", "OND"))
+gpr_adult_vis$Season <- factor(gpr_adult_vis$Season, levels = c("Winter", "Spring" ,"Summer", "Fall"))  
+gpr_adult_vis$Area <- factor(gpr_adult_vis$Area, levels = c("A\u00f1o Nuevo", "Point Lobos" ,"Piedras Blancas", "Point Buchon"))  
+
+
+gpr_adult_plot <- ggplot()+
+  scale_color_manual(values = c("#999999", "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c("#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = gpr_adult_vis, aes(x = lag, y = correlation, 
+                                                    color = Season, fill = Season))+
+  labs(title = "Adult Gopher Rockfish Lag Correlation")+
+  scale_y_continuous(limits = c(-0.6, 1.0), 
+                     breaks = c(-0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8, 1.0))+
+  theme_bw()+
+  theme(panel.grid = element_blank(),
+        plot.title = element_text(hjust = 0.5))+
+  facet_grid(site~Area)
+
+
+gpr_top_adult <- gpr_adult_vis %>% 
+  arrange(desc(correlation)) %>% 
+  group_by(area, site) %>% slice(1)
+
+
+gpr_top_adult_meeting <- gpr_top_adult %>%
+  mutate(Season = case_when(
+    season == "JFM" ~ "Winter",
+    season == "AMJ" ~ "Spring",
+    season == "JAS" ~ "Summer",
+    season == "OND" ~ "Fall"
+  ), Lag = case_when(
+    lag == "-6" ~ "6",
+    lag == "-5" ~ "5",
+    lag == "-4" ~ "4",
+    lag == "-3" ~ "3",
+    lag == "-2" ~ "2",
+    lag == "-1" ~ "1",
+    lag == "0" ~ "0"
+  ), Area = case_when(
+    area == "AN" ~ "A\u00f1o Nuevo",
+    area == "PL" ~ "Point Lobos",
+    area == "BL" ~ "Piedras Blancas",
+    area == "PB" ~ "Point Buchon"
+  ))
+
+gpr_top_adult_meeting$area <- factor(gpr_top_adult_meeting$area, levels = c("AN", "PL", "BL", "PB"))
+gpr_top_adult_meeting$Area <- factor(gpr_top_adult_meeting$Area, levels = c("A\u00f1o Nuevo", "Point Lobos", "Piedras Blancas", "Point Buchon"))
+gpr_top_adult_meeting$Season <- factor(gpr_top_adult_meeting$Season, 
+                                 levels = c("Winter", "Spring", "Summer", "Fall"))
+
+
+gpr_top_adult_2020_dat <- gpr_top_adult_meeting %>%
+  ggplot()+
+  geom_point(size = 4, aes(x = Area, y = correlation, color = Season, 
+                           fill = Season, shape = Lag))+
+  scale_color_manual(values = c("#999999", "#009999","#666666", "#000000"))+
+  scale_fill_manual(values = c("#999999", "#009999", "#666666", "#000000"))+
+  scale_shape_manual(values = c(15, 19, 1, 2, 3, 4))+
+  labs(title = "Adult Gopher Rockfish Top Correlation CPUE-MOCI", 
+       y = "Correlation\n", x = "\nArea (N to S)", caption = "")+
+  scale_y_continuous(limits = c(0.0, 1.0), 
+                     breaks = c(0.0, 0.2, 0.4, 0.6, 0.8, 1.0))+
+  facet_wrap(.~site)+
+  theme_bw()+
+    theme(panel.grid = element_blank(),
+          plot.title = element_text(hjust = 0.5),
+          plot.caption = element_text(size = 8),
+          axis.text.x = element_text(face = "bold",angle = 45, hjust =1))
+
+
+```
+
+
+# Vermilion Rockfish
+
+## Juvenile Vermilion Rockfish
+
+```{r ver juv loop}
+
+for(j in area_list){
+  for(k in site_list){
+    for(l in season_list){
+      juvenile <- gpr_juv_moci %>%
+        filter(area == j, site == k, season == l)
+      for(i in 0:8){
+        lag_df <- juvenile %>%
+          mutate(central_ca = dplyr::lag(central_ca, n = i)) %>% drop_na()
+        cor <- erin_ccf(juvenile$central_ca, juvenile$cpue_site,
+                        lag_df$central_ca, lag_df$cpue_site)
+        for(m in 1:length(cor)){
+          gpr_juv_corr <- bind_rows(gpr_juv_corr, c(area = j, site = k, season = l, 
+                                            lag = -i, correlation = cor[m]))
+        }
+      }
+    }
+  }
+} 
+
+
+gpr_juv_vis <- gpr_juv_corr %>%
+  mutate(correlation = as.numeric(correlation),
+         lag = as.numeric(lag),
+         Season = case_when(
+    season == "JFM" ~ "Winter",
+    season == "AMJ" ~ "Spring",
+    season == "JAS" ~ "Summer",
+    season == "OND" ~ "Fall"
+  ), Area = case_when(
+    area == "AN" ~ "A\u00f1o Nuevo",
+    area == "PL" ~ "Point Lobos",
+    area == "BL" ~ "Piedras Blancas",
+    area == "PB" ~ "Point Buchon"
+  ))
+  
+gpr_juv_vis$season <- factor(gpr_juv_vis$season, levels = c("JFM", "AMJ" ,"JAS", "OND"))
+gpr_juv_vis$Season <- factor(gpr_juv_vis$Season, levels = c("Winter", "Spring" ,"Summer", "Fall"))  
+gpr_juv_vis$Area <- factor(gpr_juv_vis$Area, levels = c("A\u00f1o Nuevo", "Point Lobos" ,"Piedras Blancas", "Point Buchon"))  
+
+
+gpr_juv_plot <- ggplot()+
+  scale_color_manual(values = c("#999999", "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c("#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = gpr_juv_vis, aes(x = lag, y = correlation, 
+                                                    color = Season, fill = Season))+
+  labs(title = "Juvenile Gopher Rockfish Lag Correlation")+
+  scale_y_continuous(limits = c(-0.6, 1.0), 
+                     breaks = c(-0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8, 1.0))+
+  theme_bw()+
+  theme(panel.grid = element_blank(),
+        plot.title = element_text(hjust = 0.5))+
+  facet_grid(site~Area)
+
+
+gpr_top_juv <- gpr_juv_vis %>% 
+  arrange(desc(correlation)) %>% 
+  group_by(area, site) %>% slice(1)
+
+
+gpr_top_juv_meeting <- gpr_top_juv %>%
+  mutate(Season = case_when(
+    season == "JFM" ~ "Winter",
+    season == "AMJ" ~ "Spring",
+    season == "JAS" ~ "Summer",
+    season == "OND" ~ "Fall"
+  ), Lag = case_when(
+    lag == "-6" ~ "6",
+    lag == "-5" ~ "5",
+    lag == "-4" ~ "4",
+    lag == "-3" ~ "3",
+    lag == "-2" ~ "2",
+    lag == "-1" ~ "1",
+    lag == "0" ~ "0"
+  ), Area = case_when(
+    area == "AN" ~ "A\u00f1o Nuevo",
+    area == "PL" ~ "Point Lobos",
+    area == "BL" ~ "Piedras Blancas",
+    area == "PB" ~ "Point Buchon"
+  ))
+
+gpr_top_juv_meeting$area <- factor(gpr_top_juv_meeting$area, levels = c("AN", "PL", "BL", "PB"))
+gpr_top_juv_meeting$Area <- factor(gpr_top_juv_meeting$Area, levels = c("A\u00f1o Nuevo", "Point Lobos", "Piedras Blancas", "Point Buchon"))
+gpr_top_juv_meeting$Season <- factor(gpr_top_juv_meeting$Season, 
+                                 levels = c("Winter", "Spring", "Summer", "Fall"))
+
+
+gpr_top_juv_2020_dat <- gpr_top_juv_meeting %>%
+  ggplot()+
+  geom_point(size = 4, aes(x = Area, y = correlation, color = Season, 
+                           fill = Season, shape = Lag))+
+  scale_color_manual(values = c("#999999", "#009999","#666666", "#000000"))+
+  scale_fill_manual(values = c("#999999", "#009999", "#666666", "#000000"))+
+  scale_shape_manual(values = c(15, 19, 1, 2, 3, 4))+
+  labs(title = "Juvenile Gopher Rockfish Top Correlation CPUE-MOCI", 
+       y = "Correlation\n", x = "\nArea (N to S)", caption = "")+
+  scale_y_continuous(limits = c(0.0, 1.0), 
+                     breaks = c(0.0, 0.2, 0.4, 0.6, 0.8, 1.0))+
+  facet_wrap(.~site)+
+  theme_bw()+
+    theme(panel.grid = element_blank(),
+          plot.title = element_text(hjust = 0.5),
+          plot.caption = element_text(size = 8),
+          axis.text.x = element_text(face = "bold",angle = 45, hjust =1))
+
+
+```
+
+
+## Adult Vermilion Rockfish
+
+```{r ver adult loop}
+
+for(j in area_list){
+  for(k in site_list){
+    for(l in season_list){
+      adult <- gpr_adult_moci %>%
+        filter(area == j, site == k, season == l)
+      for(i in 0:8){
+        lag_df <- adult %>%
+          mutate(central_ca = dplyr::lag(central_ca, n = i)) %>% drop_na()
+        cor <- erin_ccf(adult$central_ca, adult$cpue_site,
+                        lag_df$central_ca, lag_df$cpue_site)
+        for(m in 1:length(cor)){
+          gpr_adult_corr <- bind_rows(gpr_adult_corr, c(area = j, site = k, season = l, 
+                                            lag = -i, correlation = cor[m]))
+        }
+      }
+    }
+  }
+} 
+
+
+gpr_adult_vis <- gpr_adult_corr %>%
+  mutate(correlation = as.numeric(correlation),
+         lag = as.numeric(lag),
+         Season = case_when(
+    season == "JFM" ~ "Winter",
+    season == "AMJ" ~ "Spring",
+    season == "JAS" ~ "Summer",
+    season == "OND" ~ "Fall"
+  ), Area = case_when(
+    area == "AN" ~ "A\u00f1o Nuevo",
+    area == "PL" ~ "Point Lobos",
+    area == "BL" ~ "Piedras Blancas",
+    area == "PB" ~ "Point Buchon"
+  ))
+  
+gpr_adult_vis$season <- factor(gpr_adult_vis$season, levels = c("JFM", "AMJ" ,"JAS", "OND"))
+gpr_adult_vis$Season <- factor(gpr_adult_vis$Season, levels = c("Winter", "Spring" ,"Summer", "Fall"))  
+gpr_adult_vis$Area <- factor(gpr_adult_vis$Area, levels = c("A\u00f1o Nuevo", "Point Lobos" ,"Piedras Blancas", "Point Buchon"))  
+
+
+gpr_adult_plot <- ggplot()+
+  scale_color_manual(values = c("#999999", "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c("#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = gpr_adult_vis, aes(x = lag, y = correlation, 
+                                                    color = Season, fill = Season))+
+  labs(title = "Adult Gopher Rockfish Lag Correlation")+
+  scale_y_continuous(limits = c(-0.6, 1.0), 
+                     breaks = c(-0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8, 1.0))+
+  theme_bw()+
+  theme(panel.grid = element_blank(),
+        plot.title = element_text(hjust = 0.5))+
+  facet_grid(site~Area)
+
+
+gpr_top_adult <- gpr_adult_vis %>% 
+  arrange(desc(correlation)) %>% 
+  group_by(area, site) %>% slice(1)
+
+
+gpr_top_adult_meeting <- gpr_top_adult %>%
+  mutate(Season = case_when(
+    season == "JFM" ~ "Winter",
+    season == "AMJ" ~ "Spring",
+    season == "JAS" ~ "Summer",
+    season == "OND" ~ "Fall"
+  ), Lag = case_when(
+    lag == "-6" ~ "6",
+    lag == "-5" ~ "5",
+    lag == "-4" ~ "4",
+    lag == "-3" ~ "3",
+    lag == "-2" ~ "2",
+    lag == "-1" ~ "1",
+    lag == "0" ~ "0"
+  ), Area = case_when(
+    area == "AN" ~ "A\u00f1o Nuevo",
+    area == "PL" ~ "Point Lobos",
+    area == "BL" ~ "Piedras Blancas",
+    area == "PB" ~ "Point Buchon"
+  ))
+
+gpr_top_adult_meeting$area <- factor(gpr_top_adult_meeting$area, levels = c("AN", "PL", "BL", "PB"))
+gpr_top_adult_meeting$Area <- factor(gpr_top_adult_meeting$Area, levels = c("A\u00f1o Nuevo", "Point Lobos", "Piedras Blancas", "Point Buchon"))
+gpr_top_adult_meeting$Season <- factor(gpr_top_adult_meeting$Season, 
+                                 levels = c("Winter", "Spring", "Summer", "Fall"))
+
+
+gpr_top_adult_2020_dat <- gpr_top_adult_meeting %>%
+  ggplot()+
+  geom_point(size = 4, aes(x = Area, y = correlation, color = Season, 
+                           fill = Season, shape = Lag))+
+  scale_color_manual(values = c("#999999", "#009999","#666666", "#000000"))+
+  scale_fill_manual(values = c("#999999", "#009999", "#666666", "#000000"))+
+  scale_shape_manual(values = c(15, 19, 1, 2, 3, 4))+
+  labs(title = "Adult Gopher Rockfish Top Correlation CPUE-MOCI", 
+       y = "Correlation\n", x = "\nArea (N to S)", caption = "")+
+  scale_y_continuous(limits = c(0.0, 1.0), 
+                     breaks = c(0.0, 0.2, 0.4, 0.6, 0.8, 1.0))+
+  facet_wrap(.~site)+
+  theme_bw()+
+    theme(panel.grid = element_blank(),
+          plot.title = element_text(hjust = 0.5),
+          plot.caption = element_text(size = 8),
+          axis.text.x = element_text(face = "bold",angle = 45, hjust =1))
+
+
+```
+
+
+# Lingcod
+
+## Juvenile Lingcod
+
+```{r lcd juv loop}
+
+for(j in area_list){
+  for(k in site_list){
+    for(l in season_list){
+      juvenile <- gpr_juv_moci %>%
+        filter(area == j, site == k, season == l)
+      for(i in 0:8){
+        lag_df <- juvenile %>%
+          mutate(central_ca = dplyr::lag(central_ca, n = i)) %>% drop_na()
+        cor <- erin_ccf(juvenile$central_ca, juvenile$cpue_site,
+                        lag_df$central_ca, lag_df$cpue_site)
+        for(m in 1:length(cor)){
+          gpr_juv_corr <- bind_rows(gpr_juv_corr, c(area = j, site = k, season = l, 
+                                            lag = -i, correlation = cor[m]))
+        }
+      }
+    }
+  }
+} 
+
+
+gpr_juv_vis <- gpr_juv_corr %>%
+  mutate(correlation = as.numeric(correlation),
+         lag = as.numeric(lag),
+         Season = case_when(
+    season == "JFM" ~ "Winter",
+    season == "AMJ" ~ "Spring",
+    season == "JAS" ~ "Summer",
+    season == "OND" ~ "Fall"
+  ), Area = case_when(
+    area == "AN" ~ "A\u00f1o Nuevo",
+    area == "PL" ~ "Point Lobos",
+    area == "BL" ~ "Piedras Blancas",
+    area == "PB" ~ "Point Buchon"
+  ))
+  
+gpr_juv_vis$season <- factor(gpr_juv_vis$season, levels = c("JFM", "AMJ" ,"JAS", "OND"))
+gpr_juv_vis$Season <- factor(gpr_juv_vis$Season, levels = c("Winter", "Spring" ,"Summer", "Fall"))  
+gpr_juv_vis$Area <- factor(gpr_juv_vis$Area, levels = c("A\u00f1o Nuevo", "Point Lobos" ,"Piedras Blancas", "Point Buchon"))  
+
+
+gpr_juv_plot <- ggplot()+
+  scale_color_manual(values = c("#999999", "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c("#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = gpr_juv_vis, aes(x = lag, y = correlation, 
+                                                    color = Season, fill = Season))+
+  labs(title = "Juvenile Gopher Rockfish Lag Correlation")+
+  scale_y_continuous(limits = c(-0.6, 1.0), 
+                     breaks = c(-0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8, 1.0))+
+  theme_bw()+
+  theme(panel.grid = element_blank(),
+        plot.title = element_text(hjust = 0.5))+
+  facet_grid(site~Area)
+
+
+gpr_top_juv <- gpr_juv_vis %>% 
+  arrange(desc(correlation)) %>% 
+  group_by(area, site) %>% slice(1)
+
+
+gpr_top_juv_meeting <- gpr_top_juv %>%
+  mutate(Season = case_when(
+    season == "JFM" ~ "Winter",
+    season == "AMJ" ~ "Spring",
+    season == "JAS" ~ "Summer",
+    season == "OND" ~ "Fall"
+  ), Lag = case_when(
+    lag == "-6" ~ "6",
+    lag == "-5" ~ "5",
+    lag == "-4" ~ "4",
+    lag == "-3" ~ "3",
+    lag == "-2" ~ "2",
+    lag == "-1" ~ "1",
+    lag == "0" ~ "0"
+  ), Area = case_when(
+    area == "AN" ~ "A\u00f1o Nuevo",
+    area == "PL" ~ "Point Lobos",
+    area == "BL" ~ "Piedras Blancas",
+    area == "PB" ~ "Point Buchon"
+  ))
+
+gpr_top_juv_meeting$area <- factor(gpr_top_juv_meeting$area, levels = c("AN", "PL", "BL", "PB"))
+gpr_top_juv_meeting$Area <- factor(gpr_top_juv_meeting$Area, levels = c("A\u00f1o Nuevo", "Point Lobos", "Piedras Blancas", "Point Buchon"))
+gpr_top_juv_meeting$Season <- factor(gpr_top_juv_meeting$Season, 
+                                 levels = c("Winter", "Spring", "Summer", "Fall"))
+
+
+gpr_top_juv_2020_dat <- gpr_top_juv_meeting %>%
+  ggplot()+
+  geom_point(size = 4, aes(x = Area, y = correlation, color = Season, 
+                           fill = Season, shape = Lag))+
+  scale_color_manual(values = c("#999999", "#009999","#666666", "#000000"))+
+  scale_fill_manual(values = c("#999999", "#009999", "#666666", "#000000"))+
+  scale_shape_manual(values = c(15, 19, 1, 2, 3, 4))+
+  labs(title = "Juvenile Gopher Rockfish Top Correlation CPUE-MOCI", 
+       y = "Correlation\n", x = "\nArea (N to S)", caption = "")+
+  scale_y_continuous(limits = c(0.0, 1.0), 
+                     breaks = c(0.0, 0.2, 0.4, 0.6, 0.8, 1.0))+
+  facet_wrap(.~site)+
+  theme_bw()+
+    theme(panel.grid = element_blank(),
+          plot.title = element_text(hjust = 0.5),
+          plot.caption = element_text(size = 8),
+          axis.text.x = element_text(face = "bold",angle = 45, hjust =1))
+
+
+```
+
+
+## Adult Lingcod
+
+```{r lcd adult loop}
+
+for(j in area_list){
+  for(k in site_list){
+    for(l in season_list){
+      adult <- gpr_adult_moci %>%
+        filter(area == j, site == k, season == l)
+      for(i in 0:8){
+        lag_df <- adult %>%
+          mutate(central_ca = dplyr::lag(central_ca, n = i)) %>% drop_na()
+        cor <- erin_ccf(adult$central_ca, adult$cpue_site,
+                        lag_df$central_ca, lag_df$cpue_site)
+        for(m in 1:length(cor)){
+          gpr_adult_corr <- bind_rows(gpr_adult_corr, c(area = j, site = k, season = l, 
+                                            lag = -i, correlation = cor[m]))
+        }
+      }
+    }
+  }
+} 
+
+
+gpr_adult_vis <- gpr_adult_corr %>%
+  mutate(correlation = as.numeric(correlation),
+         lag = as.numeric(lag),
+         Season = case_when(
+    season == "JFM" ~ "Winter",
+    season == "AMJ" ~ "Spring",
+    season == "JAS" ~ "Summer",
+    season == "OND" ~ "Fall"
+  ), Area = case_when(
+    area == "AN" ~ "A\u00f1o Nuevo",
+    area == "PL" ~ "Point Lobos",
+    area == "BL" ~ "Piedras Blancas",
+    area == "PB" ~ "Point Buchon"
+  ))
+  
+gpr_adult_vis$season <- factor(gpr_adult_vis$season, levels = c("JFM", "AMJ" ,"JAS", "OND"))
+gpr_adult_vis$Season <- factor(gpr_adult_vis$Season, levels = c("Winter", "Spring" ,"Summer", "Fall"))  
+gpr_adult_vis$Area <- factor(gpr_adult_vis$Area, levels = c("A\u00f1o Nuevo", "Point Lobos" ,"Piedras Blancas", "Point Buchon"))  
+
+
+gpr_adult_plot <- ggplot()+
+  scale_color_manual(values = c("#999999", "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c("#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = gpr_adult_vis, aes(x = lag, y = correlation, 
+                                                    color = Season, fill = Season))+
+  labs(title = "Adult Gopher Rockfish Lag Correlation")+
+  scale_y_continuous(limits = c(-0.6, 1.0), 
+                     breaks = c(-0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8, 1.0))+
+  theme_bw()+
+  theme(panel.grid = element_blank(),
+        plot.title = element_text(hjust = 0.5))+
+  facet_grid(site~Area)
+
+
+gpr_top_adult <- gpr_adult_vis %>% 
+  arrange(desc(correlation)) %>% 
+  group_by(area, site) %>% slice(1)
+
+
+gpr_top_adult_meeting <- gpr_top_adult %>%
+  mutate(Season = case_when(
+    season == "JFM" ~ "Winter",
+    season == "AMJ" ~ "Spring",
+    season == "JAS" ~ "Summer",
+    season == "OND" ~ "Fall"
+  ), Lag = case_when(
+    lag == "-6" ~ "6",
+    lag == "-5" ~ "5",
+    lag == "-4" ~ "4",
+    lag == "-3" ~ "3",
+    lag == "-2" ~ "2",
+    lag == "-1" ~ "1",
+    lag == "0" ~ "0"
+  ), Area = case_when(
+    area == "AN" ~ "A\u00f1o Nuevo",
+    area == "PL" ~ "Point Lobos",
+    area == "BL" ~ "Piedras Blancas",
+    area == "PB" ~ "Point Buchon"
+  ))
+
+gpr_top_adult_meeting$area <- factor(gpr_top_adult_meeting$area, levels = c("AN", "PL", "BL", "PB"))
+gpr_top_adult_meeting$Area <- factor(gpr_top_adult_meeting$Area, levels = c("A\u00f1o Nuevo", "Point Lobos", "Piedras Blancas", "Point Buchon"))
+gpr_top_adult_meeting$Season <- factor(gpr_top_adult_meeting$Season, 
+                                 levels = c("Winter", "Spring", "Summer", "Fall"))
+
+
+gpr_top_adult_2020_dat <- gpr_top_adult_meeting %>%
+  ggplot()+
+  geom_point(size = 4, aes(x = Area, y = correlation, color = Season, 
+                           fill = Season, shape = Lag))+
+  scale_color_manual(values = c("#999999", "#009999","#666666", "#000000"))+
+  scale_fill_manual(values = c("#999999", "#009999", "#666666", "#000000"))+
+  scale_shape_manual(values = c(15, 19, 1, 2, 3, 4))+
+  labs(title = "Adult Gopher Rockfish Top Correlation CPUE-MOCI", 
+       y = "Correlation\n", x = "\nArea (N to S)", caption = "")+
+  scale_y_continuous(limits = c(0.0, 1.0), 
+                     breaks = c(0.0, 0.2, 0.4, 0.6, 0.8, 1.0))+
+  facet_wrap(.~site)+
+  theme_bw()+
+    theme(panel.grid = element_blank(),
+          plot.title = element_text(hjust = 0.5),
+          plot.caption = element_text(size = 8),
+          axis.text.x = element_text(face = "bold",angle = 45, hjust =1))
+
+
+```
+
+
+# Olive Rockfish
+
+## Juvenile Olive Rockfish
+
+```{r olv juv loop}
+
+for(j in area_list){
+  for(k in site_list){
+    for(l in season_list){
+      juvenile <- gpr_juv_moci %>%
+        filter(area == j, site == k, season == l)
+      for(i in 0:8){
+        lag_df <- juvenile %>%
+          mutate(central_ca = dplyr::lag(central_ca, n = i)) %>% drop_na()
+        cor <- erin_ccf(juvenile$central_ca, juvenile$cpue_site,
+                        lag_df$central_ca, lag_df$cpue_site)
+        for(m in 1:length(cor)){
+          gpr_juv_corr <- bind_rows(gpr_juv_corr, c(area = j, site = k, season = l, 
+                                            lag = -i, correlation = cor[m]))
+        }
+      }
+    }
+  }
+} 
+
+
+gpr_juv_vis <- gpr_juv_corr %>%
+  mutate(correlation = as.numeric(correlation),
+         lag = as.numeric(lag),
+         Season = case_when(
+    season == "JFM" ~ "Winter",
+    season == "AMJ" ~ "Spring",
+    season == "JAS" ~ "Summer",
+    season == "OND" ~ "Fall"
+  ), Area = case_when(
+    area == "AN" ~ "A\u00f1o Nuevo",
+    area == "PL" ~ "Point Lobos",
+    area == "BL" ~ "Piedras Blancas",
+    area == "PB" ~ "Point Buchon"
+  ))
+  
+gpr_juv_vis$season <- factor(gpr_juv_vis$season, levels = c("JFM", "AMJ" ,"JAS", "OND"))
+gpr_juv_vis$Season <- factor(gpr_juv_vis$Season, levels = c("Winter", "Spring" ,"Summer", "Fall"))  
+gpr_juv_vis$Area <- factor(gpr_juv_vis$Area, levels = c("A\u00f1o Nuevo", "Point Lobos" ,"Piedras Blancas", "Point Buchon"))  
+
+
+gpr_juv_plot <- ggplot()+
+  scale_color_manual(values = c("#999999", "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c("#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = gpr_juv_vis, aes(x = lag, y = correlation, 
+                                                    color = Season, fill = Season))+
+  labs(title = "Juvenile Gopher Rockfish Lag Correlation")+
+  scale_y_continuous(limits = c(-0.6, 1.0), 
+                     breaks = c(-0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8, 1.0))+
+  theme_bw()+
+  theme(panel.grid = element_blank(),
+        plot.title = element_text(hjust = 0.5))+
+  facet_grid(site~Area)
+
+
+gpr_top_juv <- gpr_juv_vis %>% 
+  arrange(desc(correlation)) %>% 
+  group_by(area, site) %>% slice(1)
+
+
+gpr_top_juv_meeting <- gpr_top_juv %>%
+  mutate(Season = case_when(
+    season == "JFM" ~ "Winter",
+    season == "AMJ" ~ "Spring",
+    season == "JAS" ~ "Summer",
+    season == "OND" ~ "Fall"
+  ), Lag = case_when(
+    lag == "-6" ~ "6",
+    lag == "-5" ~ "5",
+    lag == "-4" ~ "4",
+    lag == "-3" ~ "3",
+    lag == "-2" ~ "2",
+    lag == "-1" ~ "1",
+    lag == "0" ~ "0"
+  ), Area = case_when(
+    area == "AN" ~ "A\u00f1o Nuevo",
+    area == "PL" ~ "Point Lobos",
+    area == "BL" ~ "Piedras Blancas",
+    area == "PB" ~ "Point Buchon"
+  ))
+
+gpr_top_juv_meeting$area <- factor(gpr_top_juv_meeting$area, levels = c("AN", "PL", "BL", "PB"))
+gpr_top_juv_meeting$Area <- factor(gpr_top_juv_meeting$Area, levels = c("A\u00f1o Nuevo", "Point Lobos", "Piedras Blancas", "Point Buchon"))
+gpr_top_juv_meeting$Season <- factor(gpr_top_juv_meeting$Season, 
+                                 levels = c("Winter", "Spring", "Summer", "Fall"))
+
+
+gpr_top_juv_2020_dat <- gpr_top_juv_meeting %>%
+  ggplot()+
+  geom_point(size = 4, aes(x = Area, y = correlation, color = Season, 
+                           fill = Season, shape = Lag))+
+  scale_color_manual(values = c("#999999", "#009999","#666666", "#000000"))+
+  scale_fill_manual(values = c("#999999", "#009999", "#666666", "#000000"))+
+  scale_shape_manual(values = c(15, 19, 1, 2, 3, 4))+
+  labs(title = "Juvenile Gopher Rockfish Top Correlation CPUE-MOCI", 
+       y = "Correlation\n", x = "\nArea (N to S)", caption = "")+
+  scale_y_continuous(limits = c(0.0, 1.0), 
+                     breaks = c(0.0, 0.2, 0.4, 0.6, 0.8, 1.0))+
+  facet_wrap(.~site)+
+  theme_bw()+
+    theme(panel.grid = element_blank(),
+          plot.title = element_text(hjust = 0.5),
+          plot.caption = element_text(size = 8),
+          axis.text.x = element_text(face = "bold",angle = 45, hjust =1))
+
+
+```
+
+
+## Adult Olive Rockfish
+
+```{r olv adult loop}
+
+for(j in area_list){
+  for(k in site_list){
+    for(l in season_list){
+      adult <- gpr_adult_moci %>%
+        filter(area == j, site == k, season == l)
+      for(i in 0:8){
+        lag_df <- adult %>%
+          mutate(central_ca = dplyr::lag(central_ca, n = i)) %>% drop_na()
+        cor <- erin_ccf(adult$central_ca, adult$cpue_site,
+                        lag_df$central_ca, lag_df$cpue_site)
+        for(m in 1:length(cor)){
+          gpr_adult_corr <- bind_rows(gpr_adult_corr, c(area = j, site = k, season = l, 
+                                            lag = -i, correlation = cor[m]))
+        }
+      }
+    }
+  }
+} 
+
+
+gpr_adult_vis <- gpr_adult_corr %>%
+  mutate(correlation = as.numeric(correlation),
+         lag = as.numeric(lag),
+         Season = case_when(
+    season == "JFM" ~ "Winter",
+    season == "AMJ" ~ "Spring",
+    season == "JAS" ~ "Summer",
+    season == "OND" ~ "Fall"
+  ), Area = case_when(
+    area == "AN" ~ "A\u00f1o Nuevo",
+    area == "PL" ~ "Point Lobos",
+    area == "BL" ~ "Piedras Blancas",
+    area == "PB" ~ "Point Buchon"
+  ))
+  
+gpr_adult_vis$season <- factor(gpr_adult_vis$season, levels = c("JFM", "AMJ" ,"JAS", "OND"))
+gpr_adult_vis$Season <- factor(gpr_adult_vis$Season, levels = c("Winter", "Spring" ,"Summer", "Fall"))  
+gpr_adult_vis$Area <- factor(gpr_adult_vis$Area, levels = c("A\u00f1o Nuevo", "Point Lobos" ,"Piedras Blancas", "Point Buchon"))  
+
+
+gpr_adult_plot <- ggplot()+
+  scale_color_manual(values = c("#999999", "#009999", "#666666", "#000000"))+
+  scale_fill_manual(values = c("#999999", "#009999", "#666666", "#000000"))+
+  geom_col(position = "dodge2", data = gpr_adult_vis, aes(x = lag, y = correlation, 
+                                                    color = Season, fill = Season))+
+  labs(title = "Adult Gopher Rockfish Lag Correlation")+
+  scale_y_continuous(limits = c(-0.6, 1.0), 
+                     breaks = c(-0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8, 1.0))+
+  theme_bw()+
+  theme(panel.grid = element_blank(),
+        plot.title = element_text(hjust = 0.5))+
+  facet_grid(site~Area)
+
+
+gpr_top_adult <- gpr_adult_vis %>% 
+  arrange(desc(correlation)) %>% 
+  group_by(area, site) %>% slice(1)
+
+
+gpr_top_adult_meeting <- gpr_top_adult %>%
+  mutate(Season = case_when(
+    season == "JFM" ~ "Winter",
+    season == "AMJ" ~ "Spring",
+    season == "JAS" ~ "Summer",
+    season == "OND" ~ "Fall"
+  ), Lag = case_when(
+    lag == "-6" ~ "6",
+    lag == "-5" ~ "5",
+    lag == "-4" ~ "4",
+    lag == "-3" ~ "3",
+    lag == "-2" ~ "2",
+    lag == "-1" ~ "1",
+    lag == "0" ~ "0"
+  ), Area = case_when(
+    area == "AN" ~ "A\u00f1o Nuevo",
+    area == "PL" ~ "Point Lobos",
+    area == "BL" ~ "Piedras Blancas",
+    area == "PB" ~ "Point Buchon"
+  ))
+
+gpr_top_adult_meeting$area <- factor(gpr_top_adult_meeting$area, levels = c("AN", "PL", "BL", "PB"))
+gpr_top_adult_meeting$Area <- factor(gpr_top_adult_meeting$Area, levels = c("A\u00f1o Nuevo", "Point Lobos", "Piedras Blancas", "Point Buchon"))
+gpr_top_adult_meeting$Season <- factor(gpr_top_adult_meeting$Season, 
+                                 levels = c("Winter", "Spring", "Summer", "Fall"))
+
+
+gpr_top_adult_2020_dat <- gpr_top_adult_meeting %>%
+  ggplot()+
+  geom_point(size = 4, aes(x = Area, y = correlation, color = Season, 
+                           fill = Season, shape = Lag))+
+  scale_color_manual(values = c("#999999", "#009999","#666666", "#000000"))+
+  scale_fill_manual(values = c("#999999", "#009999", "#666666", "#000000"))+
+  scale_shape_manual(values = c(15, 19, 1, 2, 3, 4))+
+  labs(title = "Adult Gopher Rockfish Top Correlation CPUE-MOCI", 
+       y = "Correlation\n", x = "\nArea (N to S)", caption = "")+
+  scale_y_continuous(limits = c(0.0, 1.0), 
+                     breaks = c(0.0, 0.2, 0.4, 0.6, 0.8, 1.0))+
+  facet_wrap(.~site)+
+  theme_bw()+
+    theme(panel.grid = element_blank(),
+          plot.title = element_text(hjust = 0.5),
+          plot.caption = element_text(size = 8),
+          axis.text.x = element_text(face = "bold",angle = 45, hjust =1))
+
+
+```

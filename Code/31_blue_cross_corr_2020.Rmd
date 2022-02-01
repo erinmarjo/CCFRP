@@ -527,7 +527,7 @@ top_teen_2020_dat <- top_teen_meeting %>%
                            fill = Season, shape = Lag))+
   scale_color_manual(values = c("#009999","#666666", "#000000"))+
   scale_fill_manual(values = c("#009999", "#666666", "#000000"))+
-  scale_shape_manual(values = c(15, 19, 17, 12))+
+  scale_shape_manual(values = c(15, 19, 17, 6))+
   labs(title = "'Teenager' Blue Rockfish Top Correlation CPUE-MOCI", 
        y = "Correlation\n", x = "\nArea (N to S)", caption = "")+
   scale_y_continuous(limits = c(0.0, 1.0), 
@@ -553,7 +553,7 @@ top_teen_2020_dat
 #        path = "C:/Users/erinj/Documents/Thesis/Figures/Lag/2021", dpi = 1000, width = 6,
 #         height = 4)
 
-ggsave(filename = "2022-01-20_adult_blue_top_corr.png", plot = top_adult_2020_dat,
+ggsave(filename = "2022-01-20_teenager_blue_cross_corr.png", plot = teen_plot_erin_ccf,
        path = "C:/Users/erinj/Documents/Thesis/Figures/Lag/2022", dpi = 1000, width = 6, height = 4)
 
 
