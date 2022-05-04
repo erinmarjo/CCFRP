@@ -169,6 +169,37 @@ olv_adult <- olv_full %>%
 ```
 
 
+```{r sample size}
+
+gpr_juv_n <- gpr_full %>%
+  filter(size <= 17) 
+
+sample_size <- master %>%
+  filter(species == "BLU", size <= 20) %>%
+  summarize(sum = sum(num_caught))
+
+overall_sample <- master %>%
+  summarize(sum = sum(num_caught))
+
+## blue juv = 12,700
+## blue adult = 11,188
+## blue total = 58,490
+
+## gpr juv = 67
+## gpr adult = 23,785
+## gpr total = 24,215
+
+## ver juv = 526
+## ver adult = 415
+## ver total = 3933
+
+## olv juve = 2,239
+## olv adult = 1,511
+## olv total = 7979
+
+```
+
+
 ```{r MOCI and data with na}
 
 MOCI <- read_csv(here("Data", "Central_California_MOCI_2020.csv"))

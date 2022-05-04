@@ -150,6 +150,9 @@ The 210 missing drifts for each of the 21 species were added to the full dataset
 full_master <- full_cp_ml %>%
   bind_rows(add_drift_df)
 
+## This was saved as 2021-06-28_full_master_2020.csv
+
+
 ```
 
 
