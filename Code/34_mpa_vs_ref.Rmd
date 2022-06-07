@@ -15,6 +15,7 @@ knitr::opts_chunk$set(echo = TRUE,
 
 library(tidyverse)
 library(here)
+library(pscl)
 ```
 
 
@@ -265,7 +266,8 @@ We need to add the section on MPA vs REF because it is a piece of the story that
  * (adult_cpue ~ site*B/D/A) - 4 models (AN, PL, BL PB)
  
  
-```{r}
+```{r blue data processing}
+
 ### steps from 31_blue_cross_corr_2020.Rmd
 blue_full_glm_pro <- master %>%
   filter(species == "BLU") %>%
@@ -318,11 +320,116 @@ adult <- blue_full_glm_pro %>%
 #   geom_point(aes(x = year, y = cpue_cell, color = site))+
 #   facet_grid(area ~ site)
 
+hist <- blue_full_glm_pro %>%
+  filter(size <= 21, cpue > 0) %>%
+  uncount(num_caught)
+
+hist(juv_AN$cpue_cell)
+
+# check <- blue_full_glm_pro %>%
+#   filter(size >= 32, cpue > 0) %>%
+#   uncount(num_caught)
+
+juv_AN <- juv %>%
+  filter(area == "AN")
+
+juv_PL <- juv %>%
+  filter(area == "PL")
+
+juv_BL <- juv %>%
+  filter(area == "BL")
+
+juv_PB <- juv %>%
+  filter(area == "PB")
+
+adult_AN <- juv %>%
+  filter(area == "AN")
+
+adult_PL <- juv %>%
+  filter(area == "PL")
+
+adult_BL <- juv %>%
+  filter(area == "BL")
+
+adult_PB <- juv %>%
+  filter(area == "PB")
+
 
 ```
  
+Okay, I now have eight datasets, four for adults (one per area) and four for juvenile Blue rockfish (one per area). Now I am going to run four sets of four models. 
+ 
+```{r glm juvenile bda}
+
+juv_mod_1 <- glm(cpue_cell ~ site*bda, data = juv_AN)
+summary(juv_mod_1)
+
+juv_mod_2 <- glm(cpue_cell ~ site*bda, data = juv_PL)
+summary(juv_mod_2)
+
+juv_mod_3 <- glm(cpue_cell ~ site*bda, data = juv_BL)
+summary(juv_mod_3)
+
+juv_mod_4 <- glm(cpue_cell ~ site*bda, data = juv_PB)
+summary(juv_mod_4)
+
+## do we need to account for zero inflated data? If so... something like this?
+# try <- juv_AN %>% mutate(cpue_cell = as.integer(cpue_cell))
+# juv_mod_try <- zeroinfl(cpue_cell ~ site*bda, data = try)
+
+```
+
+```{r glm juvenile pos-neg}
+
+juv_mod_5 <- glm(cpue_cell ~ site*moci_state, data = juv_AN)
+summary(juv_mod_5)
+
+juv_mod_6 <- glm(cpue_cell ~ site*moci_state, data = juv_PL)
+summary(juv_mod_6)
+
+juv_mod_7 <- glm(cpue_cell ~ site*moci_state, data = juv_BL)
+summary(juv_mod_7)
+
+juv_mod_8 <- glm(cpue_cell ~ site*moci_state, data = juv_PB)
+summary(juv_mod_8)
+
+```
 
 
+Now the same models for adults
+
+```{r glm adult bda}
+
+adult_mod_1 <- glm(cpue_cell ~ site*bda, data = adult_AN)
+summary(adult_mod_1)
+
+adult_mod_2 <- glm(cpue_cell ~ site*bda, data = adult_PL)
+summary(adult_mod_2)
+
+adult_mod_3 <- glm(cpue_cell ~ site*bda, data = adult_BL)
+summary(adult_mod_3)
+
+adult_mod_4 <- glm(cpue_cell ~ site*bda, data = adult_PB)
+summary(adult_mod_4)
+
+
+```
+
+```{r glm adult pos-neg}
+
+adult_mod_5 <- glm(cpue_cell ~ site*moci_state, data = adult_AN)
+summary(adult_mod_5)
+
+adult_mod_6 <- glm(cpue_cell ~ site*moci_state, data = adult_PL)
+summary(adult_mod_6)
+
+adult_mod_7 <- glm(cpue_cell ~ site*moci_state, data = adult_BL)
+summary(adult_mod_7)
+
+adult_mod_8 <- glm(cpue_cell ~ site*moci_state, data = adult_PB)
+summary(adult_mod_8)
+
+```
 
 # CODE GRAVEYARD R.I.P.
 
