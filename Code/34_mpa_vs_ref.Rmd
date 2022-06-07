@@ -32,26 +32,26 @@ caught_fishes21 <- caught_fishes %>%
   uncount(num_caught)
 
 
-mlml <- master %>%
-  filter(area %in% c("AN", "PL"))
-
-length(unique(mlml$trip))
-
-angler_hr_check <- master %>%
-  select(area, site, drift, year, anglerhours) %>%
-  distinct() %>%
-  group_by(area, year) %>%
-  summarise(hour_sum = sum(anglerhours, na.rm = T))
-
-num_drift <- master %>%
-  select(area, site, drift, year, anglerhours) %>%
-  distinct() %>%
-  group_by(area, site, year) 
-
-
-ggplot(data =angler_hr_check) +
-  geom_line(aes(x = year, y = hour_sum)) +
-  facet_grid(area ~ site) 
+# mlml <- master %>%
+#   filter(area %in% c("AN", "PL"))
+# 
+# length(unique(mlml$trip))
+# 
+# angler_hr_check <- master %>%
+#   select(area, site, drift, year, anglerhours) %>%
+#   distinct() %>%
+#   group_by(area, year, site) %>%
+#   summarise(hour_sum = sum(anglerhours, na.rm = T))
+# 
+# num_drift <- master %>%
+#   select(area, site, drift, year, anglerhours) %>%
+#   distinct() %>%
+#   group_by(area, site, year) 
+# 
+# 
+# ggplot(data =angler_hr_check) +
+#   geom_line(aes(x = year, y = hour_sum)) +
+#   facet_grid(area ~ site) 
 
 ```
 
@@ -250,6 +250,79 @@ To determine if the distributions of slopes inside MPAs or REFs varied before an
 Q32c. Is there an increase over time in the difference between MPAs and reference sites in abundance (density, cover, biomass) of focal species and if so are there differences between SMR and SMCAs of similar size?
 Statewide time series (4 years)
 We modified this question to examine how variables such as MPA size (measured as the total area for both paired and unpaired SMCA/SMR zones at each site) and latitude influenced the rate of MPA response for the total fish assemblage, using generalized linear models with the CPUE response ratio or the BPUE response ratio as our metric of differences between paired MPA-Reference sites. We found a clear positive relationship between the CPUE response ratio and the total protected cluster area of the MPAs across the state, such that larger MPAs exhibited bigger differences in catch rates between the MPA and Reference sites than smaller MPAs (R2= 0.37, p<0.001; Figure 42). Similarly, we found a strong positive association between MPA area and the strength of the MPA response using the BPUE response ratio metric (R2= 0.37, p<0.001; Figure 43), indicating that strength of the MPA response was higher in larger reserves compared to smaller reserves. Stating this another way, fish biomass was proportionally higher inside larger MPAs. These results indicate that reserve effects are greatest in the South coast region and weakest in the North coast region, despite being implemented at similar times, and that the Central coast was intermediate in the strength of the MPA response, despite being implemented earlier. These geographic effects on MPA responses are likely due to life history differences among the species that are common in each region (i.e., consistency of recruitment, growth rates in warmer waters, etc.) and differences in the amount of external fishing pressure outside the MPAs in each region.
+
+
+## Update 2022-06-06
+
+We need to add the section on MPA vs REF because it is a piece of the story that is missing. After meeting with Ally, Ben, Josiah on 2022-06-06, I am going to run a glm with the response of cell level cpue for juveniles and then another model with cell level cpue for adults and a separate model for each of the four study areas. I will do this for fixed effect of MOCI negative/positive year and also Before-During-After year (total of 16 models). The fixed effects will be site and some classification of year (see above neg/pos and B/D/A). The models should be the following:
+
+ * (juv_cpue ~ site*neg/pos) - 4 models (AN, PL, BL, PB)
+ 
+ * (juv_cpue ~ site*B/D/A) - 4 models (AN, PL, BL, PB)
+ 
+ * (adult_cpue ~ site*neg/pos) - 4 models (AN, PL, BL PB)
+ 
+ * (adult_cpue ~ site*B/D/A) - 4 models (AN, PL, BL PB)
+ 
+ 
+```{r}
+### steps from 31_blue_cross_corr_2020.Rmd
+blue_full_glm_pro <- master %>%
+  filter(species == "BLU") %>%
+  mutate(group = as.factor(group),
+         trip = as.factor(trip),
+         area = as.factor(area),
+         month = as.factor(month),
+         year = as.factor(year),
+         gridcell = as.factor(gridcell),
+         site = as.factor(site),
+         bda = as.factor(case_when(
+           year %in% c(2007:2013) ~ "Before",
+           year %in% c(2014:2016) ~ "During",
+           year %in% c(2017:2020) ~ "After")),
+         moci_state = as.factor(case_when(
+           year %in% c(2007:2013) ~ "Negative",
+           year %in% c(2014:2020) ~ "Positive"
+         )))
+
+# missing_bl_blue <- data.frame(area = c("BL", "BL", "BL", "BL"),
+#                               site = c("REF", "MPA", "REF", "MPA"),
+#                               year = c(2007, 2007, 2015, 2015), 
+#                               cpue_site = c(NA, NA, NA, NA))
+
+juv <- blue_full_glm_pro %>%
+  filter(size <= 21) %>%
+  select(-size) %>%
+  group_by(drift, trip, area, site, month, day, year, gridcell, bda, moci_state) %>%
+  summarise(cpue_sum = sum(cpue))%>%
+  group_by(trip, area, site, month, day, year, gridcell, bda, moci_state) %>%
+  summarise(cpue_date = mean(cpue_sum))%>%
+  group_by( area, site, year, gridcell, bda, moci_state) %>%
+  summarise(cpue_cell = mean(cpue_date))
+#  bind_rows(missing_bl_blue)
+
+
+adult <- blue_full_glm_pro %>%
+  filter(size >= 32) %>%
+  select(-size)%>%
+  group_by(drift, trip, area, site, month, day, year, gridcell, bda, moci_state) %>%
+  summarise(cpue_sum = sum(cpue))%>%
+  group_by(trip, area, site, month, year, gridcell, bda, moci_state) %>%
+  summarise(cpue_date = mean(cpue_sum)) %>%
+  group_by( area, site, year, gridcell, bda, moci_state) %>%
+  summarise(cpue_cell = mean(cpue_date))
+
+# adult %>%
+#   filter(area == "BL") %>%
+#   ggplot()+
+#   geom_point(aes(x = year, y = cpue_cell, color = site))+
+#   facet_grid(area ~ site)
+
+
+```
+ 
+
+
 
 # CODE GRAVEYARD R.I.P.
 
