@@ -16,6 +16,8 @@ knitr::opts_chunk$set(echo = TRUE,
 library(tidyverse)
 library(here)
 library(pscl)
+library(stargazer)
+
 ```
 
 
@@ -65,7 +67,7 @@ null hypothesis: The difference in group means is 0
 alternative hypothesis: The difference in group means in different than 0
 
 
-```{r t test combo loop}
+```{r t test combo loop, eval = F}
 
 area_list <- c("AN", "PL", "BL", "PB")
 year_list <- c(2007:2020)
@@ -112,7 +114,7 @@ Do I need to keep 0's in to get an accurate BPUE? I think I do... BPUE at what l
 
 Using L-W relationship from Milton 2002.
 
-```{r glm models}
+```{r glm models, eval = F}
 
 ##calculate biomass and BPUE
 caught_blue <- caught_fishes %>%
@@ -182,7 +184,7 @@ Okay, I based on models and with visuals I want to say that MPA and REF are diff
 
 # KS Test Juvenile Rockfish per Area
 
-```{r ks test loops}
+```{r ks test loops, eval = F}
 
 caught_blue_mpa <- caught_blue %>%
   filter(site == "MPA") %>%
@@ -314,17 +316,41 @@ adult <- blue_full_glm_pro %>%
   group_by( area, site, year, gridcell, bda, moci_state) %>%
   summarise(cpue_cell = mean(cpue_date))
 
+
+juvjuv <- blue_full_glm_pro %>%
+  filter(size <= 21) %>%
+  select(-size) %>%
+  group_by(drift, trip, area, site, month, day, year, gridcell, bda, moci_state) %>%
+  summarise(cpue_sum = sum(cpue))%>%
+  group_by(trip, area, site, month, day, year, gridcell, bda, moci_state) %>%
+  summarise(cpue_date = mean(cpue_sum))%>%
+  group_by( area, site, year, gridcell, bda, moci_state) %>%
+  summarise(cpue_cell = mean(cpue_date))%>%
+  mutate(lifehistory = "juv")
+
+
+adultadult <- blue_full_glm_pro %>%
+  filter(size >= 32) %>%
+  select(-size)%>%
+  group_by(drift, trip, area, site, month, day, year, gridcell, bda, moci_state) %>%
+  summarise(cpue_sum = sum(cpue))%>%
+  group_by(trip, area, site, month, year, gridcell, bda, moci_state) %>%
+  summarise(cpue_date = mean(cpue_sum)) %>%
+  group_by( area, site, year, gridcell, bda, moci_state) %>%
+  summarise(cpue_cell = mean(cpue_date)) %>%
+  mutate(lifehistory = "adult")
+
 # adult %>%
 #   filter(area == "BL") %>%
 #   ggplot()+
 #   geom_point(aes(x = year, y = cpue_cell, color = site))+
 #   facet_grid(area ~ site)
 
-hist <- blue_full_glm_pro %>%
-  filter(size <= 21, cpue > 0) %>%
-  uncount(num_caught)
-
-hist(juv_AN$cpue_cell)
+# hist <- blue_full_glm_pro %>%
+#   filter(size <= 21, cpue > 0) %>%
+#   uncount(num_caught)
+# 
+# hist(asin(sqrt(juv_AN$cpue_cell)))
 
 # check <- blue_full_glm_pro %>%
 #   filter(size >= 32, cpue > 0) %>%
@@ -342,16 +368,16 @@ juv_BL <- juv %>%
 juv_PB <- juv %>%
   filter(area == "PB")
 
-adult_AN <- juv %>%
+adult_AN <- adult %>%
   filter(area == "AN")
 
-adult_PL <- juv %>%
+adult_PL <- adult %>%
   filter(area == "PL")
 
-adult_BL <- juv %>%
+adult_BL <- adult %>%
   filter(area == "BL")
 
-adult_PB <- juv %>%
+adult_PB <- adult %>%
   filter(area == "PB")
 
 
@@ -361,7 +387,7 @@ Okay, I now have eight datasets, four for adults (one per area) and four for juv
  
 ```{r glm juvenile bda}
 
-juv_mod_1 <- glm(cpue_cell ~ site*bda, data = juv_AN)
+juv_mod_1 <- glm(cpue_cell ~ site* bda, data = juv_AN)
 summary(juv_mod_1)
 
 juv_mod_2 <- glm(cpue_cell ~ site*bda, data = juv_PL)
@@ -373,16 +399,45 @@ summary(juv_mod_3)
 juv_mod_4 <- glm(cpue_cell ~ site*bda, data = juv_PB)
 summary(juv_mod_4)
 
+
 ## do we need to account for zero inflated data? If so... something like this?
 # try <- juv_AN %>% mutate(cpue_cell = as.integer(cpue_cell))
 # juv_mod_try <- zeroinfl(cpue_cell ~ site*bda, data = try)
 
 ```
 
+
+```{r output juv bda, results= 'asis', echo = F}
+
+stargazer(juv_mod_1, juv_mod_2, juv_mod_3, juv_mod_4, type = "html",
+          column.labels = c("Juv AN", "Juv PL", "Juv BL", "Juv PB"),
+          title = "Juvenile: Before-During-After",
+          notes = "<em>p&lt;0.1&#42;; p&lt;0.05&#42;&#42;; p&lt;0.01&#42;&#42;&#42;</em>",
+          notes.append = FALSE)
+
+
+```
+
+```{r output to save juv bda, results= 'asis', echo = F, eval = F}
+
+stargazer(juv_mod_1, juv_mod_2, juv_mod_3, juv_mod_4, type = "html",
+          column.labels = c("Juv AN", "Juv PL", "Juv BL", "Juv PB"),
+          title = "Juvenile: Before-During-After",
+          covariate.labels = c("Reference Site", "Before MHW", "During MHW", 
+                               "Reference:Before MHW", "Reference: During MHW"),
+          dep.var.labels = "Juvenile Catch Per Unit Effort: Cell Level",
+          notes = "<em>p&lt;0.1&#42;; p&lt;0.05&#42;&#42;; p&lt;0.01&#42;&#42;&#42;</em>",
+          notes.append = FALSE,
+          out = here("Output/juv_bda.htm"))
+
+```
+
+
 ```{r glm juvenile pos-neg}
 
 juv_mod_5 <- glm(cpue_cell ~ site*moci_state, data = juv_AN)
 summary(juv_mod_5)
+
 
 juv_mod_6 <- glm(cpue_cell ~ site*moci_state, data = juv_PL)
 summary(juv_mod_6)
@@ -395,6 +450,31 @@ summary(juv_mod_8)
 
 ```
 
+
+```{r output juv posneg, results= 'asis', echo = F}
+
+stargazer(juv_mod_5, juv_mod_6, juv_mod_7, juv_mod_8, type = "html",
+          column.labels = c("Juv AN", "Juv PL", "Juv BL", "Juv PB"),
+          title = "Juvenile: MOCI Negative-Positive",
+          notes = "<em>p&lt;0.1&#42;; p&lt;0.05&#42;&#42;; p&lt;0.01&#42;&#42;&#42;</em>",
+          notes.append = FALSE)
+
+
+```
+
+```{r output to save juv posneg, results= 'asis', echo = F, eval = F}
+
+stargazer(juv_mod_5, juv_mod_6, juv_mod_7, juv_mod_8, type = "html",
+          column.labels = c("Juv AN", "Juv PL", "Juv BL", "Juv PB"),
+          title = "Juvenile: MOCI Negative-Positive",
+          covariate.labels = c("Reference Site", "Positive MOCI",
+                               "Reference: Positive MOCI"),
+          dep.var.labels = "Juvenile Catch Per Unit Effort: Cell Level",
+          notes = "<em>p&lt;0.1&#42;; p&lt;0.05&#42;&#42;; p&lt;0.01&#42;&#42;&#42;</em>",
+          notes.append = FALSE,
+          out = here("Output/juv_negpos.htm"))
+
+```
 
 Now the same models for adults
 
@@ -415,6 +495,35 @@ summary(adult_mod_4)
 
 ```
 
+
+
+
+```{r output adult bda, results= 'asis', echo = F}
+
+stargazer(adult_mod_1, adult_mod_2, adult_mod_3, adult_mod_4, type = "html",
+          column.labels = c("Adult AN", "Adult PL", "Adult BL", "Adult PB"),
+          title = "Adult: Before-During-After",
+          notes = "<em>p&lt;0.1&#42;; p&lt;0.05&#42;&#42;; p&lt;0.01&#42;&#42;&#42;</em>",
+          notes.append = FALSE)
+
+
+```
+
+```{r output to save adult bda, results= 'asis', echo = F, eval = F}
+
+stargazer(adult_mod_1, adult_mod_2, adult_mod_3, adult_mod_4, type = "html",
+          column.labels = c("Adult AN", "Adult PL", "Adult BL", "Adult PB"),
+          title = "Adult: Before-During-After",
+          covariate.labels = c("Reference Site", "Before MHW", "During MHW", 
+                               "Reference:Before MHW", "Reference: During MHW"),
+          dep.var.labels = "Adult Catch Per Unit Effort: Cell Level",
+          notes = "<em>p&lt;0.1&#42;; p&lt;0.05&#42;&#42;; p&lt;0.01&#42;&#42;&#42;</em>",
+          notes.append = FALSE,
+          out = here("Output/adult_bda.htm"))
+
+```
+
+
 ```{r glm adult pos-neg}
 
 adult_mod_5 <- glm(cpue_cell ~ site*moci_state, data = adult_AN)
@@ -431,10 +540,36 @@ summary(adult_mod_8)
 
 ```
 
+
+```{r output adult posneg, results= 'asis', echo = F}
+
+stargazer(adult_mod_5, adult_mod_6, adult_mod_7, adult_mod_8, type = "html",
+          column.labels = c("Adult AN", "Adult PL", "Adult BL", "Adult PB"),
+          title = "Adult: MOCI Negative-Positive",
+          notes = "<em>p&lt;0.1&#42;; p&lt;0.05&#42;&#42;; p&lt;0.01&#42;&#42;&#42;</em>",
+          notes.append = FALSE)
+## to add p-val instead of standard error add report = ('vc*p')
+
+```
+
+```{r output to save adult posneg, results= 'asis', echo = F, eval = F}
+
+stargazer(adult_mod_5, adult_mod_6, adult_mod_7, adult_mod_8, type = "html",
+          column.labels = c("Adult AN", "Adult PL", "Adult BL", "Adult PB"),
+          title = "Adult: MOCI Negative-Positive",
+          covariate.labels = c("Reference Site", "Positive MOCI",
+                               "Reference: Positive MOCI"),
+          dep.var.labels = "Adult Catch Per Unit Effort: Cell Level",
+          notes = "<em>p&lt;0.1&#42;; p&lt;0.05&#42;&#42;; p&lt;0.01&#42;&#42;&#42;</em>",
+          notes.append = FALSE,
+          out = here("Output/adult_negpos.htm"))
+
+```
+
+
+```{r pretty dead code, echo = F, eval = F}
+
 # CODE GRAVEYARD R.I.P.
-
-
-```{r pretty dead code}
 
 ## blue rockfish
 ## different areas
@@ -574,9 +709,11 @@ for( i in year_list) {
 ```
 
 
-## Use Grid Cell as replicate
 
-```{r}
+
+```{r, echo = F, eval = F}
+
+## Use Grid Cell as replicate
 
 blue_full <- master %>%
   filter(species == "BLU") 
