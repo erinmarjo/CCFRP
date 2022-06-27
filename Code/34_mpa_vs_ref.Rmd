@@ -387,6 +387,8 @@ Okay, I now have eight datasets, four for adults (one per area) and four for juv
  
 ```{r glm juvenile bda}
 
+str(juv_AN)
+
 juv_mod_1 <- glm(cpue_cell ~ site* bda, data = juv_AN)
 summary(juv_mod_1)
 
@@ -566,6 +568,8 @@ stargazer(adult_mod_5, adult_mod_6, adult_mod_7, adult_mod_8, type = "html",
 
 ```
 
+
+NOTES: repeated measures anova
 
 ```{r pretty dead code, echo = F, eval = F}
 
