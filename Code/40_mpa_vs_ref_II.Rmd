@@ -1,0 +1,225 @@
+---
+title: "New MPA v REF"
+author: "Erin Johnston"
+date: "9/20/2022"
+output: html_document
+---
+
+Old file (34_mpa_vs_ref) is causing RStudio to crash upon open. This new file is a copy of some of the MPA v REF work that has been ongoing for the last several months.
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE,
+                      warning = F,
+                      message = F)
+
+```
+
+```{r packages}
+
+library(tidyverse)
+library(here)
+
+```
+
+```{r data}
+
+master <- read_csv(here("Data", "2021-06-28_full_master_2020.csv"))
+
+```
+
+
+## Update 2022-06-06
+
+We need to add the section on MPA vs REF because it is a piece of the story that is missing. After meeting with Ally, Ben, Josiah on 2022-06-06, I am going to run a glm with the response of cell level cpue for juveniles and then another model with cell level cpue for adults and a separate model for each of the four study areas. I will do this for fixed effect of MOCI negative/positive year and also Before-During-After year (total of 16 models). The fixed effects will be site and some classification of year (see above neg/pos and B/D/A). The models should be the following:
+
+* (juv_cpue ~ site*neg/pos) - 4 models (AN, PL, BL, PB)
+
+* (juv_cpue ~ site*B/D/A) - 4 models (AN, PL, BL, PB)
+
+* (adult_cpue ~ site*neg/pos) - 4 models (AN, PL, BL PB)
+
+* (adult_cpue ~ site*B/D/A) - 4 models (AN, PL, BL PB)
+
+```{r}
+
+blue_full_glm_pro <- master %>%
+  filter(species == "BLU") %>%
+  mutate(group = as.factor(group),
+         trip = as.factor(trip),
+         area = as.factor(area),
+         month = as.factor(month),
+         year = as.factor(year),
+         gridcell = as.factor(gridcell),
+         site = as.factor(site),
+         bda = as.factor(case_when(
+           year %in% c(2007:2013) ~ "Before",
+           year %in% c(2014:2016) ~ "During",
+           year %in% c(2017:2020) ~ "After")),
+         moci_state = as.factor(case_when(
+           year %in% c(2007:2013) ~ "Negative",
+           year %in% c(2014:2020) ~ "Positive"
+         )))
+
+juv <- blue_full_glm_pro %>%
+  filter(size <= 21) %>%
+  select(-size) %>%
+  group_by(drift, trip, area, site, month, day, year, gridcell, bda, moci_state) %>%
+  summarise(cpue_sum = sum(cpue))%>%
+  group_by(trip, area, site, month, day, year, gridcell, bda, moci_state) %>%
+  summarise(cpue_date = mean(cpue_sum))%>%
+  group_by( area, site, year, gridcell, bda, moci_state) %>%
+  summarise(cpue_cell = mean(cpue_date))
+
+adult <- blue_full_glm_pro %>%
+  filter(size >= 32) %>%
+  select(-size)%>%
+  group_by(drift, trip, area, site, month, day, year, gridcell, bda, moci_state) %>%
+  summarise(cpue_sum = sum(cpue))%>%
+  group_by(trip, area, site, month, year, gridcell, bda, moci_state) %>%
+  summarise(cpue_date = mean(cpue_sum)) %>%
+  group_by( area, site, year, gridcell, bda, moci_state) %>%
+  summarise(cpue_cell = mean(cpue_date))
+
+
+juv_AN <- juv %>%
+  filter(area == "AN")
+
+juv_PL <- juv %>%
+  filter(area == "PL")
+
+juv_BL <- juv %>%
+  filter(area == "BL")
+
+juv_PB <- juv %>%
+  filter(area == "PB")
+
+adult_AN <- adult %>%
+  filter(area == "AN")
+
+adult_PL <- adult %>%
+  filter(area == "PL")
+
+adult_BL <- adult %>%
+  filter(area == "BL")
+
+adult_PB <- adult %>%
+  filter(area == "PB")
+
+```
+
+Okay, I now there are eight datasets, four for adults (one per area) and four for juvenile Blue rockfish (one per area). Now run four sets of four models.
+
+
+```{r}
+
+juv_mod_1 <- glm(cpue_cell ~ site* bda, data = juv_AN)
+summary(juv_mod_1)
+
+juv_mod_2 <- glm(cpue_cell ~ site*bda, data = juv_PL)
+summary(juv_mod_2)
+
+juv_mod_3 <- glm(cpue_cell ~ site*bda, data = juv_BL)
+summary(juv_mod_3)
+
+juv_mod_4 <- glm(cpue_cell ~ site*bda, data = juv_PB)
+summary(juv_mod_4)
+
+
+juv_mod_5 <- glm(cpue_cell ~ site*moci_state, data = juv_AN)
+summary(juv_mod_5)
+
+juv_mod_6 <- glm(cpue_cell ~ site*moci_state, data = juv_PL)
+summary(juv_mod_6)
+
+juv_mod_7 <- glm(cpue_cell ~ site*moci_state, data = juv_BL)
+summary(juv_mod_7)
+
+juv_mod_8 <- glm(cpue_cell ~ site*moci_state, data = juv_PB)
+summary(juv_mod_8)
+
+```
+
+
+```{r}
+
+adult_mod_1 <- glm(cpue_cell ~ site*bda, data = adult_AN)
+summary(adult_mod_1)
+
+adult_mod_2 <- glm(cpue_cell ~ site*bda, data = adult_PL)
+summary(adult_mod_2)
+
+adult_mod_3 <- glm(cpue_cell ~ site*bda, data = adult_BL)
+summary(adult_mod_3)
+
+adult_mod_4 <- glm(cpue_cell ~ site*bda, data = adult_PB)
+summary(adult_mod_4)
+
+adult_mod_5 <- glm(cpue_cell ~ site*moci_state, data = adult_AN)
+summary(adult_mod_5)
+
+adult_mod_6 <- glm(cpue_cell ~ site*moci_state, data = adult_PL)
+summary(adult_mod_6)
+
+adult_mod_7 <- glm(cpue_cell ~ site*moci_state, data = adult_BL)
+summary(adult_mod_7)
+
+adult_mod_8 <- glm(cpue_cell ~ site*moci_state, data = adult_PB)
+summary(adult_mod_8)
+
+
+```
+
+
+## Update 2022-09-20
+
+An email thread ('Statistics are confusing - help!') with Hunter from June 2022 indicates that trying one model with age and area included is the way to go.  Hunter says: 
+
+"So, in my experience and knowledge, the effects of other variables on cpue will not be easier seen if there are separate models for each area and age and they will not be washed out by virtue of the alternative being a single model with area in it. My general recommendation is to use a single model with the entire dataset for at least the following two big reasons:
+
+1. Using a single model gives you the ability to model possible interactions between the variables you're currently subsetting by (area and age), which cannot be done with multiple models. I'm not sure if you have hypotheses about interactions, but this is a big benefit.
+
+
+2. By using the entire dataset with a single model you will have greater power to detect effects, which is precisely what I think you're trying to do."
+
+I need to check regression assumtions before really moving forward, but I think I need some help with that. My grasp of statistics is slipping the further away from classes I get.
+
+
+```{r single model}
+## make columns that label adult, juvenile, teen. Take out teen for the analysis
+
+single_glm_dat <- blue_full_glm_pro %>%
+  mutate(life_stage = as.factor(case_when(
+    size <= 21 ~ "Juvenile",
+    size >= 32 ~ "Adult",
+    size %in% c(22:31) ~ "Teen"))) %>%
+  filter(!life_stage == "Teen")
+
+
+single_glm_dat2 <- single_glm_dat %>%
+  select(-size) %>%
+  group_by(drift, trip, area, site, month, day, year, gridcell, bda, moci_state, life_stage) %>%
+  summarise(cpue_sum = sum(cpue))%>%
+  group_by(trip, area, site, month, day, year, gridcell, bda, moci_state, life_stage) %>%
+  summarise(cpue_date = mean(cpue_sum))%>%
+  group_by( area, site, year, gridcell, bda, moci_state, life_stage) %>%
+  summarise(cpue_cell = mean(cpue_date))
+
+
+single_mod_1 <- glm(cpue_cell ~ area + site + life_stage + moci_state + site:moci_state + life_stage:site + life_stage:moci_state, data = single_glm_dat2)
+summary(single_mod_1)
+
+## second model with bda?? reverse stepwise including bda and moci_state
+## maybe different model for life stage. life stage is critical enough that we would have to include the interaction between life_stage and everything else.
+## area site
+
+## cpue or response ratio as the response?
+## ping shelby about MPA REF. 
+
+## 1. does it make more sense for juv and adult to be separate? We expect life stage is going to be affected differently by the different variables that are in the model. 
+## 2. what should the unit of replecation be? cpue at the gridcell level? Cell nested in site in area, how to set up. Or should we use response ratio of cpue as response variable?
+## 3. 
+
+
+```
+

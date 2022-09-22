@@ -569,7 +569,424 @@ stargazer(adult_mod_5, adult_mod_6, adult_mod_7, adult_mod_8, type = "html",
 ```
 
 
-NOTES: repeated measures anova
+NOTES: repeated measures anova - Ben Ruttenberg suggestion
+sensitivity test to look at length cutoffs - Ryan Walter suggestion
+
+
+## Two way repeated measures ANOVA 7/1/2022
+
+Following guidance and code from https://finnstats.com/index.php/2021/04/06/repeated-measures-of-anova-in-r/
+
+"The two-way repeated measures ANOVA can be performed in order to determine whether there is a significant interaction between treatment and time on the score."
+
+In my case, the treatment is going to be MPA/REF and the time will be time...
+
+```{r tutorial libraries}
+
+library(xlsx)
+library(rstatix)
+library(reshape)
+#library(tidyverse)
+#library(dplyr)
+library(ggpubr)
+library(plyr)
+library(datarium)
+
+```
+
+
+```{r}
+
+summary <- juv_PB %>%
+group_by(site,year) %>%
+get_summary_stats(cpue_cell, type = "mean_sd")
+data.frame(summary)
+
+## check outliers
+
+ggplot(data = juv_PB) +
+  geom_boxplot(aes(x = year, y = cpue_cell))+
+  facet_grid(.~site)
+
+outlier <- juv_PB %>%
+group_by(site,year) %>%
+identify_outliers(cpue_cell)
+data.frame(outlier)
+
+## if removing outliers run next two
+
+# summary<-data %>%
+# group_by(site,year) %>%
+# get_summary_stats(score, type = "mean_sd")
+# data.frame(summary)
+# 
+# outlier<-data %>%
+# group_by(site,year) %>%
+# identify_outliers(cpue_site)
+# data.frame(outlier)
+
+
+## check normality
+
+# normality <- juv_PB %>%
+# shapiro_test(cpue_cell)
+# data.frame(normality)
+
+ggqqplot(juv_PB, "cpue_cell", ggtheme = theme_bw()) +
+facet_grid(year ~ site, labeller = "label_both")
+
+# iris %>% group_by(Species) %>% shapiro_test(Sepal.Length)
+# 
+# juv_PB %>% filter(cpue_cell > 0) %>% group_by(site) %>% shapiro_test(cpue_cell)
+# 
+# str(iris)
+# str(juv_PB)
+```
+
+
+```{r}
+
+juv_PB <- juv_PB %>% 
+  dplyr::mutate(ID = row_number())%>%
+  ungroup
+
+res.aov <- anova_test(
+data = juv_PB, dv = cpue_cell, wid = ID,
+between = c(site, year)
+)
+get_anova_table(res.aov)
+
+
+pwc <- test %>%
+group_by(year) %>%
+pairwise_t_test(
+cpue_site ~ site, paired = TRUE,
+p.adjust.method = "bonferroni"
+)
+data.frame(pwc)
+
+str(juv_PB)
+
+test <- juv_PB %>%
+  dplyr::group_by(site, year) %>%
+  dplyr::summarise(cpue_site = mean(cpue_cell))
+
+testest <- test %>%
+  group_by(year) %>%
+  t.test(cpue_site ~ site, paired= T)
+
+```
+
+
+
+okay nothing is working...
+
+trying again. with a tutorial from https://www.datanovia.com/en/lessons/repeated-measures-anova-in-r/
+
+
+```{r}
+
+str(juv_PB)
+
+library(tidyverse)
+library(ggpubr)
+library(rstatix)
+library(dplyr)
+
+juv_PB %>%
+  group_by(site, year) %>%
+  get_summary_stats(cpue_cell, type = "mean_sd")
+
+## vis for outliers
+bxp <- ggboxplot(
+  juv_PB, x = "year", y = "cpue_cell",
+  color = "site", palette = "jco"
+  )
+bxp
+
+## outlier check
+juv_PB %>%
+  group_by(site, year) %>%
+  identify_outliers(cpue_cell)
+
+juv_PB <- juv_PB %>% ungroup
+
+res.aov <- anova_test(
+  data = juv_PB, dv = cpue_cell, wid = ID,
+  between = c(site, year)
+  )
+get_anova_table(res.aov)
+
+```
+
+Just for shits and giggles: A two-way repeated measures ANOVA was performed to evaluate the effect of different protection status (MPA or REF) over time on catch per unit effort of Blue rockfish in each cell.
+
+```{r}
+
+
+juv_AN2 <- juv_AN %>% 
+  rowid_to_column("ID")%>%
+  ungroup
+
+juv_PL2 <- juv_PL %>% 
+  rowid_to_column("ID")%>%
+  ungroup
+
+juv_BL2 <- juv_BL %>% 
+  rowid_to_column("ID")%>%
+  ungroup
+
+juv_PB2 <- juv_PB %>% 
+  rowid_to_column("ID")%>%
+  ungroup
+
+
+adult_AN2 <- adult_AN %>% 
+  rowid_to_column("ID")%>%
+  ungroup
+
+adult_PL2 <- adult_PL %>% 
+  rowid_to_column("ID")%>%
+  ungroup
+
+adult_BL2 <- adult_BL %>% 
+  rowid_to_column("ID")%>%
+  ungroup
+
+adult_PB2 <- adult_PB %>% 
+  rowid_to_column("ID")%>%
+  ungroup
+
+
+####### juvenile aovs #####
+
+
+jAN_aov <- anova_test(
+  data = juv_AN2, dv = cpue_cell, wid = ID,
+  between = c(site, year) 
+  )
+get_anova_table(jAN_aov)
+
+## There was NOT a statistically significant interaction between site and year on juvenile Blue rockfish cell cpue at Ano Nuevo, F = 1.313, p = 0.206
+
+
+jPL_aov <- anova_test(
+  data = juv_PL2, dv = cpue_cell, wid = ID,
+  between = c(site, year) 
+  )
+get_anova_table(jPL_aov)
+
+## There was a statistically significant interaction between site and year on juvenile Blue rockfish cell cpue at Point Lobos, F = 4.885, p = 2.27e-07
+
+jBL_aov <- anova_test(
+  data = juv_BL2, dv = cpue_cell, wid = ID,
+  between = c(site, year) 
+  )
+get_anova_table(jBL_aov)
+
+## There was a statistically significant interaction between site and year on juvenile Blue rockfish cell cpue at Piedras Blancas, F = 5.295, p = 1.59e-07
+
+jPB_aov <- anova_test(
+  data = juv_PB2, dv = cpue_cell, wid = ID,
+  between = c(site, year) 
+  )
+get_anova_table(jPB_aov)
+
+## There was a statistically significant interaction between site and year on juvenile Blue rockfish cell cpue at Point Buchon, F = 12.386, p = 3.19e-20
+
+
+
+##### adult aovs #####
+
+
+aAN_aov <- anova_test(
+  data = adult_AN2, dv = cpue_cell, wid = ID,
+  between = c(site, year) 
+  )
+get_anova_table(aAN_aov)
+
+## There was NOT a statistically significant interaction between site and year on adult Blue rockfish cell cpue at Ano Nuevo, F = 0.815, p = 0.644
+
+
+aPL_aov <- anova_test(
+  data = adult_PL2, dv = cpue_cell, wid = ID,
+  between = c(site, year) 
+  )
+get_anova_table(aPL_aov)
+
+## There was a statistically significant interaction between site and year on adult Blue rockfish cell cpue at Point Lobos, F = 6.36, p = 5.95e-10
+
+aBL_aov <- anova_test(
+  data = adult_BL2, dv = cpue_cell, wid = ID,
+  between = c(site, year) 
+  )
+get_anova_table(aBL_aov)
+
+## There was NOT a statistically significant interaction between site and year on adult Blue rockfish cell cpue at Piedras Blancas, F = 0.467, p = 0.922
+
+aPB_aov <- anova_test(
+  data = adult_PB2, dv = cpue_cell, wid = ID,
+  between = c(site, year) 
+  )
+get_anova_table(aPB_aov)
+
+## There was a statistically significant interaction between site and year on adult Blue rockfish cell cpue at Point Buchon, F = 3.346, p = 0.000106
+
+
+
+```
+
+
+Conclusions Part I:
+
+There was a statistically significant interaction between site and year on juvenile Blue rockfish cell cpue at Point Lobos, Piedras Blancas, and Point Buchon, but NOT at Ano Nuevo.
+
+There was a statistically significant interaction between site and year on adult Blue rockfish cell cpue at Point Lobos and Point Buchon, but NOT at Ano Nuevo or Piedras Blancas.
+
+NOTES:
+
+* When there is a signifcant two way interaction that means that the impact that MPA/REF has on cpue depends on what year.
+
+* When there is not a significant two-way interaction, I look at whether there are significant main effects from the original output.
+
+Conclusions Part II:
+
+* juvenile Ano Nuevo: There was NOT a significant interaction, so the effect of site on cpue does not depend on year. Both main effects of site(p = 0.002) and year(p = 3.33 e-43) both have a significant effect on cpue.
+
+* adult Ano Nuevo: There was NOT a significant interaction, so the effect of site on cpue does not depend on year. Both main effects of site(p = 0.028) and year(p = 1.48e-12) both have a sigificant effect on cpue.
+
+* adult Piedras Blancas: There was NOT a significant interaction, so the effect of site on cpue does not depend on year. Year(p = 1.72e-28) has a significant effect on cpue, however site(p = 0.215) does not have a significant effect on cpue.
+
+
+
+Next Step: Now for those where there was a significant interaction... we need to see which years had that significance.
+
+juv @ lobos, juv @ blancas, juv @ buchon, adult @ lobos, adult @ buchon.
+
+
+```{r one way comparisons}
+
+
+## Effect of site at each time point (year)
+
+
+## juv lobos
+one_way_jPL <- juv_PL2 %>%
+  group_by(year) %>%
+  anova_test(dv = cpue_cell, wid = ID, between = site) %>%
+  get_anova_table() %>%
+  adjust_pvalue(method = "bonferroni")
+one_way_jPL
+
+
+## This doesnt run because not all arguments have the same length...
+# pwc_jPL <- juv_PL2 %>%
+#   group_by(year) %>%
+#   pairwise_t_test(
+#     cpue_cell ~ site, paired = TRUE,
+#     p.adjust.method = "bonferroni"
+#     )
+# pwc
+
+num_pairs <- juv_PL2 %>% count(site, year)
+## this needs to be the same number of cells in MPA/REF each year or the pairwise comparison won't run
+
+
+## conclusion: 
+
+## juv blancas
+
+one_way_jBL <- juv_BL2 %>%
+  group_by(year) %>%
+  anova_test(dv = cpue_cell, wid = ID, between = site) %>%
+  get_anova_table() %>%
+  adjust_pvalue(method = "bonferroni")
+one_way_jBL
+
+## juv buchon
+## this doesnt work because the residual sum of squares is 0 (within rounding error)
+# one_way_jPB <- juv_PB2 %>%
+#   group_by(year) %>%
+#   anova_test(dv = cpue_cell, wid = ID, between = site) %>%
+#   get_anova_table() %>%
+#   adjust_pvalue(method = "bonferroni")
+# one_way_jPB
+
+## adult lobos
+
+one_way_aPL <- adult_PL2 %>%
+  group_by(year) %>%
+  anova_test(dv = cpue_cell, wid = ID, between = site) %>%
+  get_anova_table() %>%
+  adjust_pvalue(method = "bonferroni")
+one_way_aPL
+
+## adult buchon
+
+one_way_aPB <- adult_PB2 %>%
+  group_by(year) %>%
+  anova_test(dv = cpue_cell, wid = ID, between = site) %>%
+  get_anova_table() %>%
+  adjust_pvalue(method = "bonferroni")
+one_way_aPB
+
+
+### output tables nicer
+
+library(kableExtra)
+
+one_way_jBL %>% 
+  kbl(caption = "Juvenile Piedras Blancas") %>%
+  kable_classic(full_width = F, html_font = "Cambria")
+
+one_way_jPL %>% 
+  kbl(caption = "Juvenile Point Lobos") %>%
+  kable_classic(full_width = F, html_font = "Cambria")
+
+one_way_aPL %>% 
+  kbl(caption = "Adult Point Lobos") %>%
+  kable_classic(full_width = F, html_font = "Cambria")
+
+one_way_aPB %>% 
+  kbl(caption = "Adult Point Buchon") %>%
+  kable_classic(full_width = F, html_font = "Cambria")
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ```{r pretty dead code, echo = F, eval = F}
 
