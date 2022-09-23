@@ -1,0 +1,760 @@
+---
+title: "CCFRP CC Old v New Lobos"
+author: "Shelby Ziegler"
+date: "2/8/2021"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+rm(list = ls());graphics.off()
+library(tidyverse) # For data manipulation and summarization
+library(plotrix) #To use standard error calculation
+library(cowplot) #For grouping plots
+library(scales) #For editing axis scales
+library(vegan) #For multivariate analyses
+library(rstatix) #For running ANCOVA
+library(ggpmisc) #adding equation and r2 to figures
+
+formula<-y~x
+alpha=0.5
+theme_set(theme_classic())
+```
+
+Previously calcuated BPUE and CPUE in 'CCFRP_Data_Summary_2019_ForShelby.R' sent by Rachel Brooks (rbrooks@mlml.calstate.edu). 
+
+Here we will pull in BPUE and will be running regression analyses for BPUE through time and then calculate response ratios for all sites and year (and species). 
+
+Need to make data into long format to calculate average BPUE for all species across years. 
+
+Need to make data into long format to calculate average BPUE for all species across years. 
+
+```{r}
+#setwd("~/Desktop/Git Hub/MPA-CCFRP/Raw_Data")
+
+Lbpue<-read.csv('Raw_Data /BPUE.per.IDcell_CC2020_OldLobos.csv')
+mpadata<-read.csv('2020-Raw_Data/mpa-data-2.csv')
+enviro<-read.csv('Raw_Data /sumenviroCC.csv')
+fp<-read.csv('2020-Raw_Data/ccfrpmicroblocks.csv')%>%
+  filter(Site=="Reference")
+fp<-fp[,-3]
+
+
+Lbpuecc<-Lbpue%>%
+  filter(Area=="Ano Nuevo" | Area=="Point Lobos"| 
+           Area=="Piedras Blancas" | Area == 'Point Buchon')%>%
+  filter(Age=="New")
+
+mpainfo<-mpadata%>%
+  select(MPA.Group, Region, island.mainland, Cluster, Cluster.Area_km2, Median.Latitude)%>%
+  rename(Area = MPA.Group )
+
+#Gather data into long format
+Lbpuecc<-Lbpuecc%>%
+  group_by(Area, Site, Year)%>%
+  gather(species, bpue,-ID.Cell.per.Trip,  -Area, -Site, -Year, -Age, -Total.Angler.Hours, -Grid.Cell.ID)
+
+Lbpuematch<-inner_join(Lbpuecc, mpainfo, by = 'Area')
+
+#Calculate mean bpue for all species, sites and years. 
+Lbpuecc1<-Lbpuematch%>%
+  group_by(Area, Site, Year, species, Region)%>%
+  summarize(meanbpue=mean(bpue), sebpue=std.error(bpue), 
+            lower = mean(bpue) - qt(1- alpha/2, (n() - 1))*sd(bpue)/sqrt(n()),
+                       upper = mean(bpue) + qt(1- alpha/2, (n() - 1))*sd(bpue)/sqrt(n()))
+```  
+
+```{r}
+Lbpuetotal<-Lbpuecc1%>%
+  filter(species=="Total")
+
+Lbpuetotal1<-inner_join(Lbpuetotal, enviro, by=c("Year", "Area", 
+                                               "Site"))
+
+Lbpuetotal1a<-left_join(Lbpuetotal1, fp, by=c("Year", "Area"))
+Lbpuetotal1$Area<-factor(Lbpuetotal1$Area, levels=c("Ano Nuevo", "Point Lobos", "Piedras Blancas", "Point Buchon"))
+
+Lbpue_fun1<-function(parameter, dt){
+  
+p<-(ggplot(dt[dt$Area==parameter,], aes(x=Year, y=meanbpue, fill=Site)) + 
+  #geom_histogram(color="black", position="dodge")+
+  geom_point(size=4, shape=21, alpha=0.5, position=position_dodge(0.4))+
+  #scale_shape_manual(values=c(21,22))+
+  scale_fill_manual(values=c('#b2182b','#2166ac'))+
+  geom_smooth(method='lm', se=FALSE, aes(color=Site))+
+  #scale_linetype_manual(values=c("solid", "dashed"))+
+  scale_color_manual(values=c('#b2182b','#2166ac'))+
+  ylab('Biomass (kg angler hour)')+
+  geom_hline(yintercept = 0, linetype="dashed")+
+  geom_errorbar(aes(ymax=upper, ymin=lower),
+                position=position_dodge(0.4), width=0)+
+  scale_y_continuous(breaks= pretty_breaks())+
+  ggtitle(paste0(parameter))+
+  theme(plot.title = element_text(size = 16, face = "bold")))+
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1))+
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1))
+
+return(p)
+}
+
+Lbpueplot_list1 <-lapply(unique(Lbpuetotal1$Area), Lbpue_fun1, dt=Lbpuetotal1)
+#Lbpueplot_list1
+
+
+Lbpuetotal$Area<-factor(Lbpuetotal$Area, levels=c("Ano Nuevo", "Point Lobos", "Piedras Blancas", "Point Buchon"))
+
+ccbt<-ggplot(Lbpuetotal, aes(x=Year, y=meanbpue)) + 
+  #geom_histogram(color="black", position="dodge")+
+  geom_errorbar(aes(ymax=upper, ymin=lower), width=0)+
+  geom_point(aes(fill=Site), size=3, shape=21)+
+  #scale_shape_manual(values=c(21,22))+
+  scale_fill_manual(values=c('#b2182b','#2166ac'))+
+  geom_smooth(method='lm', se=FALSE, aes(color=Site))+
+  #scale_linetype_manual(values=c("solid", "dashed"))+
+  scale_color_manual(values=c('#b2182b','#2166ac'))+
+  ylab('BPUE (kg angler hr-1)')+
+  geom_hline(yintercept = 0, linetype="dashed")+
+  scale_x_continuous(breaks= c(2010, 2015, 2020))+
+    ylim(0,25)+
+  facet_wrap(~Area, scales="free")+
+  theme(plot.title = element_text(size = 16, face = "bold"), legend.position="none")+
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1))
+
+
+bpueccTAll<-Lbpuematch%>%
+  group_by(Site, Year, species)%>%
+  filter(Area=="Ano Nuevo" | Area=="Point Lobos" | Area=="Point Buchon" | Area=="Piedras Blancas")%>%
+  filter(species=="Total")%>%
+  summarize(meanbpue=mean(bpue), sebpue=std.error(bpue),
+            lower = mean(bpue) - qt(1- alpha/2, (n() - 1))*sd(bpue)/sqrt(n()),
+                       upper = mean(bpue) + qt(1- alpha/2, (n() - 1))*sd(bpue)/sqrt(n()))
+
+ccbtall<-ggplot(bpueccTAll, aes(x=Year, y=meanbpue, fill=Site)) + 
+  geom_point(data=Lbpuetotal1, aes(x=Year, y=meanbpue, color=Site),size=2, alpha=0.2) +
+    geom_errorbar(aes(ymax=upper, ymin=lower),
+                 width=0)+
+  geom_point(shape=21,size=3)+
+  #geom_line(aes(color=Site))+
+  scale_fill_manual(values=c("#b2182b", "#2166ac"), "Site")+
+  geom_smooth(method='lm', se=FALSE, aes(color=Site))+
+  scale_color_manual(values=c("#b2182b", "#2166ac"))+
+  ylab('bpue')+
+    ylab('BPUE (kg angler hr-1)')+
+  scale_x_continuous(breaks=c(2010,2015,2020))+
+  ylim(0,25)+
+ # ggtitle("Total bpue - Central Coast")+
+  #facet_wrap(~Area, ncol=2, scales="free")+
+  theme(plot.title = element_text(size = 16, face = "bold"))+
+    theme(panel.border = element_rect(colour = "black", fill=NA, size=1))+
+  theme(legend.position="none")
+
+mpa<-bpueccTAll%>%
+  filter(Site=="MPA")
+mpa$time<-mpa$Year-2007
+summary(lm(meanbpue~time, mpa))
+
+ref<-bpueccTAll%>%
+  filter(Site=="REF")
+ref$time<-ref$Year-2007
+summary(lm(meanbpue~time, ref))
+
+
+
+plot_grid(ccbtall, ccbt, ncol=1, labels=c("A", "B"), rel_widths = c(0.75, 1))
+
+
+
+
+
+#cowplot::plot_grid(plotlist = Lbpueplot_list1, ncol = 2)
+
+ancov<-Lbpuetotal%>%
+  group_by(Area)%>%
+  anova_test(meanbpue ~ Year*Site)
+
+ancov
+summary(ancov)
+
+anpl<-filter(Lbpuetotal, Area=="Point Lobos" & Site=="MPA")
+summary(lm(meanbpue ~ Year, data=anpl))
+
+
+anpb<-filter(Lbpuetotal, Area=="Point Buchon" & Site=="MPA")
+summary(lm(meanbpue ~ Year, data=anpb))
+
+anbl<-filter(Lbpuetotal, Area=="Piedras Blancas" & Site=="MPA")
+summary(lm(meanbpue ~ Year, data=anbl))
+
+anan<-filter(Lbpuetotal, Area=="Ano Nuevo" & Site=="MPA")
+summary(lm(meanbpue ~ Year, data=anan))
+
+##REF
+anplR<-filter(Lbpuetotal, Area=="Point Lobos" & Site=="REF")
+summary(lm(meanbpue ~ Year, data=anplR))
+
+anpbR<-filter(Lbpuetotal, Area=="Point Buchon" & Site=="REF")
+summary(lm(meanbpue ~ Year, data=anpbR))
+
+anblR<-filter(Lbpuetotal, Area=="Piedras Blancas" & Site=="REF")
+summary(lm(meanbpue ~ Year, data=anblR))
+
+ananR<-filter(Lbpuetotal, Area=="Ano Nuevo" & Site=="REF")
+summary(lm(meanbpue ~ Year, data=ananR))
+```
+
+RRs 
+
+```{r}
+Ltotrrs<-Lbpuetotal[,-c(7:9)]%>%
+  spread(Site, meanbpue)
+
+Ltotrrs<-Ltotrrs[complete.cases(Ltotrrs),]
+Ltotrrs$RR=log(Ltotrrs$MPA/Ltotrrs$REF)
+
+#Ltotrrs<-Ltotrrs[,-c(5,6)]
+Ltotrrs$Area<-factor(Ltotrrs$Area, levels=c("Ano Nuevo", "Point Lobos", "Piedras Blancas", "Point Buchon"))
+
+Ltotrrsavg<-Ltotrrs%>%
+  group_by(Year)%>%
+  summarize(meanRR=mean(RR), seRR=std.error(RR), 
+          lower = mean(RR) - qt(1- alpha/2, (n() - 1))*sd(RR)/sqrt(n()),
+                       upper = mean(RR) + qt(1- alpha/2, (n() - 1))*sd(RR)/sqrt(n()))
+
+
+
+
+ggplot(Ltotrrsavg, aes(x=Year, y=meanRR))+
+  geom_smooth(method='lm', color='black', se=FALSE)+
+  ylab('Log(BiomassMPA/BiomassREF)')+
+  geom_hline(yintercept = 0, linetype="dashed")+
+  geom_errorbar(aes(ymax=upper, ymin=lower),width=0)+
+  geom_point(data=Ltotrrs, aes(x=Year, y=RR, fill=Area, shape=Area), size=3, alpha=0.5)+
+  geom_point(shape=21,size=5, alpha=0.8, fill='black')+
+  scale_fill_manual(values=c("#ffffff", "#d0d0d0","#858585", "#000000" ))+
+  scale_shape_manual(values=c(21,22,23,24))+
+  scale_x_continuous(breaks= c(2007,2009,2011,2013,2013,2015,2017,2019))+
+#  ggtitle("Central Coast", "Average RRs")+
+   theme(plot.title = element_text(size = 16, face = "bold"))
+
+
+Ltotrrsavg$timeimp<-(Ltotrrsavg$Year-2007)
+summary(lm(meanRR~timeimp, data=Ltotrrsavg))    
+
+
+Lrr_fun1<-function(parameter, dt){
+  
+p<-(ggplot(dt[dt$Area==parameter,], aes(x=Year, y=RR)) + 
+  #geom_histogram(color="black", position="dodge")+
+  geom_point(shape=21,size=4, alpha=0.5, position=position_dodge(0.9))+
+  #scale_fill_manual(values=c("#b2182b"))+
+  geom_smooth(method='lm', se=FALSE, color='#810f7c')+
+  #scale_color_manual(values=c("#b2182b"))+
+  ylab('Log(BiomassMPA/BiomassREF)')+
+  geom_hline(yintercept = 0, linetype="dashed")+
+  #geom_errorbar(aes(ymax=RR+eRR, ymin=RR-eRR),
+                #position=position_dodge(0.9), width=0)+
+  scale_y_continuous(breaks= pretty_breaks())+
+  scale_x_continuous(breaks=c(2007, 2009, 2011, 2013, 2015, 2017, 2019))+
+  ggtitle(paste0(parameter))+
+  theme(plot.title = element_text(size = 16, face = "bold")))+
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1))+
+  theme(legend.position = "none", panel.border = element_rect(colour = "black", fill=NA, size=1))
+
+return(p)
+}
+
+
+Lrrplot_list1 <-lapply(unique(Ltotrrs$Area), Lrr_fun1, dt=Ltotrrs)
+#Lrrplot_list1
+
+#cowplot::plot_grid(plotlist = Lrrplot_list1, ncol = 2)
+
+
+ggplot(Ltotrrs, aes(x=Year, y=RR)) + 
+  #geom_histogram(color="black", position="dodge")+
+  geom_point(shape=21,size=4,alpha=0.8, fill="black")+
+  #scale_fill_manual(values=c("#b2182b"))+
+  geom_smooth(method='lm', se=FALSE, color='black')+
+  #scale_color_manual(values=c("#b2182b"))+
+  ylab('Log(BiomassMPA/BiomassREF)')+
+  geom_hline(yintercept = 0, linetype="dashed")+
+  #geom_errorbar(aes(ymax=RR+eRR, ymin=RR-eRR),
+                #position=position_dodge(0.9), width=0)+
+  scale_y_continuous(breaks= pretty_breaks())+
+  scale_x_continuous(breaks=c(2010,2015,2020))+
+  xlim(2007, 2020)+
+  facet_wrap(~Area)+
+  theme(plot.title = element_text(size = 16, face = "bold"))+
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1))+
+  theme(legend.position = "none", panel.border = element_rect(colour = "black", fill=NA, size=1))+
+  stat_poly_eq(aes(label = paste(..eq.label.., ..rr.label.., sep = "~~~")), 
+               label.x.npc = "right", label.y.npc = "top",
+               formula = formula, parse = TRUE, size = 4)
+
+
+#Plots RRS together 
+
+ccbtRR<-ggplot(Ltotrrs, aes(x=Year, y=RR)) + 
+  geom_point(shape=21,size=3, fill="black")+
+  #geom_line(aes(color=Site))+
+  #scale_fill_manual(values=c("#b2182b", "#2166ac"), "Site")+
+  geom_smooth(method='lm', se=FALSE,color="black")+
+  #scale_color_manual(values=c("#b2182b", "#2166ac"))+
+  #geom_errorbar(aes(ymax=upper, ymin=lower),
+         #        width=0)+
+    ylab('Log(BPUEMPA/BPUEREF)')+
+  ylim(-0.5, 2)+
+  scale_x_continuous(breaks=c(2010,2015,2020))+
+  geom_hline(yintercept=0, linetype="dashed")+
+ # ggtitle("Total CPUE - Central Coast")+
+  facet_wrap(~Area, ncol=2, scales="free")+
+  theme(plot.title = element_text(size = 16, face = "bold"))+
+    theme(panel.border = element_rect(colour = "black", fill=NA, size=1))
+
+
+ccbtallRR<-ggplot(Ltotrrsavg, aes(x=Year, y=meanRR)) + 
+  geom_point(data=Ltotrrs, aes(x=Year, y=RR),fill="black",size=2, alpha=0.2) +
+  geom_point(shape=21,size=3, fill="black")+
+  #geom_line(aes(color=Site))+
+  #scale_fill_manual(values=c("#b2182b", "#2166ac"), "Site")+
+  geom_smooth(method='lm', se=FALSE, color="black")+
+  #scale_color_manual(values=c("#b2182b", "#2166ac"))+
+  geom_hline(yintercept=0, linetype="dashed")+
+  geom_errorbar(aes(ymax=upper, ymin=lower),
+                width=0)+
+  ylim(-0.5, 2.0)+
+    ylab('Log(BPUEMPA/BPUEREF)')+
+  scale_x_continuous(breaks=c(2010,2015,2020))+
+ # ggtitle("Total bpue - Central Coast")+
+  #facet_wrap(~Area, ncol=2, scales="free")+
+  theme(plot.title = element_text(size = 16, face = "bold"))+
+    theme(panel.border = element_rect(colour = "black", fill=NA, size=1))
+
+plot_grid(ccbtallRR, ccbtRR, ncol=1, labels=c("A", "B"), rel_widths = c(0.75, 1))
+
+plrr1<-Ltotrrs%>%
+  filter(Area=="Point Lobos")
+plrr1$timeimp<-(plrr1$Year-2007)
+summary(lm(RR~timeimp, data=plrr1))
+
+pbrr<-filter(Ltotrrs, Area=="Point Buchon")
+pbrr$timeimp<-(pbrr$Year-2007)
+summary(lm(RR~timeimp, data=pbrr))
+
+anrr<-filter(Ltotrrs, Area=="Ano Nuevo")
+anrr$timeimp<-(anrr$Year-2007)
+summary(lm(RR~timeimp, data=anrr))
+
+blrr<-filter(Ltotrrs, Area=="Piedras Blancas")
+blrr$timeimp<-(blrr$Year-2007)
+summary(lm(RR~timeimp, data=blrr))
+
+enviro1<-enviro%>%
+  filter(Site=="MPA")
+Ltotrrs1<-left_join(Ltotrrs, enviro1, by=c("Year", "Area"))
+
+Ltotrrs1a<-inner_join(Ltotrrs1, fp, by=c("Year", "Area"))
+
+
+#Run  Simple model on RRs
+
+Ltotrrs1a$Year1<-as.factor(Ltotrrs1a$Year)
+Ltotrrs1$Year1<-as.factor(Ltotrrs1$Year)
+
+
+summary(lm(RR~m.anglerdays, data=Ltotrrs1a))
+
+summary(lm(RR~m.anglerdays*Area, data=Ltotrrs1a))
+
+#POINT LOBOS
+sstlb<-filter(Ltotrrs1a, Area=="Point Lobos")
+summary(lm(RR~m.anglerdays, data=sstlb))
+
+#plot_grid(old, new)
+
+Ltotrrs1a$Area<-factor(Ltotrrs1a$Area, levels=c("Ano Nuevo", "Point Lobos", "Piedras Blancas", "Point Buchon"))
+
+
+ggplot(Ltotrrs1a, aes(x=m.anglerdays, y=RR))+
+  geom_point(aes(fill=Year1, shape=Area),size=5, color="black")+
+  scale_shape_manual(values=c(21,22,23,24))+
+  scale_fill_manual(values=c("#330000","#67001f","#b2182b","#d6604d", "#f4a582", "#fddbc7","#f7f7f7", "#d1e5f0", "#92c5de", "#4393c3", "#2166ac", "#053061", "#000033", "black"))+
+  guides(fill=guide_legend(override.aes=list(shape=21)))+
+  xlab("Angler Days (no. days microblock-1 yr-1)")+
+  ylab("Log(BPUEMPA/BPUEREF)")+
+  stat_smooth(method='lm', formula=y~x, color="black", fullrange = TRUE,
+              level = 0.95,
+              alpha=0.2, se=F, linetype="dashed")+
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1))
+#+
+ # geom_hline(yintercept=0, linetype="dashed")+
+# facet_wrap(~Area, ncol=2, scales="free_x")
+
+#+
+ # theme(legend.position = "none")
+
+
+#Envrionmental data Only New Lobos. 
+npp<-ggplot(Ltotrrs1, aes(x=meannpp, y=RR))+
+  geom_point(size=5, color="black", aes(fill=Year1, shape=Area))+
+  scale_shape_manual(values=c(21,22,23,24))+
+  scale_fill_manual(values=c("#330000","#67001f","#b2182b","#d6604d", "#f4a582", "#fddbc7","#f7f7f7", "#d1e5f0", "#92c5de", "#4393c3", "#2166ac", "#053061", "#000033", "black"))+
+  guides(fill=guide_legend(override.aes=list(shape=21)))+
+  xlab("Net Primary Production")+
+  stat_smooth(method='lm', formula=y~x, color="black", fullrange = TRUE,
+              level = 0.95,
+              alpha=0.2, linetype="dashed", se=FALSE)+
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1))+
+  geom_hline(yintercept=0, linetype="dashed")
+   #theme(legend.position = "none")
+
+ggplot(Ltotrrs1, aes(x=meannpp, y=RR))+
+  geom_point(size=5, color="black", aes(fill=Year1, shape=Area))+
+  scale_shape_manual(values=c(21,22,23,24))+
+  scale_fill_manual(values=c("#330000","#67001f","#b2182b","#d6604d", "#f4a582", "#fddbc7","#f7f7f7", "#d1e5f0", "#92c5de", "#4393c3", "#2166ac", "#053061", "#000033", "black"))+
+  guides(fill=guide_legend(override.aes=list(shape=21)))+
+  xlab("Mean Net Primary Production")+
+  stat_smooth(method='lm', formula=y~x, color="black", fullrange = TRUE,
+              level = 0.95,
+              alpha=0.2, linetype="dashed", se=FALSE)+
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1))+
+  geom_hline(yintercept=0, linetype="dashed")+
+  facet_wrap(~Area, ncol=2)
+
+
+summary(lm(RR~meannpp*Area, data=Ltotrrs1))
+
+sst<-ggplot(Ltotrrs1a, aes(x=meansst, y=RR))+
+  geom_point(size=5, color="black", aes(fill=Year1, shape=Area))+
+  scale_shape_manual(values=c(21,22,23,24))+
+  scale_fill_manual(values=c("#330000","#67001f","#b2182b","#d6604d", "#f4a582", "#fddbc7","#f7f7f7", "#d1e5f0", "#92c5de", "#4393c3", "#2166ac", "#053061", "#000033", "black"))+
+  guides(fill=guide_legend(override.aes=list(shape=21)))+
+  xlab("Sea Surface Temperature")+
+  stat_smooth(method='lm', formula=y~x, color="black", fullrange = TRUE,
+              level = 0.95,
+              alpha=0.2, linetype="dashed", se=FALSE)+
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1))+
+  #facet_wrap(~Area, ncol=2)+
+  geom_hline(yintercept=0, linetype="dashed")
+#+
+  #theme(legend.position = "none")
+
+ggplot(Ltotrrs1a, aes(x=meansst, y=RR))+
+  geom_point(size=5, color="black", aes(fill=Year1, shape=Area))+
+  scale_shape_manual(values=c(21,22,23,24))+
+  scale_fill_manual(values=c("#330000","#67001f","#b2182b","#d6604d", "#f4a582", "#fddbc7","#f7f7f7", "#d1e5f0", "#92c5de", "#4393c3", "#2166ac", "#053061", "#000033", "black"))+
+  guides(fill=guide_legend(override.aes=list(shape=21)))+
+  xlab("Sea Surface Temperature")+
+  stat_smooth(method='lm', formula=y~x, color="black", fullrange = TRUE,
+              level = 0.95,
+              alpha=0.2, linetype="dashed", se=FALSE)+
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1))+
+  geom_hline(yintercept=0, linetype="dashed")+
+  # theme(legend.position = "none")+
+  facet_wrap(~Area, ncol=2)
+
+sstlb<-filter(Ltotrrs1a, Area=="Point Lobos")
+summary(lm(RR~meansst, data=sstlb))
+
+
+summary(lm(RR~meansst, data=Ltotrrs1a))
+
+
+env1<-plot_grid(sst, npp)
+env2<-plot_grid(new, env1, ncol=2, rel_widths = c(2,1))
+
+plot_grid(sst, npp)
+```
+
+
+```{r}
+
+###meanSST, NPP and ANgler days individually explain RRs.
+Ltotrrs1a$timeimp<-(Ltotrrs1a$Year - 2007)
+summary(lm(meansst~timeimp, data=Ltotrrs1a))
+
+mod1<-Ltotrrs1a%>%
+  filter(Year!="2014")%>%
+  filter(Year!="2015")
+
+summary(lm(meansst~timeimp, data=mod1))
+summary(lm(meansst~timeimp*Area, data=mod1))
+
+anova(lm(meannpp~Year*Area, data=Ltotrrs1a))
+
+summary(lm(m.anglerdays~Year*Area, data=Ltotrrs1a))
+
+anova(lm(meansst~timeimp*Area, data=Ltotrrs1a))
+
+stpl<-ggplot(Ltotrrs1a, aes(x=Year, y=meansst))+
+    geom_point(size=5, color="black", aes(fill=Area, shape=Area))+
+  scale_fill_brewer()+
+  ylab("Mean Sea Surface Temperature")+
+  scale_shape_manual(values=c(21,22,23,24))+
+  theme(legend.position = "none")+
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1))+
+  geom_smooth(method="lm")
+  #scale_x_discrete(breaks= c(2007,2009, 2011,2013,2015,2017,2019))+
+
+
+Ltotrrs1$Area<-factor(Ltotrrs1$Area, levels=c("Ano Nuevo", "Point Lobos", "Piedras Blancas", "Point Buchon"))
+Ltotrrs1a$Area<-factor(Ltotrrs1a$Area, levels=c("Ano Nuevo", "Point Lobos", "Piedras Blancas", "Point Buchon"))
+
+ggplot(Ltotrrs1, aes(x=Year, y=meansst))+
+    geom_point(size=5, color="black", aes(fill=Area, shape=Area))+
+  scale_fill_brewer()+
+  ylab("Mean Sea Surface Temperature")+
+  scale_shape_manual(values=c(21,22,23,24))+
+  theme(legend.position = "none")+
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1))+
+  geom_smooth(method="lm", linetype="dashed", se=F, color="black")+
+  #scale_x_discrete(breaks= c(2007,2009, 2011,2013,2015,2017,2019))+
+  facet_wrap(~Area, ncol=2)
+
+
+nppl<-ggplot(Ltotrrs1, aes(x=Year, y=meannpp))+
+    geom_point(size=5, color="black", aes(fill=Area, shape=Area))+
+  scale_fill_brewer()+
+  ylab("Mean Net Primary Production")+
+  scale_shape_manual(values=c(21,22,23,24))+
+ 
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1))
+  scale_x_discrete(breaks= c(2007,2009, 2011,2013,2015,2017,2019))
+
+ggplot(Ltotrrs1, aes(x=Year, y=meannpp))+
+    geom_point(size=5, color="black", aes(fill=Area, shape=Area))+
+  scale_fill_brewer()+
+  ylab("Mean Net Primary Production")+
+  scale_shape_manual(values=c(21,22,23,24))+
+  theme(legend.position = "none")+
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1))+
+    geom_smooth(method="lm", linetype="dashed", se=F, color="black")+
+  #scale_x_discrete(breaks= c(2007,2009, 2011,2013,2015,2017,2019))+
+  facet_wrap(~Area, ncol=2)
+  
+  
+  
+agpl<-ggplot(Ltotrrs1a, aes(x=Year, y=m.anglerdays))+
+  geom_point(size=5, color="black", aes(fill=Area, shape=Area))+
+  scale_fill_brewer()+
+  ylab("Mean Angler Days")+
+  scale_shape_manual(values=c(21,22,23,24))+
+    theme(legend.position = "none")+
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1))+
+  scale_x_discrete(breaks= c(2007,2009, 2011,2013,2015,2017,2019))
+
+ggplot(Ltotrrs1a, aes(x=Year, y=m.anglerdays))+
+  geom_point(size=5, color="black", aes(fill=Area, shape=Area))+
+  scale_fill_brewer()+
+  ylab("Mean Angler Days")+
+  scale_shape_manual(values=c(21,22,23,24))+
+    theme(legend.position = "none")+
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1))+
+  #scale_x_discrete(breaks= c(2007,2009, 2011,2013,2015,2017,2019))+
+ geom_smooth(method="lm", linetype="dashed", se=F, color="black")+
+  facet_wrap(~Area, ncol=2)
+
+
+plot_grid(agpl, stpl, nppl, ncol=3, rel_widths = c(1,1,1.6))
+
+rr1<-lm(RR~meansst, data=Ltotrrs1)
+summary(rr1)
+anova(rr1)
+
+
+rr3<-lm(RR~meannpp, data=Ltotrrs1)
+summary(rr3)
+anova(rr3)
+
+rr4<-lm(RR~meanwh, data=Ltotrrs1)
+summary(rr4)
+anova(rr4)
+
+rr5<-lm(RR~meanorbv, data=Ltotrrs1)
+summary(rr5)
+anova(rr5)
+
+rr6<-lm(RR~m.anglerdays, data=Ltotrrs1a)
+summary(rr6)
+anova(rr6)
+
+rr7<-lm(RR~meansst+m.anglerdays, data=Ltotrrs1a)
+summary(rr7)
+anova(rr7)
+
+
+tempyr<-lm(meansst~Year, data=Ltotrrs1a)
+plot(tempyr)
+#Mixed effects models on Biomass 
+
+library(lme4)
+Ltotrrs1a$npp.1<-(Ltotrrs1a$meannpp/100)
+#Start with most complex
+rm1<-lmer(RR~m.anglerdays+meansst+npp.1+(1|Year), data=Ltotrrs1a, REML=FALSE)
+summary(rm1)
+AIC(rm1)
+anova(rm1)
+
+library(lme4)
+rm2<-lmer(RR~m.anglerdays*meansst+(1|Year), data=Ltotrrs1a, REML=F)
+summary(rm2)
+AIC(rm2)
+
+rm3<-lmer(RR~m.anglerdays+meansst+(1|Year), data=Ltotrrs1a, REML=FALSE)
+summary(rm3)
+AIC(rm3)
+
+rm4<-lmer(RR~meansst+(1|Year), data=Ltotrrs1a, REML=FALSE)
+summary(rm4)
+AIC(rm4)
+
+rm5<-lmer(RR~m.anglerdays+(1|Year), data=Ltotrrs1a, REML=FALSE)
+summary(rm5)
+AIC(rm5)
+
+AIC(rm1, rm2, rm3, rm4, rm5)
+BIC(rm1, rm2, rm3, rm4, rm5)
+
+#Best model is interactive effect of external fishing effort and mean monthly sea surface temperature. 
+
+
+
+library(sjPlot) #for plotting lmer and glmer mods
+library(sjmisc) 
+library(effects)
+library(sjstats) #use for r2 functions
+library(effectsize)
+
+plot(rm5)
+ggplot(data.frame(eta=predict(rm5,type="link"),pearson=residuals(rm2,type="pearson")),
+      aes(x=eta,y=pearson)) +
+    geom_point() +
+    theme_bw()
+
+qqnorm(residuals(rm5))
+
+sjPlot::plot_model(rm5,
+                   show.values=TRUE, show.p=TRUE)
+
+
+sjPlot:: tab_model(rm5)
+
+effect_rm2<-effects::effect(term="m.anglerdays*meansst", mod=rm2)
+summary(effect_rm2)
+
+
+mod2<-as.data.frame(rm2)
+xangler<-as.data.frame(effect_rm2)
+ 
+lmmresid(rm2,meansst) 
+
+ggplot()+
+  geom_point(data=Ltotrrs1a, aes(x=m.anglerdays, y=RR))+
+  geom_point(data=xangler, aes(x=m.anglerdays, y=fit), color="blue")+
+  geom_line(data=xangler, aes(x=m.anglerdays, y=fit), color="blue")+
+   #geom_ribbon(data=xangler, aes(x=m.anglerdays, ymin=lower, ymax=upper), alpha=0.3, color="blue")+
+  labs(x="Mean anglers days", y="Response Ratios")
+
+Ltotrrs1a$fit<-predict(rm2)
+```
+
+GAMM 
+```{r}
+library(mgcv)
+library(forcats)
+library(vroom)
+library(mgcViz)
+library(tidymv)
+
+
+
+
+gm1<-gam(RR~m.anglerdays+meansst+meannpp+s(timeimp, bs="re"), data=Ltotrrs1a)
+coef(gm1)
+summary(gm1)
+
+gm2<-gam(RR~m.anglerdays+s(meansst)+s(timeimp, bs="re"), data=Ltotrrs1a)
+coef(gm2)
+summary(gm2)
+AIC(gm2)
+
+gm3<-gam(RR~m.anglerdays+meansst+s(timeimp, bs="re"), data=Ltotrrs1a)
+summary(gm3)
+AIC(gm3)
+
+gm4<-gam(RR~meansst+s(timeimp, bs="re"), data=Ltotrrs1a, REML=FALSE)
+summary(gm4)
+AIC(gm4)
+
+gm5<-gam(RR~m.anglerdays+s(timeimp, bs="re"), data=Ltotrrs1a, REML=FALSE)
+summary(gm5)
+AIC(gm5)
+
+gm6<-gam(RR~m.anglerdays+meansst+s(meannpp)+s(timeimp, bs="re"), data=Ltotrrs1a)
+summary(gm6)
+
+gm7<-gam(RR~m.anglerdays+s(meansst)+s(meannpp)+s(timeimp, bs="re"), data=Ltotrrs1a)
+summary(gm7)
+plot(gm7)
+
+gm8<-gam(RR~meannpp+s(timeimp, bs="re"), data=Ltotrrs1a, REML=FALSE)
+summary(gm8)
+AIC(gm8)
+
+AIC(gm1, gm2, gm3, gm4, gm5, gm6, gm7, gm8)
+BIC(gm1, gm2, gm3, gm4, gm5, gm6, gm7, gm8)
+
+sjPlot:: plot_model(gm7,show.values=TRUE, show.p=TRUE)
+sjPlot:: tab_model(gm7)
+resid(gm7)
+plot(gm7)
+gam.vcomp(gm7)
+anova(gm7)
+
+
+
+summary(lm(RR~meannpp, data=Ltotrrs1a))
+ggplot(Ltotrrs1a, aes(x=meannpp, y=RR))+
+  geom_point()
+
+
+
+Ltotrrs1a$gm7fit<-predict.gam(gm7)
+
+ggplot(data=Ltotrrs1a, aes(x=m.anglerdays, y=RR))+
+  geom_point()+
+  geom_point(data=Ltotrrs1a,aes(x=m.anglerdays, y=gm7fit), color="red")+
+  geom_smooth(data=Ltotrrs1a,aes(x=m.anglerdays, y=gm7fit), color="blue")+
+   #geom_ribbon(data=xangler, aes(x=m.anglerdays, ymin=lower, ymax=upper), alpha=0.3, color="blue")+
+  labs(x="Mean anglers days", y="Response Ratios")
+
+ggplot(data=Ltotrrs1a, aes(x=meansst, y=RR))+
+  geom_point()+
+  geom_point(data=Ltotrrs1a,aes(x=meansst, y=gm7fit), color="red")+
+  geom_smooth(data=Ltotrrs1a,aes(x=meansst, y=gm7fit), color="blue")+
+   #geom_ribbon(data=xangler, aes(x=m.anglerdays, ymin=lower, ymax=upper), alpha=0.3, color="blue")+
+  labs(x="Mean Sea Surface Temperature", y="Response Ratios")
+
+ggplot(data=Ltotrrs1a, aes(x=meannpp, y=RR))+
+  geom_point()+
+  geom_point(data=Ltotrrs1a,aes(x=meannpp, y=gm7fit), color="red")+
+  geom_smooth(data=Ltotrrs1a,aes(x=meannpp, y=gm7fit), color="blue")+
+   #geom_ribbon(data=xangler, aes(x=m.anglerdays, ymin=lower, ymax=upper), alpha=0.3, color="blue")+
+  labs(x="Mean Net Primary Production", y="Response Ratios")
+
+ggplot(data=Ltotrrs1a, aes(x=timeimp, y=RR))+
+  geom_point()+
+  geom_point(data=Ltotrrs1a,aes(x=timeimp, y=gm7fit), color="red")+
+  geom_smooth(data=Ltotrrs1a,aes(x=timeimp, y=gm7fit), color="blue")+
+   #geom_ribbon(data=xangler, aes(x=m.anglerdays, ymin=lower, ymax=upper), alpha=0.3, color="blue")+
+  labs(x="Mean Net Primary Production", y="Response Ratios")
+
+
+gm7viz<-getViz(gm7)
+print(plot(gm7viz), ask = FALSE)
+
+```
