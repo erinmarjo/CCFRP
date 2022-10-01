@@ -108,7 +108,7 @@ adult_PB <- adult %>%
 
 ```
 
-Okay, I now there are eight datasets, four for adults (one per area) and four for juvenile Blue rockfish (one per area). Now run four sets of four models.
+Okay, now there are eight datasets, four for adults (one per area) and four for juvenile Blue rockfish (one per area). Now run four sets of four models.
 
 
 ```{r}
@@ -203,11 +203,57 @@ single_glm_dat2 <- single_glm_dat %>%
   group_by(trip, area, site, month, day, year, gridcell, bda, moci_state, life_stage) %>%
   summarise(cpue_date = mean(cpue_sum))%>%
   group_by( area, site, year, gridcell, bda, moci_state, life_stage) %>%
-  summarise(cpue_cell = mean(cpue_date))
+  summarise(cpue_cell = mean(cpue_date)) %>%
+  dplyr::mutate(year = as.numeric(as.character(year))) 
 
+### do I want to control the order and why does order matter for lmer?
+#single_glm_dat2$bda <- factor(single_glm_dat2$bda, levels = c("Before", "During", "After"))
 
-single_mod_1 <- glm(cpue_cell ~ area + site + life_stage + moci_state + site:moci_state + life_stage:site + life_stage:moci_state, data = single_glm_dat2)
+single_glm_dat2a <- single_glm_dat2 %>%
+  filter(life_stage == "Adult")
+
+single_glm_dat2b <- single_glm_dat2 %>%
+  filter(life_stage == "Juvenile")
+
+library(lme4)
+library(nlme)
+library(lmerTest)
+## glm not right if random eff
+## change year cont. not cat.
+
+single_mod_1 <- lmer(cpue_cell ~  site + life_stage + year + (1|area) + site:year + life_stage:site + life_stage:year, data = single_glm_dat2)
 summary(single_mod_1)
+
+## examine life stage differently? This would mean that we drop life stage and life stage interactions from the model which would make it much more simple. 
+
+dos_mod_1 <- lmer(cpue_cell ~ site*year + (1|area), data = single_glm_dat2 %>% filter(life_stage == "Adult"))
+summary(dos_mod_1)
+
+#options(contrasts = c("contr.sum","contr.poly")) ## intersteing SS III where the intercept is the grand mean
+#options(contrasts = c("contr.treatment","contr.poly")) ## og, where the intercept is the mean of the first (alphabetical) group
+dos_mod_1a <- lmerTest::lmer(cpue_cell ~ site*bda + (1|area), data = single_glm_dat2a)
+anova(dos_mod_1a)
+summary(dos_mod_1a)
+
+
+dos_mod_1b <- lmerTest::lmer(cpue_cell ~ site*bda + (1|area), data = single_glm_dat2b)
+anova(dos_mod_1b) 
+summary(dos_mod_1b)
+
+
+#dos_mod_1a <- lmerTest::lmer(cpue_cell ~ site*bda*life_stage + (1|area), data = single_glm_dat2)
+
+#dos_mod_2 <- lmer(cpue_cell ~ )
+
+## read online if I want the p-value I can use lme instead of lmer?? lmer is useful if I need some major computing skills, but not necessary for this level of analysis. I should get the same coefficients for either function.
+
+s_mod_2 <- lme(cpue_cell ~ site + life_stage + year + site:year + site:life_stage + life_stage:year, random = ~1|area, data = single_glm_dat2)
+summary(s_mod_2)
+
+
+
+## adult and juv and two different
+## year continuous
 
 ## second model with bda?? reverse stepwise including bda and moci_state
 ## maybe different model for life stage. life stage is critical enough that we would have to include the interaction between life_stage and everything else.
@@ -220,6 +266,68 @@ summary(single_mod_1)
 ## 2. what should the unit of replecation be? cpue at the gridcell level? Cell nested in site in area, how to set up. Or should we use response ratio of cpue as response variable?
 ## 3. 
 
+## Hunter notes: doesnt make sense for interaction between moci and site because oceanography acts on a whole area. no physical bound.
 
+
+```
+
+Response Ratios
+
+```{r, eval = F, echo = F}
+
+single_glm_dat3 <- single_glm_dat %>%
+  select(-size) %>%
+  group_by(drift, trip, area, site, month, day, year, gridcell, bda, moci_state, life_stage) %>%
+  summarise(cpue_sum = sum(cpue))%>%
+  group_by(trip, area, site, month, day, year, gridcell, bda, moci_state, life_stage) %>%
+  summarise(cpue_date = mean(cpue_sum))%>%
+  group_by( area, site, year, gridcell, bda, moci_state, life_stage) %>%
+  summarise(cpue_cell = mean(cpue_date)) %>%
+  group_by(area, site, year, bda, moci_state, life_stage) %>%
+  summarise(cpue_site = mean(cpue_cell))
+
+single_glm_dat_rr <- single_glm_dat3 %>%
+  select(area, site, bda, moci_state, life_stage, site, cpue_site) %>%
+  pivot_wider(names_from = site, values_from = cpue_site) %>%
+  mutate(RR = log(MPA/REF)) %>%
+  drop_na()
+
+single_glm_dat_rr$area<-factor(single_glm_dat_rr$area, levels=c("AN", "PL", "BL", "PB"))
+
+single_glm_dat_rr2 <- single_glm_dat_rr %>%
+  filter(!REF == 0) ## how do I deal with infinity response ratio??
+
+single_glm_rravg <- single_glm_dat_rr2 %>%
+  group_by(year, life_stage) %>%
+  summarise(meanRR = mean(RR), seRR = std.error(RR),
+            lower = mean(RR) - qt(1-alpha/2, (n() - 1))*sd(RR/sqrt(n())),
+            upper = mean(RR) + qt(1-alpha/2, (n() - 1))*sd(RR/sqrt(n())))
+
+## gen 95% CI - look this up in R
+
+ggplot(single_glm_rravg, aes(x=year, y=meanRR))+
+  geom_smooth(method='lm', color='black', se=FALSE)+
+  ylab('Log(BiomassMPA/BiomassREF)')+
+  geom_hline(yintercept = 0, linetype="dashed")+
+  geom_errorbar(aes(ymax=upper, ymin=lower),width=0)+
+  geom_point(data=single_glm_dat_rr2, aes(x=year, y=RR, fill=area, shape=area), size=3, alpha=0.5)+
+  geom_point(shape=21,size=5, alpha=0.8, fill='black')+
+  scale_fill_manual(values=c("#ffffff", "#d0d0d0","#858585", "#000000" ))+
+  scale_shape_manual(values=c(21,22,23,24))+
+  #scale_x_continuous(breaks= c(2007,2009,2011,2013,2013,2015,2017,2019))+
+#  ggtitle("Central Coast", "Average RRs")+
+  facet_grid(life_stage~.)+
+  theme(plot.title = element_text(size = 16, face = "bold"))
+
+
+```
+
+
+```{r glm with RR, echo = F}
+## should maybe look into GAMM?
+## if doing RR - we have single value for each area + year. cant get a RR at the cell level. But will obviously have more data at the cell level.
+
+# single_mod_2 <- glm(RR ~ area + life_stage + year,  data = single_glm_dat_rr2)
+# summary(single_mod_2)
 ```
 

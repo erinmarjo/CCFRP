@@ -18,7 +18,8 @@ library(cowplot) #For grouping plots
 library(scales) #For editing axis scales
 library(vegan) #For multivariate analyses
 library(rstatix) #For running ANCOVA
-library(ggpmisc) #adding equation and r2 to figures
+#library(ggpmisc) #adding equation and r2 to figures
+library(here)
 
 formula<-y~x
 alpha=0.5
@@ -36,10 +37,10 @@ Need to make data into long format to calculate average BPUE for all species acr
 ```{r}
 #setwd("~/Desktop/Git Hub/MPA-CCFRP/Raw_Data")
 
-Lbpue<-read.csv('Raw_Data /BPUE.per.IDcell_CC2020_OldLobos.csv')
-mpadata<-read.csv('2020-Raw_Data/mpa-data-2.csv')
-enviro<-read.csv('Raw_Data /sumenviroCC.csv')
-fp<-read.csv('2020-Raw_Data/ccfrpmicroblocks.csv')%>%
+Lbpue<-read_csv(here("Data","BPUE.per.IDcell_CC2020_OldLobos.csv"))
+mpadata<-read_csv(here("Data", "mpa-data-2.csv"))
+enviro<-read_csv(here("Data", "sumenviroCC.csv"))
+fp<-read_csv(here("Data", "ccfrpmicroblocks.csv"))%>%
   filter(Site=="Reference")
 fp<-fp[,-3]
 
@@ -50,8 +51,9 @@ Lbpuecc<-Lbpue%>%
   filter(Age=="New")
 
 mpainfo<-mpadata%>%
-  select(MPA.Group, Region, island.mainland, Cluster, Cluster.Area_km2, Median.Latitude)%>%
-  rename(Area = MPA.Group )
+  select(MPA.Group, Region, island.mainland, Cluster, Cluster.Area_km2, "Median Latitude")%>%
+  rename(Area = MPA.Group,
+         Median.Latitude = "Median Latitude")
 
 #Gather data into long format
 Lbpuecc<-Lbpuecc%>%
@@ -210,10 +212,10 @@ RRs
 
 ```{r}
 Ltotrrs<-Lbpuetotal[,-c(7:9)]%>%
-  spread(Site, meanbpue)
+  spread(Site, meanbpue) ## 54 ob 6 vars
 
 Ltotrrs<-Ltotrrs[complete.cases(Ltotrrs),]
-Ltotrrs$RR=log(Ltotrrs$MPA/Ltotrrs$REF)
+Ltotrrs$RR=log(Ltotrrs$MPA/Ltotrrs$REF) #### this is what I am looking for ####
 
 #Ltotrrs<-Ltotrrs[,-c(5,6)]
 Ltotrrs$Area<-factor(Ltotrrs$Area, levels=c("Ano Nuevo", "Point Lobos", "Piedras Blancas", "Point Buchon"))
