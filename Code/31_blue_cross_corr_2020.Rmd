@@ -460,6 +460,34 @@ juv_sig_corr_plot <- juv_sig_corr %>%
 
 ```
 
+### Tables for pub - juv
+
+```{r juv table for pub}
+
+library(sjPlot)
+
+juv_table <- juv_vis %>%
+  select(-Season, -Area) %>%
+  mutate(season = as.character(season))
+
+tab_df(juv_table, sort.column = -5, digits = 4, alternate.rows = T,
+       file = here("Output", "juv_corr_table.doc"))
+
+top_juv_table <- top_juv_meeting %>%
+  select(-Season, -Area, -Lag) %>%
+  mutate(season = as.character(season))
+
+
+tab_df(top_juv_table, sort.column = 2, digits = 4, alternate.rows = T, footnote = "Table X. Highest cross correlation coefficient for juvenile Blue rockfish", show.footnote = T, file = here("Output", "top_juv_corr_table.doc"))
+       
+# Highest cross correlation \ncoefficients for juvenile Blue rockfish CPUE and MOCI blah blah blah blah blah which shows that blah de blah blah       
+#)
+
+
+
+```
+
+
 
 ## Adult Blue Rockfish
 
@@ -589,6 +617,22 @@ top_adult_2020_dat <-  top_adult_meeting %>%
   guides(color = guide_legend(override.aes = list(shape = 15, size = 7)))
 
 top_adult_2020_dat
+
+```
+
+
+```{r adult table for pub}
+
+
+library(sjPlot)
+
+top_adult_table <- top_adult_meeting %>%
+  select(-Season, -Area, -Lag) %>%
+  mutate(season = as.character(season),
+         area = as.character(area))
+
+
+tab_df(top_adult_table, sort.column = 2, digits = 4, alternate.rows = T, footnote = "Table X. Highest cross correlation coefficient for adult Blue rockfish", show.footnote = T, file = here("Output", "top_adult_corr_table.doc"))
 
 ```
 

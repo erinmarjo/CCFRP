@@ -41,7 +41,7 @@ We need to add the section on MPA vs REF because it is a piece of the story that
 
 * (adult_cpue ~ site*B/D/A) - 4 models (AN, PL, BL PB)
 
-```{r}
+```{r data processing}
 
 blue_full_glm_pro <- master %>%
   filter(species == "BLU") %>%
@@ -111,7 +111,7 @@ adult_PB <- adult %>%
 Okay, now there are eight datasets, four for adults (one per area) and four for juvenile Blue rockfish (one per area). Now run four sets of four models.
 
 
-```{r}
+```{r eight juvenile glm models}
 
 juv_mod_1 <- glm(cpue_cell ~ site* bda, data = juv_AN)
 summary(juv_mod_1)
@@ -141,7 +141,7 @@ summary(juv_mod_8)
 ```
 
 
-```{r}
+```{r eight adult glm models}
 
 adult_mod_1 <- glm(cpue_cell ~ site*bda, data = adult_AN)
 summary(adult_mod_1)
@@ -185,7 +185,8 @@ An email thread ('Statistics are confusing - help!') with Hunter from June 2022 
 I need to check regression assumtions before really moving forward, but I think I need some help with that. My grasp of statistics is slipping the further away from classes I get.
 
 
-```{r single model}
+```{r single model data processing}
+
 ## make columns that label adult, juvenile, teen. Take out teen for the analysis
 
 single_glm_dat <- blue_full_glm_pro %>%
@@ -215,45 +216,182 @@ single_glm_dat2a <- single_glm_dat2 %>%
 single_glm_dat2b <- single_glm_dat2 %>%
   filter(life_stage == "Juvenile")
 
+```
+
+
+```{r single model lmer}
 library(lme4)
 library(nlme)
 library(lmerTest)
-## glm not right if random eff
-## change year cont. not cat.
 
+
+## glm not right if I want to include random effect of area
+
+## year in this model is now a continuous vars
 single_mod_1 <- lmer(cpue_cell ~  site + life_stage + year + (1|area) + site:year + life_stage:site + life_stage:year, data = single_glm_dat2)
 summary(single_mod_1)
 
 ## examine life stage differently? This would mean that we drop life stage and life stage interactions from the model which would make it much more simple. 
+## ignore this model for now
+# dos_mod_1 <- lmer(cpue_cell ~ site*year + (1|area), data = single_glm_dat2 %>% filter(life_stage == "Adult"))
+# summary(dos_mod_1)
 
-dos_mod_1 <- lmer(cpue_cell ~ site*year + (1|area), data = single_glm_dat2 %>% filter(life_stage == "Adult"))
-summary(dos_mod_1)
+
+##### two models #####
+
 
 #options(contrasts = c("contr.sum","contr.poly")) ## intersteing SS III where the intercept is the grand mean
 #options(contrasts = c("contr.treatment","contr.poly")) ## og, where the intercept is the mean of the first (alphabetical) group
-dos_mod_1a <- lmerTest::lmer(cpue_cell ~ site*bda + (1|area), data = single_glm_dat2a)
+
+###### THIS IS THE WAY ###### 
+
+## adult
+
+single_glm_dat2a2 <- single_glm_dat2a %>%
+  mutate(yn = case_when(
+    cpue_cell == 0 ~ "zero",
+    TRUE ~ "not zero"
+  )) %>%
+  group_by(site, year) %>%
+  count(yn)
+
+
+## zero inflation?
+## what to do with years?
+## do we include life stage in the model? aka single model
+## 
+
+dos_mod_1a <- lmerTest::lmer(cpue_cell ~ site*bda + (1|area), data = single_glm_dat2a2)
 anova(dos_mod_1a)
 summary(dos_mod_1a)
 
+hist(single_glm_dat2a2$cpue_cell)
 
+hist(asin(sqrt(single_glm_dat2a$cpue_cell)))
+
+hist(log(single_glm_dat2a$cpue_cell+0.5))
+
+## juv
 dos_mod_1b <- lmerTest::lmer(cpue_cell ~ site*bda + (1|area), data = single_glm_dat2b)
 anova(dos_mod_1b) 
 summary(dos_mod_1b)
 
 
-#dos_mod_1a <- lmerTest::lmer(cpue_cell ~ site*bda*life_stage + (1|area), data = single_glm_dat2)
+library(multcomp)
+## adult
+posthoc_adult <- glht(dos_mod_1a, linfct = mcp(bda = 'Tukey'))
+summary(posthoc_adult)
+## juv
+posthoc_juv <- glht(dos_mod_1b, linfct = mcp(bda = 'Tukey'))
+summary(posthoc_juv)
 
-#dos_mod_2 <- lmer(cpue_cell ~ )
+
+## 
+
+
+### anova using aov() = same thing, so yay?
+##  result is same, why are numbers slightly different?
+## adult
+dos_mod_1a.2 <- aov(cpue_cell ~ site*bda, data = single_glm_dat2a)
+summary(dos_mod_1a.2)
+TukeyHSD(dos_mod_1a.2, which = "bda")
+## juv
+dos_mod_1b.2 <- aov(cpue_cell ~ site*bda, data = single_glm_dat2b)
+summary(dos_mod_1b.2)
+TukeyHSD(dos_mod_1b.2, which = "bda")
+
+## visuals
+
+#library(ggpubr)
+## adult
+#ggboxplot(single_glm_dat2a, x = "bda", y = "cpue_cell", color = "site")
+
+aov_adult <- single_glm_dat2a
+aov_adult$bda <- factor(aov_adult$bda, levels = c("Before", "During", "After"))
+
+
+aov_adult_plot <- ggplot(data = aov_adult) +
+  geom_boxplot(aes(x = bda, y = cpue_cell, color = site))+
+  labs(y = "Catch Per Unit Effort (Fish/Angler Hour)", x = "",
+       caption = "Adult Blue rockfish")+
+  scale_color_manual("Site", values = c("#990000", "#003366"))+
+  scale_y_continuous(limits = c(0,20), breaks = c(0, 5, 10, 15, 20))+
+  theme_bw()+
+  theme(panel.grid = element_blank())
+
+ggplot(data = aov_adult) +
+  geom_boxplot(aes(x = site, y = cpue_cell, color = bda))+
+  labs(y = "Catch Per Unit Effort (Fish/Angler Hour)", x = "",
+       caption = "Adult Blue rockfish")+
+  scale_color_manual("Year Group", values = c("#A2B5CD", "#FF4500", "#9BCD9B"))+
+  scale_y_continuous(limits = c(0, 20), breaks = c(0, 5, 10, 15, 20))+
+  theme_bw()+
+  theme(panel.grid = element_blank())
+
+ggplot(data = aov_adult) +
+  geom_boxplot(aes(x = bda, y = cpue_cell))+
+  labs(y = "Catch Per Unit Effort (Fish/Angler Hour)", x = "",
+       caption = "Adult Blue rockfish")+
+  scale_y_continuous(limits = c(0,20), breaks = c(0, 5, 10, 15, 20))+
+  theme_bw()+
+  theme(panel.grid = element_blank())
+
+
+aov_juv <- single_glm_dat2b
+aov_juv$bda <- factor(aov_juv$bda, levels = c("Before", "During", "After"))
+
+
+aov_juv_plot <- ggplot(data = aov_juv) +
+  geom_boxplot(aes(x = bda, y = cpue_cell, color = site))+
+  labs(y = "Catch Per Unit Effort (Fish/Angler Hour)", x = "",
+       caption = "Juvenile Blue rockfish")+
+  scale_color_manual("Site", values = c("#990000", "#003366"))+
+  scale_y_continuous(limits = c(0, 20), breaks = c(0, 5, 10, 15, 20))+
+  theme_bw()+
+  theme(panel.grid = element_blank())
+
+
+ggplot(data = aov_juv) +
+  geom_boxplot(aes(x = site, y = cpue_cell, color = bda))+
+  labs(y = "Catch Per Unit Effort (Fish/Angler Hour)", x = "",
+       caption = "Juvenile Blue rockfish")+
+  scale_color_manual("Year Group", values = c("#A2B5CD", "#FF4500", "#9BCD9B"))+
+  scale_y_continuous(limits = c(0, 20), breaks = c(0, 5, 10, 15, 20))+
+  theme_bw()+
+  theme(panel.grid = element_blank())
+
+
+
+
+## together
+aov_bludat <- single_glm_dat2
+aov_bludat$bda <- factor(aov_bludat$bda, levels = c("Before", "During", "After"))
+
+ggplot(data = aov_bludat) +
+  geom_boxplot(aes(x = life_stage, y = cpue_cell, color = site))+
+  labs(y = "Catch Per Unit Effort (Fish/Angler Hour)", x = "",
+       caption = "Adult Blue rockfish")+
+  scale_y_continuous(limits = c(0,20), breaks = c(0, 5, 10, 15, 20))+
+  theme_bw()+
+  theme(panel.grid = element_blank())
+
+##saving the vis
+#ggsave(filename = "aov_adult_plot.png", plot = aov_adult_plot, path = here("Images"), dpi = 1000, width = 6, height = 4)
+
+###### testing models without interaction. No interaction has a higher AIC. So model with the interaction above is better 
+# dos_mod_1aa <- lmerTest::lmer(cpue_cell ~ site + bda + (1|area), data = single_glm_dat2a)
+# anova(dos_mod_1a, dos_mod_1aa, refit = FALSE)
+# dos_mod_1bb <- lmerTest::lmer(cpue_cell ~ site + bda + (1|area), data = single_glm_dat2b)
+# anova(dos_mod_1b, dos_mod_1bb, refit = FALSE)
+
+
 
 ## read online if I want the p-value I can use lme instead of lmer?? lmer is useful if I need some major computing skills, but not necessary for this level of analysis. I should get the same coefficients for either function.
 
-s_mod_2 <- lme(cpue_cell ~ site + life_stage + year + site:year + site:life_stage + life_stage:year, random = ~1|area, data = single_glm_dat2)
-summary(s_mod_2)
-
-
+# s_mod_2 <- lme(cpue_cell ~ site + life_stage + year + site:year + site:life_stage + life_stage:year, random = ~1|area, data = single_glm_dat2)
+# summary(s_mod_2)
 
 ## adult and juv and two different
-## year continuous
 
 ## second model with bda?? reverse stepwise including bda and moci_state
 ## maybe different model for life stage. life stage is critical enough that we would have to include the interaction between life_stage and everything else.
@@ -271,9 +409,122 @@ summary(s_mod_2)
 
 ```
 
+10/3/22
+
+After re-reading some notes, I remember that I am supposed to be running two-way repeated measure ANOVAs, where the response is CPUE, the repeated measures are time points before, during, and after the MHW. and the treatment is site type. I think I need to run this as 16 different models though. So back to that thought... should email Hunter again, but I am going to set up the analysis below
+
+Working using this website as a guide: http://agroninfotech.blogspot.com/2020/06/two-way-repeated-measures-analysis-in-r.html
+
+Next maybe I will try this guide: https://www.datanovia.com/en/lessons/repeated-measures-anova-in-r/
+
+```{r eight two way repeated measures ANOVA}
+
+## juvenile
+
+jmod_AN <- aov(cpue_cell ~ site*bda + Error(gridcell/(site*bda)), data = juv_AN)
+summary(jmod_AN)
+
+jmod_PL <- aov(cpue_cell ~ site*bda + Error(gridcell/(site*bda)), data = juv_PL)
+summary(jmod_PL)
+
+jmod_BL <- aov(cpue_cell ~ site*bda + Error(gridcell/(site*bda)), data = juv_BL)
+summary(jmod_BL)
+
+jmod_PB <- aov(cpue_cell ~ site*bda + Error(gridcell/(site*bda)), data = juv_PB)
+summary(jmod_PB)
+
+
+## adult
+
+amod_AN <- aov(cpue_cell ~ site*bda + Error(gridcell/(site*bda)), data = adult_AN)
+summary(amod_AN)
+
+amod_PL <- aov(cpue_cell ~ site*bda + Error(gridcell/(site*bda)), data = adult_PL)
+summary(amod_PL)
+
+amod_BL <- aov(cpue_cell ~ site*bda + Error(gridcell/(site*bda)), data = adult_BL)
+summary(amod_BL)
+
+amod_PB <- aov(cpue_cell ~ site*bda + Error(gridcell/(site*bda)), data = adult_PB)
+summary(amod_PB)
+
+
+```
+
+This isn't really going to work because if I need to account for natural variability in the error term, I can't do it by grid cell because each grid cell number is site specific.. aka AN01 as the 'id' will only ever be in the reference area because that is where AN01 occurs.. Better to do two models: one for juve and one for adult and have area be in the error term to account for naturally occurring variability between areas without actually testing between area differences. Right? I will set up the other 7 just in case.
+
+```{r juv and adult two way repeated measures ANOVA}
+
+adult_dat_aov <- single_glm_dat2 %>%
+  filter(life_stage == "Adult")
+
+juv_dat_aov <- single_glm_dat2 %>%
+  filter(life_stage == "Juvenile")
+
+
+jmod_aov <- aov(cpue_cell ~ site*bda + Error(area/(site*bda)), data = juv_dat_aov)
+summary(jmod_aov)
+
+amod_aov <- aov(cpue_cell ~ site*bda + Error(area/(site*bda)), data = adult_dat_aov)
+summary(amod_aov)
+
+```
+
+
+The problem with all of this is that I don't know for certain that subjects are sampled again at the next time point (the repeated measure, whatever that is. Year, bda, moci...). So all of the code is looking for subject ID to go into the error term.
+
+
+```{r rep measures ANOVA new guide}
+library(ggpubr)
+library(rstatix)
+## Data preparationb
+## the question: does protection status change cpue for blue rockfish over time for both juveniles and adults
+
+## visualization
+
+juv_AN$bda <- factor(juv_AN$bda, levels = c("Before", "During", "After"))
+
+bxp_jAN <- ggboxplot(juv_AN, x = "bda", y = "cpue_cell", color = "site", palette = "jco")
+
+####checking assumptions
+## outliers
+
+juv_AN %>% group_by(site, bda) %>% identify_outliers(cpue_cell) ## there are 9 outliers
+
+## normality assumption
+
+juv_AN %>% group_by(site, bda) %>% shapiro_test(cpue_cell) ## not normally distributed
+
+## qq plots
+
+ggqqplot(juv_AN, "cpue_cell", ggtheme = theme_bw())+
+  facet_grid(bda ~ site, labeller = "label_both") ## can more or less assume normality, though some of these don't line up perfectly with the line
+
+
+## yet another anova, but set up slightly differently
+
+juv_AN <- ungroup(juv_AN)
+# juv_AN.aov <- juv_AN %>%
+#   group_by(area, site,  bda ) %>%
+#   summarise(cpue_site = mean(cpue_cell))
+
+jAN.aov <- anova_test(
+  data = juv_AN, dv = cpue_cell, wid = gridcell, within = c(site, bda)
+)
+##... data are not set up the right way. Don't really get how to do it with my data because I need subject ID AGAIN...
+
+```
+
+
+
+
+
+Below is a take on Shelby's code on response ratios. UPDATE 9/29: I will not be using response ratio of MPA and REF CPUE as the response, because I need to have site in my analysis to truly talk about site level differences in CPUE
+
+
 Response Ratios
 
-```{r, eval = F, echo = F}
+```{r RR dat processing model and vis SZ, eval = F, echo = F}
 
 single_glm_dat3 <- single_glm_dat %>%
   select(-size) %>%
