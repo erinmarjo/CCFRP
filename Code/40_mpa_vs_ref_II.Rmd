@@ -207,6 +207,8 @@ single_glm_dat2 <- single_glm_dat %>%
   summarise(cpue_cell = mean(cpue_date)) %>%
   dplyr::mutate(year = as.numeric(as.character(year))) 
 
+single_dat_yearfac <- single_glm_dat2
+
 ### do I want to control the order and why does order matter for lmer?
 #single_glm_dat2$bda <- factor(single_glm_dat2$bda, levels = c("Before", "During", "After"))
 
@@ -247,13 +249,15 @@ summary(single_mod_1)
 
 ## adult
 
-single_glm_dat2a2 <- single_glm_dat2a %>%
-  mutate(yn = case_when(
-    cpue_cell == 0 ~ "zero",
-    TRUE ~ "not zero"
-  )) %>%
-  group_by(site, year) %>%
-  count(yn)
+# single_glm_dat2a2 <- single_glm_dat2a %>%
+#   mutate(yn = case_when(
+#     cpue_cell == 0 ~ "zero",
+#     TRUE ~ "not zero"
+#   )) %>%
+#   group_by(site, year) %>%
+#   count(yn)
+
+
 
 
 ## zero inflation?
@@ -261,7 +265,9 @@ single_glm_dat2a2 <- single_glm_dat2a %>%
 ## do we include life stage in the model? aka single model
 ## 
 
-dos_mod_1a <- lmerTest::lmer(cpue_cell ~ site*bda + (1|area), data = single_glm_dat2a2)
+## year as a factor
+## adult
+dos_mod_1a <- lmerTest::lmer(cpue_cell ~ site*bda + (1|area), data = single_glm_dat2a)
 anova(dos_mod_1a)
 summary(dos_mod_1a)
 
