@@ -61,111 +61,115 @@ blue_full_glm_pro <- master %>%
            year %in% c(2014:2020) ~ "Positive"
          )))
 
-juv <- blue_full_glm_pro %>%
-  filter(size <= 21) %>%
-  select(-size) %>%
-  group_by(drift, trip, area, site, month, day, year, gridcell, bda, moci_state) %>%
-  summarise(cpue_sum = sum(cpue))%>%
-  group_by(trip, area, site, month, day, year, gridcell, bda, moci_state) %>%
-  summarise(cpue_date = mean(cpue_sum))%>%
-  group_by( area, site, year, gridcell, bda, moci_state) %>%
-  summarise(cpue_cell = mean(cpue_date))
+# juv <- blue_full_glm_pro %>%
+#   filter(size <= 21) %>%
+#   select(-size) %>%
+#   group_by(drift, trip, area, site, month, day, year, gridcell, bda, moci_state) %>%
+#   summarise(cpue_sum = sum(cpue))%>%
+#   group_by(trip, area, site, month, day, year, gridcell, bda, moci_state) %>%
+#   summarise(cpue_date = mean(cpue_sum))%>%
+#   group_by( area, site, year, gridcell, bda, moci_state) %>%
+#   summarise(cpue_cell = mean(cpue_date))
+# 
+# adult <- blue_full_glm_pro %>%
+#   filter(size >= 32) %>%
+  # select(-size)%>%
+  # group_by(drift, trip, area, site, month, day, year, gridcell, bda, moci_state) %>%
+  # summarise(cpue_sum = sum(cpue))%>%
+  # group_by(trip, area, site, month, year, gridcell, bda, moci_state) %>%
+  # summarise(cpue_date = mean(cpue_sum)) %>%
+  # group_by( area, site, year, gridcell, bda, moci_state) %>%
+  # summarise(cpue_cell = mean(cpue_date))
 
-adult <- blue_full_glm_pro %>%
-  filter(size >= 32) %>%
-  select(-size)%>%
-  group_by(drift, trip, area, site, month, day, year, gridcell, bda, moci_state) %>%
-  summarise(cpue_sum = sum(cpue))%>%
-  group_by(trip, area, site, month, year, gridcell, bda, moci_state) %>%
-  summarise(cpue_date = mean(cpue_sum)) %>%
-  group_by( area, site, year, gridcell, bda, moci_state) %>%
-  summarise(cpue_cell = mean(cpue_date))
+```
 
 
-juv_AN <- juv %>%
-  filter(area == "AN")
+```{r data processing 2, eval = F, echo = F}
 
-juv_PL <- juv %>%
-  filter(area == "PL")
-
-juv_BL <- juv %>%
-  filter(area == "BL")
-
-juv_PB <- juv %>%
-  filter(area == "PB")
-
-adult_AN <- adult %>%
-  filter(area == "AN")
-
-adult_PL <- adult %>%
-  filter(area == "PL")
-
-adult_BL <- adult %>%
-  filter(area == "BL")
-
-adult_PB <- adult %>%
-  filter(area == "PB")
+# juv_AN <- juv %>%
+#   filter(area == "AN")
+# 
+# juv_PL <- juv %>%
+#   filter(area == "PL")
+# 
+# juv_BL <- juv %>%
+#   filter(area == "BL")
+# 
+# juv_PB <- juv %>%
+#   filter(area == "PB")
+# 
+# adult_AN <- adult %>%
+#   filter(area == "AN")
+# 
+# adult_PL <- adult %>%
+#   filter(area == "PL")
+# 
+# adult_BL <- adult %>%
+#   filter(area == "BL")
+# 
+# adult_PB <- adult %>%
+#  filter(area == "PB")
 
 ```
 
 Okay, now there are eight datasets, four for adults (one per area) and four for juvenile Blue rockfish (one per area). Now run four sets of four models.
 
 
-```{r eight juvenile glm models}
+```{r eight juvenile glm models, eval = F, echo = F}
 
-juv_mod_1 <- glm(cpue_cell ~ site* bda, data = juv_AN)
-summary(juv_mod_1)
-
-juv_mod_2 <- glm(cpue_cell ~ site*bda, data = juv_PL)
-summary(juv_mod_2)
-
-juv_mod_3 <- glm(cpue_cell ~ site*bda, data = juv_BL)
-summary(juv_mod_3)
-
-juv_mod_4 <- glm(cpue_cell ~ site*bda, data = juv_PB)
-summary(juv_mod_4)
-
-
-juv_mod_5 <- glm(cpue_cell ~ site*moci_state, data = juv_AN)
-summary(juv_mod_5)
-
-juv_mod_6 <- glm(cpue_cell ~ site*moci_state, data = juv_PL)
-summary(juv_mod_6)
-
-juv_mod_7 <- glm(cpue_cell ~ site*moci_state, data = juv_BL)
-summary(juv_mod_7)
-
-juv_mod_8 <- glm(cpue_cell ~ site*moci_state, data = juv_PB)
-summary(juv_mod_8)
+# juv_mod_1 <- glm(cpue_cell ~ site* bda, data = juv_AN)
+# summary(juv_mod_1)
+# 
+# juv_mod_2 <- glm(cpue_cell ~ site*bda, data = juv_PL)
+# summary(juv_mod_2)
+# 
+# juv_mod_3 <- glm(cpue_cell ~ site*bda, data = juv_BL)
+# summary(juv_mod_3)
+# 
+# juv_mod_4 <- glm(cpue_cell ~ site*bda, data = juv_PB)
+# summary(juv_mod_4)
+# 
+# 
+# juv_mod_5 <- glm(cpue_cell ~ site*moci_state, data = juv_AN)
+# summary(juv_mod_5)
+# 
+# juv_mod_6 <- glm(cpue_cell ~ site*moci_state, data = juv_PL)
+# summary(juv_mod_6)
+# 
+# juv_mod_7 <- glm(cpue_cell ~ site*moci_state, data = juv_BL)
+# summary(juv_mod_7)
+# 
+# juv_mod_8 <- glm(cpue_cell ~ site*moci_state, data = juv_PB)
+# summary(juv_mod_8)
 
 ```
 
 
-```{r eight adult glm models}
+```{r eight adult glm models, echo = F, eval = F}
 
-adult_mod_1 <- glm(cpue_cell ~ site*bda, data = adult_AN)
-summary(adult_mod_1)
-
-adult_mod_2 <- glm(cpue_cell ~ site*bda, data = adult_PL)
-summary(adult_mod_2)
-
-adult_mod_3 <- glm(cpue_cell ~ site*bda, data = adult_BL)
-summary(adult_mod_3)
-
-adult_mod_4 <- glm(cpue_cell ~ site*bda, data = adult_PB)
-summary(adult_mod_4)
-
-adult_mod_5 <- glm(cpue_cell ~ site*moci_state, data = adult_AN)
-summary(adult_mod_5)
-
-adult_mod_6 <- glm(cpue_cell ~ site*moci_state, data = adult_PL)
-summary(adult_mod_6)
-
-adult_mod_7 <- glm(cpue_cell ~ site*moci_state, data = adult_BL)
-summary(adult_mod_7)
-
-adult_mod_8 <- glm(cpue_cell ~ site*moci_state, data = adult_PB)
-summary(adult_mod_8)
+# adult_mod_1 <- glm(cpue_cell ~ site*bda, data = adult_AN)
+# summary(adult_mod_1)
+# 
+# adult_mod_2 <- glm(cpue_cell ~ site*bda, data = adult_PL)
+# summary(adult_mod_2)
+# 
+# adult_mod_3 <- glm(cpue_cell ~ site*bda, data = adult_BL)
+# summary(adult_mod_3)
+# 
+# adult_mod_4 <- glm(cpue_cell ~ site*bda, data = adult_PB)
+# summary(adult_mod_4)
+# 
+# adult_mod_5 <- glm(cpue_cell ~ site*moci_state, data = adult_AN)
+# summary(adult_mod_5)
+# 
+# adult_mod_6 <- glm(cpue_cell ~ site*moci_state, data = adult_PL)
+# summary(adult_mod_6)
+# 
+# adult_mod_7 <- glm(cpue_cell ~ site*moci_state, data = adult_BL)
+# summary(adult_mod_7)
+# 
+# adult_mod_8 <- glm(cpue_cell ~ site*moci_state, data = adult_PB)
+# summary(adult_mod_8)
 
 
 ```
@@ -207,24 +211,188 @@ single_glm_dat2 <- single_glm_dat %>%
   summarise(cpue_cell = mean(cpue_date)) %>%
   dplyr::mutate(year = as.numeric(as.character(year))) 
 
+
+
+```
+
+
+# Update 2022-11-14
+
+After meeting with Hunter and receving **
+
+```{r mparef analysis dat}
+
+MR_dat <- single_glm_dat2 %>%
+  mutate(year = as.factor(year))
+
+#str(MR_dat)
+
+```
+
+```{r mpa ref analysis model, eval=F}
+
+library(lme4)
+library(lmerTest)
+
+MR_mod <- lmerTest::lmer(cpue_cell ~ site + life_stage + year + life_stage:site + year:site + (1|area), data = MR_dat)
+
+## ben was hesitant about adding year:site interaction. So this one is without that second interaction
+MR_mod1 <- lmerTest::lmer(cpue_cell ~ site + life_stage + year + life_stage:site + (1|area), data = MR_dat)
+
+summary(MR_mod)
+summary(MR_mod1)
+
+## year life stage
+
+```
+
+
+2022-11-15: Chatted with AP. Life stages separately is biologically relevant. FINAL ANSWER. Will be running the separate models, but NOT doing an ANOVA
+
+```{r two models final answer}
+
+MR_adult <- MR_dat %>%
+  filter(life_stage == "Adult")
+
+MR_mod2 <- lmerTest::lmer(cpue_cell ~ site*year + (1|area), data = MR_adult)
+summary(MR_mod2)
+
+MR_juv <- MR_dat %>%
+  filter(life_stage == "Juvenile")
+
+MR_mod3 <- lmerTest::lmer(cpue_cell ~ site*year + (1|area), data = MR_juv)
+summary(MR_mod3)
+
+
+```
+
+
+2022-12-31: Bringing this analysis (above MR_mod2 for adults and MR_mod3 for juveniles) into the draft of the thesis. 
+
+
+```{r, results= 'asis'}
+
+class(MR_mod2) <- "lmerMod"
+class(MR_mod3) <- "lmerMod"
+
+
+library(stargazer)
+
+stargazer(MR_mod2, MR_mod3, type = "html",
+          column.labels = c("Adult", "Juvenile"),
+          dep.var.labels = "Catch Per Unit Effort (CPUE): Cell Level",
+          covariate.labels = c("Reference (REF)", "2008", "2009", "2010", "2011", "2012", "2013", "2014", "2015", "2016", "2017", "2018", "2019", "2020", "REF:2008", "REF:2009", "REF:2010", "REF:2011", "REF:2012", "REF:2013", "REF:2014", "REF:2015", "REF:2016", "REF:2017", "REF:2018", "REF:2019", "REF:2020"),
+          model.numbers = FALSE,
+          title = "MPA-REF Analysis",
+          single.row = TRUE,
+          no.space = TRUE,
+          align = TRUE,
+          column.sep.width = "3pt",
+          font.size = "small",
+          out = here("Output/MPA_REF_Analysis_test.jpg"))
+
+
+
+
+```
+
+
+2023-01-17: FINAL FINAL (?) MODEL... maybe back to the one with before/during/after warm water events ('after' also happens to correspond with 10 years of MPA protection in 2017). This will be the exact same models as above EXCEPT instead of using year (categorical with 15 years), we will be using year GROUPINGS of before: 2007-2013, during: 2014-2016, and after: 2017-2020.
+
+
+```{r two models final answer bda}
+options(contrasts = c("contr.treatment","contr.poly"))
+
+MR_adult$bda <- factor(MR_adult$bda, levels = c("Before", "During", "After"))
+MR_juv$bda <- factor(MR_juv$bda, levels = c("Before", "During", "After"))
+
+
+MR_mod4 <- lmerTest::lmer(cpue_cell ~ site*bda + (1|area), data = MR_adult)
+summary(MR_mod4)
+
+
+MR_mod5 <- lmerTest::lmer(cpue_cell ~ site*bda + (1|area), data = MR_juv)
+summary(MR_mod5)
+
+```
+
+```{r two bda models, results= 'asis'}
+
+class(MR_mod4) <- "lmerMod"
+class(MR_mod5) <- "lmerMod"
+
+
+
+library(stargazer)
+
+stargazer(MR_mod4, MR_mod5, type = "html",
+          column.labels = c("Adult", "Juvenile"),
+          dep.var.labels = "Catch Per Unit Effort (CPUE): Cell Level",
+          covariate.labels = c("Reference (REF)", "During", "After", "REF:During", "REF:After"),
+          model.numbers = FALSE,
+          title = "MPA-REF Analysis",
+          single.row = TRUE,
+          no.space = TRUE,
+          align = TRUE,
+          column.sep.width = "3pt",
+          font.size = "small",
+          out = here("Output/MPA_REF_Analysis_bda.htm"))
+
+
+
+
+```
+
+
+
+## investigating the Zeros in the model
+
+```{r}
+
+zero <- MR_dat %>%
+  filter(cpue_cell == 0) %>%
+  group_by(life_stage, year) %>%
+  count() %>%
+  unite("stage_year", life_stage:year, sep = "_", remove = F)
+
+
+tot <- MR_dat %>%
+  group_by(life_stage, year) %>%
+  count() %>%
+  rename(total_cell = n) %>%
+  unite("stage_year", life_stage:year, sep = "_", remove = T) 
+
+percent_zero <- left_join(zero, tot, by = "stage_year") %>%
+  mutate(perc_zero = n/total_cell*100)
+
+ggplot() +
+  geom_col(position = position_dodge(), data = zero, 
+           aes(x = year, y = n, fill = life_stage))
+
+ggplot() +
+  geom_col(position = position_dodge(), data = percent_zero, 
+           aes(x = year, y = perc_zero, fill = life_stage))
+
+```
+
+
+Everything below is for models run previous to 2022-11-14. See above for updated code
+```{r single model lmer, eval = F}
+library(lme4)
+library(nlme)
+library(lmerTest)
+
+
 single_dat_yearfac <- single_glm_dat2
 
 ### do I want to control the order and why does order matter for lmer?
 #single_glm_dat2$bda <- factor(single_glm_dat2$bda, levels = c("Before", "During", "After"))
 
-single_glm_dat2a <- single_glm_dat2 %>%
+single_glm_dat2a <- MR_dat %>%
   filter(life_stage == "Adult")
 
-single_glm_dat2b <- single_glm_dat2 %>%
+single_glm_dat2b <- MR_dat %>%
   filter(life_stage == "Juvenile")
-
-```
-
-
-```{r single model lmer}
-library(lme4)
-library(nlme)
-library(lmerTest)
 
 
 ## glm not right if I want to include random effect of area
@@ -265,9 +433,11 @@ summary(single_mod_1)
 ## do we include life stage in the model? aka single model
 ## 
 
+## just run this but not anova 2022-11-15
+
 ## year as a factor
 ## adult
-dos_mod_1a <- lmerTest::lmer(cpue_cell ~ site*bda + (1|area), data = single_glm_dat2a)
+dos_mod_1a <- lmerTest::lmer(cpue_cell ~ site*year (1|area), data = single_glm_dat2a)
 anova(dos_mod_1a)
 summary(dos_mod_1a)
 
@@ -423,7 +593,7 @@ Working using this website as a guide: http://agroninfotech.blogspot.com/2020/06
 
 Next maybe I will try this guide: https://www.datanovia.com/en/lessons/repeated-measures-anova-in-r/
 
-```{r eight two way repeated measures ANOVA}
+```{r eight two way repeated measures ANOVA, eval = F}
 
 ## juvenile
 
@@ -459,7 +629,7 @@ summary(amod_PB)
 
 This isn't really going to work because if I need to account for natural variability in the error term, I can't do it by grid cell because each grid cell number is site specific.. aka AN01 as the 'id' will only ever be in the reference area because that is where AN01 occurs.. Better to do two models: one for juve and one for adult and have area be in the error term to account for naturally occurring variability between areas without actually testing between area differences. Right? I will set up the other 7 just in case.
 
-```{r juv and adult two way repeated measures ANOVA}
+```{r juv and adult two way repeated measures ANOVA, eval = F}
 
 adult_dat_aov <- single_glm_dat2 %>%
   filter(life_stage == "Adult")
@@ -480,7 +650,7 @@ summary(amod_aov)
 The problem with all of this is that I don't know for certain that subjects are sampled again at the next time point (the repeated measure, whatever that is. Year, bda, moci...). So all of the code is looking for subject ID to go into the error term.
 
 
-```{r rep measures ANOVA new guide}
+```{r rep measures ANOVA new guide, eval = F}
 library(ggpubr)
 library(rstatix)
 ## Data preparationb

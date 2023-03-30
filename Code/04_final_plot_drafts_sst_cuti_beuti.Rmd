@@ -1,0 +1,482 @@
+---
+title: "03_paneled_plot"
+author: "Josiah Gilbert"
+date: "8/10/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This file contains code to create somewhat polished summary plots of the various oceanographic and phytoplankton data most pertinent to Erin Johnston's blue rockfish project
+
+
+```{r Load libraries}
+library(tidyverse)
+library(lubridate)
+library(colorspace)
+library(dplyr)
+library(readxl)
+library(readr)
+library(here)
+library(patchwork)
+```
+
+# Read data in
+
+```{r read in physical parameters (at monthly levels)}
+# Read in Morro weather data
+
+morro_raw <- read_csv("BM1_monthly_T.txt", skip = 1, col_names = c("Year", "Month" ,"Mean T","Std T", "Max T","Min T","n T")) %>% 
+  mutate(date = ymd(paste0(Year, " ", Month, " ", "01")))
+
+# add empty rows for months that are missing from dataset
+missing_dates <- ymd(c("2007-01-01","2007-02-01","2007-03-01"))
+
+#merge missing dates with orginal morro dataset, adding rows of NAs to dataset for missing months
+morro <- bind_rows(morro_raw, data.frame("date" = missing_dates)) %>% 
+  arrange(date)
+
+polyprofiler_raw <-read_csv("Profiler_monthly_T.txt", skip = 1, col_names = c(
+"Year","Month","Mean T surface","Std T surface","Max T surface","Min T surface", "n T surface","Mean T bottom","Std T bottom","Max T bottom","Min T bottom","n T bottom"))
+
+polyprofiler <- polyprofiler_raw %>% 
+  mutate(date = ymd(paste0(Year, "-", Month, "-", rep("01", length(polyprofiler_raw$Year)))))
+```
+
+
+```{r}
+# run markdown file 02a_oceanography to create these data files
+monthly_beuti <- readRDS("monthly_beuti.RDS")
+monthly_cuti <- readRDS("monthly_cuti.RDS")
+```
+
+
+----------Final Drafts-----------------------------------------------------------------------------------------------------------------
+
+```{r}
+
+sizes <- c(4.59, 1.62, 11.75, 1.46)
+
+```
+# BEUTI
+
+```{r BEUTI timeseries plots lats 35N-37N}
+
+source("~/pasulkalab_shared/everyone/MarineDataIntegration_Invertebrates_2020/Timeseries_Axis.R", local = knitr::knit_global())
+
+xaxis <- timeseries_axis2(monthly_beuti$date, monthly_beuti$date)
+
+#pdf("beuti_35N_fish_draft.pdf", width = 11.70, height = sizes[4]*3)
+
+monthly_beuti %>% 
+  filter(year > 2007 & year < 2021) %>% 
+  ggplot(aes(x = as.factor(date), y = `35N`)) +
+  geom_line(group = 1, color = "#F8766D")+
+  geom_point(color = "#F8766D")+
+  xlab("Date")+
+  ylab("BEUTI")+
+  ggtitle("Biologically Effective Upwelling Transport Index (BEUTI) (i.e. vertical nitrate flux) at 35N")+
+  theme_classic()+
+  scale_x_discrete(breaks = xaxis$breaks, labels = xaxis$labels)+
+  theme(panel.background = element_rect(colour = "black", size=.75),
+        plot.title = element_text(size = 17),
+        axis.ticks.length = unit(2, "mm"),
+        #axis.text.x = element_blank(),
+        #axis.title.x = element_blank(),
+        axis.text.x = element_text(size = 15),
+        axis.title.x = element_text(size = 15),
+        axis.text.y = element_text(size = 15),
+        axis.title.y = element_text(size = 15))
+
+#dev.off()
+
+#pdf("beuti_36N_fish_draft.pdf", width = 11.70, height = sizes[4]*3)
+
+monthly_beuti %>% 
+  filter(year > 2007 & year < 2021) %>% 
+  ggplot(aes(x = as.factor(date), y = `36N`)) +
+  geom_line(group = 1, color = "#F8766D")+
+  geom_point(color = "#F8766D")+
+  xlab("Date")+
+  ylab("BEUTI")+
+  ggtitle("Biologically Effective Upwelling Transport Index (BEUTI) (i.e. vertical nitrate flux) at 36N")+
+  theme_classic()+
+  scale_x_discrete(breaks = xaxis$breaks, labels = xaxis$labels)+
+  theme(panel.background = element_rect(colour = "black", size=.75),
+        plot.title = element_text(size = 17),
+        axis.ticks.length = unit(2, "mm"),
+        #axis.text.x = element_blank(),
+        #axis.title.x = element_blank(),
+        axis.text.x = element_text(size = 15),
+        axis.title.x = element_text(size = 15),
+        axis.text.y = element_text(size = 15),
+        axis.title.y = element_text(size = 15))
+
+#dev.off()
+
+#pdf("beuti_37N_fish_draft.pdf", width = 11.70, height = sizes[4]*3)
+## this!!! take that chat gpt. Still took a human to figure out what you couldn't.
+## with RW comments on this figure "Need to add a, b, c.  Change colors on panels b and c to black.  Change colors on panel a to black and light gray.  Need to add units as well. CUTI is m^2/s.  BEUTI is mmol/(m*s).Remove titles from figures above (description goes in the caption).  Update caption (e.g. see below). 
+
+
+
+
+beuti_plot <- monthly_beuti %>% 
+  filter(year > 2007 & year < 2021) %>% 
+  ggplot(aes(x = as.factor(date), y = `35N`)) +
+  geom_line(group = 1, color = "black")+
+  geom_point(color = "black")+
+  annotate("rect", xmin = as.factor(2014), xmax = as.factor(2016), ymin = -Inf, ymax = Inf, 
+           alpha = .5, fill = "grey84")+
+  xlab("Date")+
+  ylab(expression(BEUTI~(mmol~m^-1~s^-1)))+
+  #ggtitle("Biologically Effective Upwelling Transport Index (BEUTI) (i.e. vertical nitrate flux) at 37N")+
+  theme_classic()+
+  scale_x_discrete(breaks = xaxis$breaks, labels = xaxis$labels)+
+  theme(panel.background = element_rect(colour = "black", size=.75),
+        plot.title = element_text(size = 17),
+        axis.ticks.length = unit(2, "mm"),
+        #axis.text.x = element_blank(),
+        #axis.title.x = element_blank(),
+        axis.text.x = element_text(size = 15),
+        axis.title.x = element_text(size = 15),
+        axis.text.y = element_text(size = 15),
+        axis.title.y = element_text(size = 15))
+
+
+
+ggsave("beuti_plot_35N.pdf", plot = beuti_plot, path = here("Output"), dpi = 1000, width = 11.70, height = sizes[4]*3)
+
+#dev.off()
+
+### BEUTI data for other regions
+
+beuti_plot36N <- monthly_beuti %>% 
+  filter(year > 2007 & year < 2021) %>% 
+  ggplot(aes(x = as.factor(date), y = `36N`)) +
+  geom_line(group = 1, color = "black")+
+  geom_point(color = "black")+
+  annotate("rect", xmin = as.factor(2014), xmax = as.factor(2016), ymin = -Inf, ymax = Inf, 
+           alpha = .5, fill = "grey84")+
+  xlab("Date")+
+  ylab(expression(BEUTI~(mmol~m^-1~s^-1)))+
+  #ggtitle("Biologically Effective Upwelling Transport Index (BEUTI) (i.e. vertical nitrate flux) at 37N")+
+  theme_classic()+
+  scale_x_discrete(breaks = xaxis$breaks, labels = xaxis$labels)+
+  theme(panel.background = element_rect(colour = "black", size=.75),
+        plot.title = element_text(size = 17),
+        axis.ticks.length = unit(2, "mm"),
+        #axis.text.x = element_blank(),
+        #axis.title.x = element_blank(),
+        axis.text.x = element_text(size = 15),
+        axis.title.x = element_text(size = 15),
+        axis.text.y = element_text(size = 15),
+        axis.title.y = element_text(size = 15))
+
+
+beuti_plot37N <- monthly_beuti %>% 
+  filter(year > 2007 & year < 2021) %>% 
+  ggplot(aes(x = as.factor(date), y = `37N`)) +
+  geom_line(group = 1, color = "black")+
+  geom_point(color = "black")+
+  annotate("rect", xmin = as.factor(2014), xmax = as.factor(2016), ymin = -Inf, ymax = Inf, 
+           alpha = .5, fill = "grey84")+
+  xlab("Date")+
+  ylab(expression(BEUTI~(mmol~m^-1~s^-1)))+
+  #ggtitle("Biologically Effective Upwelling Transport Index (BEUTI) (i.e. vertical nitrate flux) at 37N")+
+  theme_classic()+
+  scale_x_discrete(breaks = xaxis$breaks, labels = xaxis$labels)+
+  theme(panel.background = element_rect(colour = "black", size=.75),
+        plot.title = element_text(size = 17),
+        axis.ticks.length = unit(2, "mm"),
+        #axis.text.x = element_blank(),
+        #axis.title.x = element_blank(),
+        axis.text.x = element_text(size = 15),
+        axis.title.x = element_text(size = 15),
+        axis.text.y = element_text(size = 15),
+        axis.title.y = element_text(size = 15))
+
+beuti_all <- beuti_plot/beuti_plot36N/beuti_plot37N
+
+ggsave("beuti_plot_all.pdf", plot = beuti_all, path = here("Output"), dpi = 1000, width = 11.70, height = sizes[4]*3*3)
+
+
+
+```
+
+
+
+# CUTI
+
+```{r CUTI timeseries plot lats 35N-37N}
+source("~/pasulkalab_shared/everyone/MarineDataIntegration_Invertebrates_2020/Timeseries_Axis.R", local = knitr::knit_global())
+
+xaxis <- timeseries_axis2(monthly_cuti$date, monthly_cuti$date)
+
+#pdf("cuti_35N_fish_axis_draft.pdf", width = 11.70, height = sizes[4]*3)
+
+monthly_cuti %>%
+  filter(year > 2007 & year < 2021) %>% 
+  ggplot(aes(x = as.factor(date), y = `35N`))+
+  geom_line(color = "blue", group = 1)+
+  geom_point(color = "blue")+
+  #scale_x_date(date_breaks = "years", date_labels = "%Y")+
+  theme_classic()+
+  ylab("CUTI")+
+  xlab("Date")+
+  ggtitle("Coastal Upwelling Transport Index (CUTI) at 35N")+
+  scale_x_discrete(breaks = xaxis$breaks, labels = xaxis$labels)+
+  theme(panel.background = element_rect(colour = "black", size=.75),
+        plot.title = element_text(size = 20),
+        axis.ticks.length = unit(2, "mm"),
+        axis.text.x = element_text(size = 15),
+        axis.title.x = element_text(size = 15),
+        axis.text.y = element_text(size = 15),
+        axis.title.y = element_text(size = 15))
+
+#dev.off()
+
+#pdf("cuti_36N_fish_axis_draft.pdf", width = 11.70, height = sizes[4]*3)
+
+monthly_cuti %>%
+  filter(year > 2007 & year < 2021) %>% 
+  ggplot(aes(x = as.factor(date), y = `36N`))+
+  geom_line(color = "blue", group = 1)+
+  geom_point(color = "blue")+
+  #scale_x_date(date_breaks = "years", date_labels = "%Y")+
+  theme_classic()+
+  ylab("CUTI")+
+  xlab("Date")+
+  ggtitle("Coastal Upwelling Transport Index (CUTI) at 36N")+
+  scale_x_discrete(breaks = xaxis$breaks, labels = xaxis$labels)+
+  theme(panel.background = element_rect(colour = "black", size=.75),
+        plot.title = element_text(size = 20),
+        axis.ticks.length = unit(2, "mm"),
+        axis.text.x = element_text(size = 15),
+        axis.title.x = element_text(size = 15),
+        axis.text.y = element_text(size = 15),
+        axis.title.y = element_text(size = 15))
+
+#dev.off()
+
+#pdf("cuti_37N_fish_axis_draft.pdf", width = 11.70, height = sizes[4]*3)
+
+monthly_cuti %>%
+  filter(year > 2007 & year < 2021) %>% 
+  ggplot(aes(x = as.factor(date), y = `37N`))+
+  geom_line(color = "black", group = 1)+
+  geom_point(color = "black")+
+  #scale_x_date(date_breaks = "years", date_labels = "%Y")+
+  theme_classic()+
+  ylab("CUTI")+
+  xlab("Date")+
+  ggtitle("Coastal Upwelling Transport Index (CUTI) at 37N")+
+  scale_x_discrete(breaks = xaxis$breaks, labels = xaxis$labels)+
+  theme(panel.background = element_rect(colour = "black", size=.75),
+        plot.title = element_text(size = 20),
+        axis.ticks.length = unit(2, "mm"),
+        axis.text.x = element_text(size = 15),
+        axis.title.x = element_text(size = 15),
+        axis.text.y = element_text(size = 15),
+        axis.title.y = element_text(size = 15))
+
+## Erin playing with code per RW suggestions
+
+cuti_plot <- monthly_cuti %>%
+  filter(year > 2007 & year < 2021) %>% 
+  ggplot(aes(x = as.factor(date), y = `35N`))+
+  geom_line(color = "black", group = 1)+
+  geom_point(color = "black")+
+  annotate("rect", xmin = as.factor(2014), xmax = as.factor(2016), ymin = -Inf, ymax = Inf, 
+           alpha = .5, fill = "grey84")+
+  #scale_x_date(date_breaks = "years", date_labels = "%Y")+
+  theme_classic()+
+  ylab(expression(CUTI~(m^2~s^-1)))+
+  xlab("Date")+
+  #ggtitle("Coastal Upwelling Transport Index (CUTI) at 37N")+
+  scale_x_discrete(breaks = xaxis$breaks, labels = xaxis$labels)+
+  theme(panel.background = element_rect(colour = "black", size=.75),
+        plot.title = element_text(size = 20),
+        axis.ticks.length = unit(2, "mm"),
+        axis.text.x = element_text(size = 15),
+        axis.title.x = element_text(size = 15),
+        axis.text.y = element_text(size = 15),
+        axis.title.y = element_text(size = 15))
+
+
+### CUTI in other areas
+
+cuti_plot36N <- monthly_cuti %>%
+  filter(year > 2007 & year < 2021) %>% 
+  ggplot(aes(x = as.factor(date), y = `36N`))+
+  geom_line(color = "black", group = 1)+
+  geom_point(color = "black")+
+  annotate("rect", xmin = as.factor(2014), xmax = as.factor(2016), ymin = -Inf, ymax = Inf, 
+           alpha = .5, fill = "grey84")+
+  #scale_x_date(date_breaks = "years", date_labels = "%Y")+
+  theme_classic()+
+  ylab(expression(CUTI~(m^2~s^-1)))+
+  xlab("Date")+
+  #ggtitle("Coastal Upwelling Transport Index (CUTI) at 37N")+
+  scale_x_discrete(breaks = xaxis$breaks, labels = xaxis$labels)+
+  theme(panel.background = element_rect(colour = "black", size=.75),
+        plot.title = element_text(size = 20),
+        axis.ticks.length = unit(2, "mm"),
+        axis.text.x = element_text(size = 15),
+        axis.title.x = element_text(size = 15),
+        axis.text.y = element_text(size = 15),
+        axis.title.y = element_text(size = 15))
+
+cuti_plot37N <- monthly_cuti %>%
+  filter(year > 2007 & year < 2021) %>% 
+  ggplot(aes(x = as.factor(date), y = `37N`))+
+  geom_line(color = "black", group = 1)+
+  geom_point(color = "black")+
+  annotate("rect", xmin = as.factor(2014), xmax = as.factor(2016), ymin = -Inf, ymax = Inf, 
+           alpha = .5, fill = "grey84")+
+  #scale_x_date(date_breaks = "years", date_labels = "%Y")+
+  theme_classic()+
+  ylab(expression(CUTI~(m^2~s^-1)))+
+  xlab("Date")+
+  #ggtitle("Coastal Upwelling Transport Index (CUTI) at 37N")+
+  scale_x_discrete(breaks = xaxis$breaks, labels = xaxis$labels)+
+  theme(panel.background = element_rect(colour = "black", size=.75),
+        plot.title = element_text(size = 20),
+        axis.ticks.length = unit(2, "mm"),
+        axis.text.x = element_text(size = 15),
+        axis.title.x = element_text(size = 15),
+        axis.text.y = element_text(size = 15),
+        axis.title.y = element_text(size = 15))
+
+cuti_all <- cuti_plot/cuti_plot36N/cuti_plot37N
+
+
+ggsave("cuti_plot_35N.pdf", plot = cuti_plot, path = here("Output"), dpi = 1000, width = 11.70, height = sizes[4]*3)
+
+ggsave("cuti_plot_all.pdf", plot = cuti_all, path = here("Output"), dpi = 1000, width = 11.70, height = sizes[4]*3*3)
+
+#dev.off()
+```
+
+# Morro and CalPoly Pier SST
+
+```{r temperature timeseries at Morro and CalPoly pier}
+source("~/pasulkalab_shared/everyone/MarineDataIntegration_Invertebrates_2020/Timeseries_Axis.R", local = knitr::knit_global())
+
+xaxis <- timeseries_axis2(morro$date, morro$date)
+
+#pdf("morro_.pdf", width = 11.70, height = sizes[4]*3)
+
+morro %>% 
+  full_join(polyprofiler) %>% 
+  select(date, Year, `Mean T`, `Mean T surface`) %>% 
+  rename(morro = `Mean T`,
+         poly = `Mean T surface`) %>% 
+  pivot_longer(c(morro, poly), names_to = "site", values_to = "mean_temp") %>% 
+  filter(Year > 2007 & Year < 2021) %>% 
+ggplot(aes(x = as.factor(date), y = mean_temp, color = site))+
+  geom_line(aes(group = site))+
+  geom_point()+
+  scale_color_manual(values = c("black", "grey42"), name = "Site", labels = c("Morro Bay", "CalPoly Pier"))+
+  scale_x_discrete(breaks = xaxis$breaks, labels = xaxis$labels)+
+  theme_classic()+
+  xlab("Date")+
+  ylab(expression("Temp. " ( degree*C)))+
+  ggtitle("Sea surface temperature in SLO Bay region")+
+  theme(panel.background = element_rect(colour = "black", size=.75),
+        legend.position = c(0.2, 0.85),
+        legend.box.background = element_rect(colour = "black", size = 0.75),
+        legend.box = "horizontal",
+        plot.title = element_text(size = 20),
+        axis.ticks.length = unit(2, "mm"),
+        axis.text.x = element_text(size = 15),
+        axis.title.x = element_text(size = 15),
+        axis.text.y = element_text(size = 15),
+        axis.title.y = element_text(size = 15))
+
+## Erin playing with code per RW suggetions
+
+temp_plot <- morro %>% 
+  full_join(polyprofiler) %>% 
+  select(date, Year, `Mean T`, `Mean T surface`) %>% 
+  rename(morro = `Mean T`,
+         poly = `Mean T surface`) %>% 
+  pivot_longer(c(morro, poly), names_to = "site", values_to = "mean_temp") %>% 
+  filter(Year > 2007 & Year < 2021) %>% 
+ggplot(aes(x = as.factor(date), y = mean_temp, color = site))+
+  geom_line(aes(group = site))+
+  geom_point()+
+  annotate("rect", xmin = as.factor(2014), xmax = as.factor(2016), ymin = -Inf, ymax = Inf, 
+           alpha = .5, fill = "grey84")+
+  scale_color_manual(values = c("black", "grey42"), name = "Site", labels = c("Morro Bay", "CalPoly Pier"))+
+  scale_x_discrete(breaks = xaxis$breaks, labels = xaxis$labels)+
+  theme_classic()+
+  xlab("Date")+
+  ylab(expression("Temperature " ( degree*C)))+
+  #ggtitle("Sea surface temperature in SLO Bay region")+
+  theme(panel.background = element_rect(colour = "black", size=.75),
+        legend.position = c(0.2, 0.85),
+        legend.box.background = element_rect(colour = "black", size = 0.75),
+        legend.box = "horizontal",
+        plot.title = element_text(size = 20),
+        axis.ticks.length = unit(2, "mm"),
+        axis.text.x = element_text(size = 15),
+        axis.title.x = element_text(size = 15),
+        axis.text.y = element_text(size = 15),
+        axis.title.y = element_text(size = 15))
+
+ggsave("temp_plot.pdf", plot = temp_plot, path = here("Output"), dpi = 1000, width = 11.70, height = sizes[4]*3)
+
+#dev.off()
+```
+
+```{r combining plots}
+
+local_ocean_panel_plot <- temp_plot/cuti_plot/beuti_plot
+
+ggsave("test.pdf", plot = test, path = here("Output"), dpi = 1000, width = 11.70*2, height = sizes[4]*3*3)
+
+
+
+test <- temp_plot/(cuti_plot + beuti_plot)
+
+
+
+```
+
+
+```{r Morro temperature timeseries and BEUTI (at 35N) on single plot, eval = F, echo = F}
+source("~/pasulkalab_shared/everyone/MarineDataIntegration_Invertebrates_2020/Timeseries_Axis.R", local = knitr::knit_global())
+
+xaxis <- timeseries_axis2(morro$date, morro$date)
+
+#pdf("morro_temp_beuti_fish_draft.pdf", width = sizes[3], height = sizes[4]*3)
+
+morro %>% 
+  filter(date >= ymd("2008-01-01")) %>% 
+  full_join(monthly_beuti %>% filter(year > 2007 & year < 2021)) %>% 
+  pivot_longer(c("35N", "Mean T"), names_to = "index", values_to = "value") %>% 
+  ggplot(aes(x = as.factor(date), y = value, color = index, group = index)) +
+  geom_point()+
+  geom_line()+
+  theme_classic()+
+  scale_x_discrete(breaks = xaxis$breaks, labels = xaxis$labels)+
+  scale_color_discrete(labels = c("BEUTI", "Mean SST"))+
+  xlab("Date")+
+  ylab(expression("Temp. " ( degree*C)))+
+  theme(panel.background = element_rect(colour = "black", size=.75),
+        legend.position = c(0.8, 0.15),
+        legend.box.background = element_rect(colour = "black", size = 0.75),
+        legend.box = "horizontal",
+        legend.title = element_blank(),
+        axis.ticks.length = unit(2, "mm"),
+        axis.text.x = element_blank(),
+        axis.title.x = element_blank(),
+        axis.text.y = element_text(size = 15),
+        axis.title.y = element_text(size = 15))+
+    annotate("text", x=2, y=18.2, label= "C", size = 8)
+
+#dev.off()
+```

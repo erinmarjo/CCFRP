@@ -1,0 +1,40 @@
+
+<table style="text-align:center"><caption><strong>MPA-REF Analysis</strong></caption>
+<tr><td colspan="3" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left"></td><td colspan="2"><em>Dependent variable:</em></td></tr>
+<tr><td></td><td colspan="2" style="border-bottom: 1px solid black"></td></tr>
+<tr><td style="text-align:left"></td><td colspan="2">Catch Per Unit Effort (CPUE): Cell Level</td></tr>
+<tr><td style="text-align:left"></td><td>Adult</td><td>Juvenile</td></tr>
+<tr><td colspan="3" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left">Reference (REF)</td><td>-0.714<sup>*</sup> (0.417)</td><td>-0.056 (0.428)</td></tr>
+<tr><td style="text-align:left">2008</td><td>-0.397 (0.389)</td><td>-0.209 (0.399)</td></tr>
+<tr><td style="text-align:left">2009</td><td>-1.160<sup>***</sup> (0.389)</td><td>-0.711<sup>*</sup> (0.400)</td></tr>
+<tr><td style="text-align:left">2010</td><td>-1.261<sup>***</sup> (0.395)</td><td>-0.838<sup>**</sup> (0.405)</td></tr>
+<tr><td style="text-align:left">2011</td><td>-1.084<sup>***</sup> (0.394)</td><td>-0.794<sup>**</sup> (0.405)</td></tr>
+<tr><td style="text-align:left">2012</td><td>-1.022<sup>**</sup> (0.399)</td><td>-0.839<sup>**</sup> (0.409)</td></tr>
+<tr><td style="text-align:left">2013</td><td>-0.845<sup>**</sup> (0.395)</td><td>-0.714<sup>*</sup> (0.405)</td></tr>
+<tr><td style="text-align:left">2014</td><td>-0.477 (0.395)</td><td>-0.343 (0.405)</td></tr>
+<tr><td style="text-align:left">2015</td><td>0.456 (0.451)</td><td>-0.033 (0.463)</td></tr>
+<tr><td style="text-align:left">2016</td><td>0.639 (0.395)</td><td>3.998<sup>***</sup> (0.405)</td></tr>
+<tr><td style="text-align:left">2017</td><td>0.969<sup>**</sup> (0.395)</td><td>4.707<sup>***</sup> (0.406)</td></tr>
+<tr><td style="text-align:left">2018</td><td>2.199<sup>***</sup> (0.406)</td><td>0.913<sup>**</sup> (0.417)</td></tr>
+<tr><td style="text-align:left">2019</td><td>1.710<sup>***</sup> (0.403)</td><td>-0.243 (0.414)</td></tr>
+<tr><td style="text-align:left">2020</td><td>2.763<sup>***</sup> (0.412)</td><td>-0.151 (0.423)</td></tr>
+<tr><td style="text-align:left">REF:2008</td><td>0.077 (0.542)</td><td>-0.390 (0.557)</td></tr>
+<tr><td style="text-align:left">REF:2009</td><td>0.576 (0.542)</td><td>0.009 (0.557)</td></tr>
+<tr><td style="text-align:left">REF:2010</td><td>0.675 (0.544)</td><td>0.064 (0.558)</td></tr>
+<tr><td style="text-align:left">REF:2011</td><td>0.619 (0.548)</td><td>0.054 (0.562)</td></tr>
+<tr><td style="text-align:left">REF:2012</td><td>0.436 (0.554)</td><td>0.052 (0.569)</td></tr>
+<tr><td style="text-align:left">REF:2013</td><td>0.597 (0.548)</td><td>0.153 (0.562)</td></tr>
+<tr><td style="text-align:left">REF:2014</td><td>0.423 (0.551)</td><td>-0.117 (0.566)</td></tr>
+<tr><td style="text-align:left">REF:2015</td><td>-0.280 (0.631)</td><td>-0.350 (0.647)</td></tr>
+<tr><td style="text-align:left">REF:2016</td><td>-0.176 (0.546)</td><td>-1.982<sup>***</sup> (0.561)</td></tr>
+<tr><td style="text-align:left">REF:2017</td><td>-0.437 (0.546)</td><td>-2.500<sup>***</sup> (0.561)</td></tr>
+<tr><td style="text-align:left">REF:2018</td><td>-1.283<sup>**</sup> (0.568)</td><td>-0.314 (0.584)</td></tr>
+<tr><td style="text-align:left">REF:2019</td><td>-1.157<sup>**</sup> (0.563)</td><td>0.453 (0.578)</td></tr>
+<tr><td style="text-align:left">REF:2020</td><td>-1.868<sup>***</sup> (0.570)</td><td>0.025 (0.586)</td></tr>
+<tr><td style="text-align:left">Constant</td><td>1.364<sup>***</sup> (0.458)</td><td>0.883<sup>**</sup> (0.376)</td></tr>
+<tr><td colspan="3" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left">Observations</td><td>1,010</td><td>1,010</td></tr>
+<tr><td style="text-align:left">Log Likelihood</td><td>-1,892.303</td><td>-1,916.740</td></tr>
+<tr><td style="text-align:left">Akaike Inf. Crit.</td><td>3,844.606</td><td>3,893.480</td></tr>
+<tr><td style="text-align:left">Bayesian Inf. Crit.</td><td>3,992.137</td><td>4,041.011</td></tr>
+<tr><td colspan="3" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left"><em>Note:</em></td><td colspan="2" style="text-align:right"><sup>*</sup>p<0.1; <sup>**</sup>p<0.05; <sup>***</sup>p<0.01</td></tr>
+</table>
